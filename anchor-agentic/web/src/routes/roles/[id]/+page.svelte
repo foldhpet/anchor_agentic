@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
+	import { STATUS_STYLE } from '$lib/statusStyle';
 	import type { VersionSnapshot } from '$lib/api/types';
 	import type { PageProps } from './$types';
 
@@ -9,11 +10,13 @@
 	let versionsTotalPages = $derived(Math.max(1, Math.ceil(data.versionsTotal / data.versionsPageSize)));
 </script>
 
-<h1>{data.role.name}</h1>
-<p><a href="/roles">&larr; All Roles</a></p>
+<h1 class="text-2xl">{data.role.name}</h1>
+<p class="mt-1 text-sm"><a href="/roles">&larr; All Roles</a></p>
 
 {#if form?.error}
-	<p role="alert">{form.error}</p>
+	<p role="alert" class="mt-4 rounded-md border-l-4 border-attention bg-surface px-4 py-3 text-ink">
+		{form.error}
+	</p>
 {/if}
 
 {#if data.isOwner && data.role.status !== 'Archived'}
@@ -25,76 +28,120 @@
 				await update({ reset: false });
 			};
 		}}
+		class="mt-6 flex max-w-sm flex-col gap-4"
 	>
-		<label>
+		<label class="flex flex-col gap-1 text-sm">
 			Name
-			<input name="name" value={data.role.name} required />
+			<input
+				name="name"
+				value={data.role.name}
+				required
+				class="rounded-md border border-ink/15 bg-bg px-3 py-1.5"
+			/>
 		</label>
-		<label>
+		<label class="flex flex-col gap-1 text-sm">
 			Description
-			<input name="description" value={data.role.description ?? ''} />
+			<input
+				name="description"
+				value={data.role.description ?? ''}
+				class="rounded-md border border-ink/15 bg-bg px-3 py-1.5"
+			/>
 		</label>
-		<p>Status: {data.role.status}</p>
-		<button type="submit">Save</button>
+		<p class="text-sm text-ink/70">
+			Status: <span class="rounded-full px-2 py-0.5 text-xs {STATUS_STYLE[data.role.status]}"
+				>{data.role.status}</span
+			>
+		</p>
+		<button type="submit" class="self-start rounded-md bg-primary px-4 py-1.5 text-white">Save</button>
 	</form>
 	{#if data.role.status === 'Draft'}
-		<form method="POST" action="?/archive" use:enhance>
-			<button type="submit">Archive</button>
+		<form method="POST" action="?/archive" use:enhance class="mt-2">
+			<button type="submit" class="rounded-md border border-attention px-3 py-1.5 text-sm text-ink"
+				>Archive</button
+			>
 		</form>
 	{/if}
 {:else}
-	<p>{data.role.description ?? ''}</p>
-	<p>Status: {data.role.status}</p>
+	<p class="mt-4 text-ink/80">{data.role.description ?? ''}</p>
+	<p class="mt-2 text-sm text-ink/70">
+		Status: <span class="rounded-full px-2 py-0.5 text-xs {STATUS_STYLE[data.role.status]}"
+			>{data.role.status}</span
+		>
+	</p>
 	{#if data.role.status === 'Archived'}
-		<p>This item is archived — clone it to resume work.</p>
+		<p class="mt-2 rounded-md bg-surface px-4 py-3 text-sm text-ink/70">
+			This item is archived — clone it to resume work.
+		</p>
+	{:else if !data.isOwner}
+		<p class="mt-2 rounded-md bg-surface px-4 py-3 text-sm text-ink/70">
+			Read-only — you're viewing another user's Sandbox item.
+		</p>
 	{/if}
 {/if}
 
-<h2>Tasks</h2>
+<h2 class="mt-8 text-lg">Tasks</h2>
 {#if data.tasks.length === 0}
-	<p>No Tasks under this Role yet.</p>
+	<p class="mt-2 text-ink/70">No Tasks under this Role yet.</p>
 {:else}
-	<ul>
+	<ul class="mt-2 flex flex-col gap-2">
 		{#each data.tasks as task (task.id)}
-			<li><a href="/tasks/{task.id}">{task.name}</a> — {task.status}</li>
+			<li class="flex items-center gap-2 rounded-md border border-ink/10 p-3">
+				<a class="font-semibold" href="/tasks/{task.id}">{task.name}</a>
+				<span class="rounded-full px-2 py-0.5 text-xs {STATUS_STYLE[task.status]}">{task.status}</span>
+			</li>
 		{/each}
 	</ul>
 {/if}
 
 {#if data.isOwner && data.role.status !== 'Archived'}
-	<h3>New Task</h3>
-	<form method="POST" action="?/createTask" use:enhance>
-		<label>
+	<h3 class="mt-6 text-base font-semibold">New Task</h3>
+	<form method="POST" action="?/createTask" use:enhance class="mt-2 flex max-w-sm flex-col gap-4">
+		<label class="flex flex-col gap-1 text-sm">
 			Name
-			<input name="name" required />
+			<input name="name" required class="rounded-md border border-ink/15 bg-bg px-3 py-1.5" />
 		</label>
-		<label>
+		<label class="flex flex-col gap-1 text-sm">
 			Instructions
-			<textarea name="instructions"></textarea>
+			<textarea name="instructions" class="rounded-md border border-ink/15 bg-bg px-3 py-1.5"
+			></textarea>
 		</label>
-		<button type="submit">Create Task</button>
+		<button type="submit" class="self-start rounded-md bg-primary px-4 py-1.5 text-white"
+			>Create Task</button
+		>
 	</form>
 {/if}
 
-<h2>Version History</h2>
+<h2 class="mt-8 text-lg">Version History</h2>
 {#if data.versions.length === 0}
-	<p>No version history yet.</p>
+	<p class="mt-2 text-ink/70">No version history yet.</p>
 {:else}
-	<ul>
+	<ul class="mt-2 flex flex-col gap-1">
 		{#each data.versions as version (version.id)}
 			<li>
-				<button type="button" onclick={() => (viewingVersion = version)}>
+				<button
+					type="button"
+					onclick={() => (viewingVersion = version)}
+					class="rounded-md border border-ink/10 px-3 py-1.5 text-sm hover:bg-surface"
+				>
 					v{version.version_number} — {version.created_at}
 				</button>
 			</li>
 		{/each}
 	</ul>
 	{#if viewingVersion}
-		<pre>{JSON.stringify(viewingVersion.snapshot_data, null, 2)}</pre>
-		<button type="button" onclick={() => (viewingVersion = null)}>Close</button>
+		<pre class="mt-2 overflow-x-auto rounded-md bg-surface p-4 text-xs">{JSON.stringify(
+				viewingVersion.snapshot_data,
+				null,
+				2
+			)}</pre>
+		<button
+			type="button"
+			onclick={() => (viewingVersion = null)}
+			class="mt-2 rounded-md border border-ink/15 px-3 py-1.5 text-sm">Close</button
+		>
 	{/if}
 	{#if versionsTotalPages > 1}
-		<p>
+		<p class="mt-4 flex items-center gap-3 text-sm text-ink/70">
 			Version page {data.versionsPage} of {versionsTotalPages}
 			{#if data.versionsPage > 1}
 				<a href="?vpage={data.versionsPage - 1}">&larr; Prev</a>

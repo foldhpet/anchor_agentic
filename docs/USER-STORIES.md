@@ -106,6 +106,21 @@
 | [US-045](#us-045) | [V2] Report abusive or broken published content | F-5.4 | Medium | 5 |
 | [US-046](#us-046) | [V2] Moderator removes reported content | F-5.4 | Medium | 5 |
 
+### Epic K — Visual Design Refresh (v1.1)
+| ID | Title | Feature ID(s) | Priority | Estimate |
+|---|---|---|---|---|
+| [US-047](#us-047) | Type scale & spacing system applied site-wide | F-6.1 | High | 8 |
+| [US-048](#us-048) | Functional color system applied site-wide | F-6.2 | High | 5 |
+| [US-049](#us-049) | Visual distinction between editable and read-only content | F-6.3 | High | 5 |
+| [US-050](#us-050) | WCAG 2.1 AA baseline accessibility | F-6.4 | High | 8 |
+| [US-051](#us-051) | Light-mode baseline robust to OS-forced dark mode | F-6.5 | Low | 3 |
+
+### Epic L — Role Creation Discoverability
+| ID | Title | Feature ID(s) | Priority | Estimate |
+|---|---|---|---|---|
+| [US-052](#us-052) | "New Role" in the global create menu | F-2.5 | Medium | 2 |
+| [US-053](#us-053) | Dedicated "New Role" page | F-2.5, F-3.1 | Medium | 3 |
+
 ---
 
 ## Dependency Matrix
@@ -157,6 +172,13 @@
 | US-044 | US-042, US-043 | Human review is an optional additional step alongside automated checks |
 | US-045 | US-026 | Reporting requires published content to exist |
 | US-046 | US-045 | Removal acts on a reported item |
+| US-047 | US-001, US-002, US-016, US-017, US-026 | Type/spacing system is applied across pages that must already exist (Auth, My/All Sandbox, Marketplace) |
+| US-048 | US-047 | Color tokens build on the same Tailwind theme foundation as the type/spacing system |
+| US-049 | US-016, US-017, US-018, US-048 | Read-only/editable distinction styles the existing Sandbox permission boundaries |
+| US-050 | US-047, US-048 | Accessibility baseline is measured against the type and color systems once defined |
+| US-051 | US-048 | Forced-dark-mode robustness reuses the color tokens, not a separate palette |
+| US-052 | US-005, US-013 | Amends the existing create-menu story to add Role; Role authoring (US-005) must exist |
+| US-053 | US-005, US-052 | The dedicated page needs both Role authoring and the menu entry pointing to it |
 
 ---
 
@@ -530,6 +552,8 @@ Maps to F-2.5. Reduces friction to begin contributing (Guiding Principle 1). Not
 **Dependencies:** US-005, US-007, US-009, US-010
 
 **Notes:** Role/Task are intentionally excluded from the top-level "+" menu since they are not independently published or the primary sharable unit — this follows the Architect's resolution that only Agent/Skill/Workflow are first-class Marketplace citizens.
+
+**Amendment (2026-10-03, see [US-052](#us-052)):** The Role exclusion above is superseded at the stakeholder's explicit request — Role creation was only reachable via the Agent-creation empty state or by navigating directly to `/roles`, which proved to not be discoverable enough in practice. Task remains excluded from the top-level menu, unchanged; it is still reached via a Role's detail page (US-006).
 
 ---
 
@@ -1486,6 +1510,211 @@ Maps to F-5.4's removal half. Completes the `UnderReview → Removed` state tran
 **Dependencies:** US-045
 
 **Notes:** V2/Phase 3 scope. Moderator role/permissions model itself (who qualifies as a moderator) is not defined in the source docs and should be raised as an open question back to the Product Owner before this story enters a V2 sprint.
+
+---
+
+## Epic K — Visual Design Refresh (v1.1)
+
+> Post-MVP polish increment, not a reopening of Epics A-J's functional scope. Per `PRODUCT-CONCEPT.md`'s Phase 1.1 roadmap entry: applies a small, functional design system (type, spacing, a stakeholder-supplied color palette) and a WCAG 2.1 AA baseline across the existing V1 pages. Explicitly excludes icon libraries, illustration, animation, rebranding, and a true dark theme — see `PRODUCT-CONCEPT.md` Feature Category 6 for the full non-goals list.
+
+### US-047
+**User Story Title:** Type Scale & Spacing System Applied Site-Wide
+
+**User Story ID:** US-047
+
+**As a** visitor or registered user reading dense domain content
+**I want** consistent, readable typography and spacing across every page
+**So that** Role/Task/Agent/Skill/Workflow content is easy to scan instead of overwhelming
+
+**Description:**
+Maps to F-6.2. Establishes a Tailwind CSS `@theme` type scale (H1-H6, body, caption/metadata) and a spacing/line-length rhythm, applied via shared base element styles so it covers every page without page-specific overrides. System font stack or free, self-hostable fonts only — no paid font service, consistent with the $20/month hosting ceiling.
+
+**Acceptance Criteria:**
+- [ ] Given any page renders, When inspected, Then headings (H1-H6), body copy, and metadata/caption text use one consistent type scale defined as reusable Tailwind/CSS tokens, not ad hoc inline font sizes.
+- [ ] Given a content-dense page (Marketplace listing, Sandbox editor, item detail), When rendered, Then body text line length stays within a readable ~60-80 character measure and vertical spacing between elements follows a consistent rhythm.
+- [ ] Given the type system is implemented, When fonts are inspected, Then only system fonts (e.g. the `-apple-system`/`Segoe UI` stack) or free, self-hostable fonts are used.
+- [ ] Given the type scale is applied, When compared across Marketplace, My Sandbox, All Sandbox, and Auth pages, Then heading/body/caption styling is visually identical in treatment.
+
+**Priority:** High
+
+**Estimate:** 8 story points
+
+**Dependencies:** US-001, US-002, US-016, US-017, US-026
+
+**Notes:** Foundation story for the rest of Epic K — US-048 through US-051 build on the same Tailwind theme this story establishes.
+
+---
+
+### US-048
+**User Story Title:** Functional Color System Applied Site-Wide
+
+**User Story ID:** US-048
+
+**As a** visitor or registered user
+**I want** a small, consistent color system that communicates state and action rather than decorates
+**So that** I can tell actions, status, and feedback apart at a glance, and the UI feels calm rather than ad hoc
+
+**Description:**
+Maps to F-6.2. Implements the stakeholder-supplied palette as Tailwind CSS tokens: one neutral text/background pairing, a single primary accent for primary actions and links, and distinct status colors for Draft/Published/UnderReview/Removed — each chosen to meet WCAG AA contrast (verified in US-050). Colors outside this token set are not used for functional UI.
+
+**Acceptance Criteria:**
+- [ ] Given the color tokens are defined, When any primary action (Publish, Clone, submit Rating, the "+" create action) is rendered, Then it uses the single primary accent color consistently across all pages.
+- [ ] Given an item's lifecycle status is shown (Draft/Published/UnderReview/Removed), When rendered, Then each status has its own consistent, documented color treatment and no two statuses share a color.
+- [ ] Given an error or destructive action (e.g., failed validation, removing a Sandbox item), When rendered, Then it uses the designated attention/error color consistently, distinct from the status colors.
+- [ ] Given the color system is implemented, When any UI surface is inspected, Then no palette color outside the defined functional token set appears in the UI (decorative use of unassigned colors is out of scope for v1.1, per `PRODUCT-CONCEPT.md` Feature Category 6).
+
+**Priority:** High
+
+**Estimate:** 5 story points
+
+**Dependencies:** US-047
+
+**Notes:** None.
+
+---
+
+### US-049
+**User Story Title:** Visual Distinction Between Editable and Read-Only Content
+
+**User Story ID:** US-049
+
+**As a** registered user moving between My Sandbox, All Sandbox, and the Marketplace
+**I want** an immediate visual cue for whether what I'm looking at is editable or read-only
+**So that** I don't attempt to edit something I don't own, and I always know which workspace I'm in
+
+**Description:**
+Maps to F-6.3. Builds on US-047/US-048. Adds consistent, non-decorative indicators (e.g., a visible "read-only" treatment, hidden/disabled edit controls outside My Sandbox) that reinforce the existing RLS/API-enforced permission boundary (US-004, US-018) through design, rather than letting a user discover it via a failed save.
+
+**Acceptance Criteria:**
+- [ ] Given a registered user views their own item in My Sandbox, When the page renders, Then edit affordances (edit/save controls) are visible and styled with the primary accent.
+- [ ] Given a registered user views another user's item in All Sandbox, When the page renders, Then no edit affordances are rendered (or they are visibly disabled), and a clear read-only indicator is present.
+- [ ] Given any user views a Published Marketplace item, When the page renders, Then it is presented with the same read-only treatment as All Sandbox, offering Clone instead of Edit.
+- [ ] Given the distinction is implemented, When a registered user navigates between My Sandbox and All Sandbox, Then they can tell which context they're in without reading the URL or page title alone.
+
+**Priority:** High
+
+**Estimate:** 5 story points
+
+**Dependencies:** US-016, US-017, US-018, US-048
+
+**Notes:** This is a visual reinforcement of an already-enforced permission boundary (US-004 server-side, RLS independently) — it changes nothing about actual authorization, only what the UI shows.
+
+---
+
+### US-050
+**User Story Title:** WCAG 2.1 AA Baseline Accessibility
+
+**User Story ID:** US-050
+
+**As a** visitor using a screen reader, keyboard-only navigation, or who needs higher contrast
+**I want** the platform to meet a WCAG 2.1 AA baseline
+**So that** I can use AnchorAgentic.io regardless of visual or motor ability
+
+**Description:**
+Maps to F-6.4. Resolves the accessibility NFR and Open Question flagged in `PRODUCT-CONCEPT.md` (previously "aspirational," now a delivered v1.1 feature). Covers text contrast, minimum touch-target size, visible keyboard focus indicators, and proper label-to-input association on every form.
+
+**Acceptance Criteria:**
+- [ ] Given any text is rendered against its background, When contrast is measured, Then it meets WCAG AA (≥4.5:1 for normal text, ≥3:1 for large/bold text), using only the color pairings defined in US-048.
+- [ ] Given any interactive element (button, link, form control), When measured, Then its touch target is at least 44×44px.
+- [ ] Given a keyboard-only user tabs through any page, When focus moves, Then a visible focus indicator appears on every focusable element and no focus trap exists.
+- [ ] Given any form (register, login, item create/edit, rating submission), When inspected, Then every input has a programmatically associated `<label>` — placeholder text alone is not treated as a label.
+- [ ] Given this story is complete, When `PRODUCT-CONCEPT.md`'s accessibility NFR and Open Question are reviewed, Then both are marked resolved rather than aspirational/open.
+
+**Priority:** High
+
+**Estimate:** 8 story points
+
+**Dependencies:** US-047, US-048
+
+**Notes:** None.
+
+---
+
+### US-051
+**User Story Title:** Light-Mode Baseline Robust to OS-Forced Dark Mode
+
+**User Story ID:** US-051
+
+**As a** visitor whose OS or browser forces a dark-mode override
+**I want** the platform to remain readable rather than visibly broken
+**So that** I'm not blocked just because a true dark theme isn't built yet
+
+**Description:**
+Maps to F-6.5. Light mode is the only designed/tested experience in v1.1; this story only guards against breakage under a forced-dark override (e.g., an explicit `color-scheme: light` and explicit background/text colors so the browser doesn't invert unpredictably) — it is not a dark-theme implementation.
+
+**Acceptance Criteria:**
+- [ ] Given a user's OS/browser applies a forced dark-mode override, When any page renders, Then text remains readable against its background (no white-on-white or black-on-black inversion artifacts).
+- [ ] Given the page declares `color-scheme: light` (or equivalent), When rendered under a forced-dark browser setting, Then the browser's automatic re-coloring is suppressed in favor of the defined light palette.
+- [ ] Given this story is complete, When a true dark theme is considered in a future iteration, Then no v1.1 work needs to be redone for it — the token-based color system from US-048 is reused, not replaced.
+
+**Priority:** Low
+
+**Estimate:** 3 story points
+
+**Dependencies:** US-048
+
+**Notes:** A true dark theme is an explicit non-goal of v1.1 (see `PRODUCT-CONCEPT.md` Feature Category 6) — this story is deliberately scoped to "don't break," not "support."
+
+---
+
+## Epic L — Role Creation Discoverability
+
+> Amends US-013's original design, at the stakeholder's explicit request: Role creation was previously reachable only via the Agent-creation empty state ("All of your Roles already have an Agent") or by navigating directly to `/roles` — no persistent, always-visible entry point existed. Task is unaffected and remains out of the top-level menu, created only from within a Role's detail page.
+
+### US-052
+**User Story Title:** "New Role" in the Global Create Menu
+
+**User Story ID:** US-052
+
+**As a** registered user
+**I want** a "New Role" option in the same "+ New" menu as Agent/Skill/Workflow
+**So that** I can start a Role without first stumbling into an empty-state link or already knowing to visit `/roles`
+
+**Description:**
+Maps to F-2.5. Amends US-013's original exclusion of Role from the top-level create menu (see that story's Amendment note). Routes to the dedicated page added by US-053.
+
+**Acceptance Criteria:**
+- [ ] Given a registered user opens the "+ New" menu from any page, When the menu renders, Then "New Role" appears alongside New Agent/New Skill/New Workflow.
+- [ ] Given the user selects "New Role", When they confirm, Then they are routed to the dedicated Role-creation page (US-053).
+- [ ] Given an anonymous visitor is browsing, When they look for a create menu, Then none is shown — unchanged from US-013.
+- [ ] Given Task is considered, When the menu is reviewed, Then Task still does not appear — this amendment is Role-only.
+
+**Priority:** Medium
+
+**Estimate:** 2 story points
+
+**Dependencies:** US-005, US-013
+
+**Notes:** Supersedes only the Role half of US-013's original exclusion clause; see the Amendment note on US-013 itself.
+
+---
+
+### US-053
+**User Story Title:** Dedicated "New Role" Page
+
+**User Story ID:** US-053
+
+**As a** registered user
+**I want** Role creation on its own page, consistent with how Agent/Skill/Workflow are created
+**So that** every domain entity follows the same creation pattern, and I land on the new Role immediately after creating it
+
+**Description:**
+Maps to F-2.5/F-3.1. Adds `/roles/new`, mirroring the existing `/agents/new`, `/skills/new`, `/workflows/new` pattern (dedicated form, redirect to the new item's own detail page on success). The existing `/roles` list page's inline quick-create form is deliberately left in place, unchanged — this adds a second entry point rather than replacing the first, so the already-verified existing behavior (and the e2e suite covering it) isn't disturbed.
+
+**Acceptance Criteria:**
+- [ ] Given a registered user navigates to `/roles/new` (via the "+ New" menu or directly), When the page renders, Then a Name + Description form is shown, styled consistently with `/agents/new`, `/skills/new`, `/workflows/new`.
+- [ ] Given the user submits a valid Name, When the Role is created, Then they are redirected to that Role's own detail page (`/roles/{id}`).
+- [ ] Given the user submits without a Name, When they submit, Then a validation error is shown and no Role is created.
+- [ ] Given the My Sandbox empty state and the Agent-creation empty state each link to Role creation, When those links are followed, Then they land on `/roles/new` rather than the list page.
+- [ ] Given the existing `/roles` list page, When it is reviewed after this change, Then its own inline create form still works exactly as before — this story does not remove or alter it.
+
+**Priority:** Medium
+
+**Estimate:** 3 story points
+
+**Dependencies:** US-005, US-052
+
+**Notes:** Deliberately additive, not a replacement — `/roles`'s inline form stays, matching how e2e tests across the suite (`domain-authoring.spec.ts`, `clone.spec.ts`, `export.spec.ts`, `marketplace.spec.ts`, `sandbox-library.spec.ts`) already exercise it directly.
 
 ---
 

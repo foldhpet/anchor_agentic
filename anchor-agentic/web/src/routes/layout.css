@@ -1,1 +1,73 @@
 @import 'tailwindcss';
+
+/*
+ * v1.1 design tokens (US-047/US-048). Palette is the stakeholder-supplied
+ * set; only the subset that clears WCAG AA contrast for its assigned role is
+ * wired up here — see docs/PRODUCT-CONCEPT.md Feature Category 6 for why
+ * Turquoise/Lime/Golden/Black were deliberately left unused in v1.1.
+ */
+@theme {
+	--color-bg: #ffffff; /* page background */
+	--color-surface: #f2f2f2; /* card/section background, one step off bg */
+	--color-ink: #413c3e; /* body text and headings (Graphite, softer than black) */
+	--color-primary: #367051; /* single primary accent: CTAs, links, focus; also = Published status */
+	--color-caution: #ffbf00; /* UnderReview status */
+	--color-attention: #ff6000; /* Removed / destructive accent (border/icon use, not small-text fill) */
+	--font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+}
+
+@layer base {
+	:root {
+		/* Light mode is the only designed experience in v1.1 (US-051) — this
+		 * stops an OS/browser-forced dark override from auto-inverting colors
+		 * underneath it. */
+		color-scheme: light;
+	}
+
+	body {
+		background-color: var(--color-bg);
+		color: var(--color-ink);
+		font-family: var(--font-sans);
+		line-height: 1.6;
+	}
+
+	h1,
+	h2,
+	h3,
+	h4,
+	h5,
+	h6 {
+		font-weight: 600;
+		line-height: 1.25;
+		margin-block: 0 0.5em;
+	}
+
+	p,
+	li {
+		max-width: 70ch; /* readable line length (US-047) */
+	}
+
+	a {
+		color: var(--color-primary);
+		text-decoration: underline;
+		text-decoration-thickness: 1px;
+	}
+
+	a:hover {
+		text-decoration-thickness: 2px;
+	}
+
+	button,
+	input,
+	select,
+	textarea {
+		font-family: inherit;
+		font-size: 1rem;
+	}
+
+	/* Visible keyboard focus everywhere (US-050) */
+	:focus-visible {
+		outline: 2px solid var(--color-primary);
+		outline-offset: 2px;
+	}
+}

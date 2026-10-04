@@ -42,7 +42,7 @@ Both `web` and `api` are self-contained npm projects (no monorepo tooling) — s
 ## Project Structure
 
 ```
-flow_model_generator_claude_code/
+anchor_agentic/
 ├── CLAUDE.md                     # This file
 ├── docs/
 │   ├── INITIAL-CONCEPT.md

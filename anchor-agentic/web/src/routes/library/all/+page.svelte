@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { LibraryItemType } from '$lib/api/types';
+	import { STATUS_STYLE } from '$lib/statusStyle';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
@@ -19,52 +20,63 @@
 	let totalPages = $derived(Math.max(1, Math.ceil(data.total / data.pageSize)));
 </script>
 
-<h1>All Library</h1>
+<h1 class="text-2xl">All Sandbox</h1>
+<p class="mt-1 text-ink/70">
+	Read-only — everyone's in-progress work, across all users. Clone a published item from the
+	Marketplace to edit your own copy.
+</p>
 
-<form method="GET">
-	<label>
+<form method="GET" class="mt-6 flex flex-wrap items-end gap-4 rounded-md bg-surface p-4">
+	<label class="flex flex-col gap-1 text-sm">
 		Search
-		<input type="search" name="q" value={data.q} placeholder="Search by name..." />
+		<input
+			type="search"
+			name="q"
+			value={data.q}
+			placeholder="Search by name..."
+			class="rounded-md border border-ink/15 bg-bg px-3 py-1.5"
+		/>
 	</label>
-	<label>
+	<label class="flex flex-col gap-1 text-sm">
 		Type
-		<select name="type">
+		<select name="type" class="rounded-md border border-ink/15 bg-bg px-3 py-1.5">
 			<option value="" selected={data.type === ''}>All types</option>
 			{#each ['ROLE', 'TASK', 'AGENT', 'SKILL', 'WORKFLOW'] as type (type)}
 				<option value={type} selected={data.type === type}>{type}</option>
 			{/each}
 		</select>
 	</label>
-	<button type="submit">Search</button>
+	<button type="submit" class="rounded-md bg-primary px-4 py-1.5 text-white">Search</button>
 </form>
 
 {#if data.items.length === 0}
-	<p>No items match your search.</p>
+	<p class="mt-6 text-ink/70">No items match your search.</p>
 {:else}
-	<ul>
+	<ul class="mt-6 flex flex-col gap-2">
 		{#each data.items as item (item.id)}
-			<li>
-				<a href="{DETAIL_ROUTE[item.item_type]}/{item.id}">{displayName(item)}</a>
-				<span>[{item.item_type}] [{item.status}]</span>
+			<li class="flex items-center gap-2 rounded-md border border-ink/10 p-3">
+				<a class="font-semibold" href="{DETAIL_ROUTE[item.item_type]}/{item.id}"
+					>{displayName(item)}</a
+				>
+				<span class="rounded-full bg-surface px-2 py-0.5 text-xs text-ink/70">[{item.item_type}]</span>
+				<span class="rounded-full px-2 py-0.5 text-xs {STATUS_STYLE[item.status]}"
+					>[{item.status}]</span
+				>
 			</li>
 		{/each}
 	</ul>
 {/if}
 
 {#if totalPages > 1}
-	<p>
+	<p class="mt-6 flex items-center gap-3 text-sm text-ink/70">
 		Page {data.page} of {totalPages}
 		{#if data.page > 1}
-			<a
-				href="?q={data.q}&type={data.type}&page={data.page - 1}"
-			>← Prev</a>
+			<a href="?q={data.q}&type={data.type}&page={data.page - 1}">← Prev</a>
 		{/if}
 		{#if data.page < totalPages}
-			<a
-				href="?q={data.q}&type={data.type}&page={data.page + 1}"
-			>Next →</a>
+			<a href="?q={data.q}&type={data.type}&page={data.page + 1}">Next →</a>
 		{/if}
 	</p>
 {/if}
 
-<p><a href="/library">← Back to My Library</a></p>
+<p class="mt-8 text-sm"><a href="/library">← Back to My Sandbox</a></p>

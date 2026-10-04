@@ -21,62 +21,51 @@
 	})
 </script>
 
-<h1>Account Settings</h1>
-<p><a href="/">← Back to Home</a></p>
+<h1 class="text-2xl">Account Settings</h1>
+<p class="mt-1 text-sm"><a href="/">← Back to Home</a></p>
 
 {#if form?.error}
-	<p role="alert" style="color: red;">{form.error}</p>
+	<p role="alert" class="mt-4 rounded-md border-l-4 border-attention bg-surface px-4 py-3 text-ink">
+		{form.error}
+	</p>
 {/if}
 
 {#if showGithubConnected}
-	<p role="alert" style="color: green;">GitHub account connected successfully!</p>
+	<p role="alert" class="mt-4 rounded-md border-l-4 border-primary bg-surface px-4 py-3 text-ink">
+		GitHub account connected successfully!
+	</p>
 {/if}
 
 {#if showGithubError}
-	<p role="alert" style="color: red;">
+	<p role="alert" class="mt-4 rounded-md border-l-4 border-attention bg-surface px-4 py-3 text-ink">
 		GitHub connection failed{githubErrorReason ? `: ${githubErrorReason}` : '.'}
 	</p>
 {/if}
 
-<section>
-	<h2>GitHub Export</h2>
+<section class="mt-6 rounded-md border border-ink/10 p-4">
+	<h2 class="text-lg">GitHub Export</h2>
 	{#if data.github.connected}
-		<p>✓ Connected as <strong>{data.github.username}</strong></p>
-		<p>Your GitHub account is authorized to receive exports of your Agents, Skills, and Workflows.</p>
-		<form method="POST" action="?/revoke">
-			<button type="submit" style="background-color: #f0f0f0; color: #333;">
+		<p class="mt-2 text-ink/80">✓ Connected as <strong>{data.github.username}</strong></p>
+		<p class="mt-1 text-sm text-ink/70">
+			Your GitHub account is authorized to receive exports of your Agents, Skills, and Workflows.
+		</p>
+		<form method="POST" action="?/revoke" class="mt-3">
+			<button type="submit" class="rounded-md border border-ink/15 px-3 py-1.5 text-sm">
 				Revoke GitHub Access
 			</button>
 		</form>
-		<p style="font-size: 0.9em; color: #666;">
-			You can also revoke app access directly on <a href="https://github.com/settings/applications" target="_blank">GitHub's settings page</a>.
+		<p class="mt-2 text-sm text-ink/60">
+			You can also revoke app access directly on <a
+				href="https://github.com/settings/applications"
+				target="_blank">GitHub's settings page</a
+			>.
 		</p>
 	{:else}
-		<p>Not connected. Connect your GitHub account to export your work directly to a repository.</p>
-		<form method="POST" action="?/connect">
-			<button type="submit" style="background-color: #24292e; color: white; padding: 8px 16px; border-radius: 6px; border: none; cursor: pointer;">
-				Connect GitHub
-			</button>
+		<p class="mt-2 text-ink/80">
+			Not connected. Connect your GitHub account to export your work directly to a repository.
+		</p>
+		<form method="POST" action="?/connect" class="mt-3">
+			<button type="submit" class="rounded-md bg-primary px-4 py-1.5 text-white"> Connect GitHub </button>
 		</form>
 	{/if}
 </section>
-
-<style>
-	section {
-		border: 1px solid #ddd;
-		padding: 16px;
-		margin: 16px 0;
-		border-radius: 4px;
-	}
-
-	button {
-		padding: 8px 16px;
-		border: 1px solid #ccc;
-		border-radius: 4px;
-		cursor: pointer;
-	}
-
-	button:hover {
-		background-color: #f9f9f9;
-	}
-</style>

@@ -1,2 +1,4 @@
 .codemie
 docs/codemie
+anchor-agentic/api/.dev.vars
+anchor-agentic/web/.env

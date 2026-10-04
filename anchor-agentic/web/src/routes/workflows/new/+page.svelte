@@ -5,20 +5,24 @@
 	let { form }: { form: ActionData } = $props();
 </script>
 
-<h1>New Workflow</h1>
+<h1 class="text-2xl">New Workflow</h1>
 
 {#if form?.error}
-	<p role="alert">{form.error}</p>
+	<p role="alert" class="mt-4 rounded-md border-l-4 border-attention bg-surface px-4 py-3 text-ink">
+		{form.error}
+	</p>
 {/if}
 
-<form method="POST" action="?/create" use:enhance>
-	<label>
+<form method="POST" action="?/create" use:enhance class="mt-6 flex max-w-sm flex-col gap-4">
+	<label class="flex flex-col gap-1 text-sm">
 		Name
-		<input name="name" required />
+		<input name="name" required class="rounded-md border border-ink/15 bg-bg px-3 py-1.5" />
 	</label>
-	<label>
+	<label class="flex flex-col gap-1 text-sm">
 		Description
-		<input name="description" />
+		<input name="description" class="rounded-md border border-ink/15 bg-bg px-3 py-1.5" />
 	</label>
-	<button type="submit">Create Workflow</button>
+	<button type="submit" class="self-start rounded-md bg-primary px-4 py-1.5 text-white"
+		>Create Workflow</button
+	>
 </form>

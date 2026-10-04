@@ -747,7 +747,7 @@ stateDiagram-v2
 - Cloudflare Workers limits documentation — basis for Decision 4's CPU-time mitigation.
 - GitHub REST API (Contents/Git Data API) documentation — basis for the git-export integration.
 - WCAG 2.1 AA — aspirational accessibility baseline flagged in the product concept.
-- Source input: `C:\dev\flow_model_generator_claude_code\docs\PRODUCT-CONCEPT.md` (Product Owner Agent deliverable, v0.2).
+- Source input: `C:\dev\ai\anchor_agentic\docs\PRODUCT-CONCEPT.md` (Product Owner Agent deliverable, v0.2).
 
 ---
 

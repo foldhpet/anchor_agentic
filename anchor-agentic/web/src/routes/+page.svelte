@@ -11,51 +11,72 @@
 	let totalPages = $derived(Math.max(1, Math.ceil(data.total / data.pageSize)));
 </script>
 
-<h1>Marketplace</h1>
+<h1 class="text-2xl">Marketplace</h1>
+<p class="mt-1 text-ink/70">Browse published Agents, Skills, and Workflows from the community.</p>
 
-<form method="GET">
-	<label>
+<form method="GET" class="mt-6 flex flex-wrap items-end gap-4 rounded-md bg-surface p-4">
+	<label class="flex flex-col gap-1 text-sm">
 		Search
-		<input type="search" name="q" value={data.q} placeholder="Search by name or description..." />
+		<input
+			type="search"
+			name="q"
+			value={data.q}
+			placeholder="Search by name or description..."
+			class="rounded-md border border-ink/15 bg-bg px-3 py-1.5"
+		/>
 	</label>
-	<label>
+	<label class="flex flex-col gap-1 text-sm">
 		Type
-		<select name="type">
+		<select name="type" class="rounded-md border border-ink/15 bg-bg px-3 py-1.5">
 			<option value="" selected={data.type === ''}>All types</option>
 			{#each ['AGENT', 'SKILL', 'WORKFLOW'] as type (type)}
 				<option value={type} selected={data.type === type}>{type}</option>
 			{/each}
 		</select>
 	</label>
-	<label>
+	<label class="flex flex-col gap-1 text-sm">
 		Role
-		<input type="text" name="role" value={data.role} placeholder="Filter Agents by Role..." />
+		<input
+			type="text"
+			name="role"
+			value={data.role}
+			placeholder="Filter Agents by Role..."
+			class="rounded-md border border-ink/15 bg-bg px-3 py-1.5"
+		/>
 	</label>
-	<button type="submit">Search</button>
+	<button type="submit" class="rounded-md bg-primary px-4 py-1.5 text-white">Search</button>
 </form>
 
 {#if data.items.length === 0}
-	<p>No published items yet. Check back soon.</p>
+	<p class="mt-6 text-ink/70">No published items yet. Check back soon.</p>
 {:else}
-	<ul>
+	<ul class="mt-6 flex flex-col gap-3">
 		{#each data.items as item (`${item.item_type}-${item.id}`)}
-			<li>
-				<a href="/marketplace/{item.item_type}/{item.id}">{displayName(item)}</a>
-				<span>[{item.item_type}]</span>
-				{#if item.description}<p>{item.description}</p>{/if}
-				{#if item.rating_count === 0}
-						<span>Not yet rated</span>
+			<li class="rounded-md border border-ink/10 p-4">
+				<div class="flex items-center gap-2">
+					<a class="font-semibold" href="/marketplace/{item.item_type}/{item.id}"
+						>{displayName(item)}</a
+					>
+					<span class="rounded-full bg-surface px-2 py-0.5 text-xs text-ink/70">{item.item_type}</span>
+				</div>
+				{#if item.description}<p class="mt-1 text-ink/80">{item.description}</p>{/if}
+				<p class="mt-2 text-sm text-ink/60">
+					{#if item.rating_count === 0}
+						Not yet rated
 					{:else}
-						<span>Rating: {item.rating?.toFixed(1)}/5 ({item.rating_count} rating{item.rating_count === 1 ? '' : 's'})</span>
+						Rating: {item.rating?.toFixed(1)}/5 ({item.rating_count} rating{item.rating_count === 1
+							? ''
+							: 's'})
 					{/if}
-					· <span>Cloned {item.clone_count} times</span>
+					· Cloned {item.clone_count} times
+				</p>
 			</li>
 		{/each}
 	</ul>
 {/if}
 
 {#if totalPages > 1}
-	<p>
+	<p class="mt-6 flex items-center gap-3 text-sm text-ink/70">
 		Page {data.page} of {totalPages}
 		{#if data.page > 1}
 			<a href="?q={data.q}&type={data.type}&role={data.role}&page={data.page - 1}">← Prev</a>

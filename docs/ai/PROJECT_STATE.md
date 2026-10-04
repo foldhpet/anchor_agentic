@@ -2,8 +2,8 @@
 
 > Purpose: Single, compact source of truth for AI + humans. Keep this file short.
 > Update cadence: end of each Epic (or when architecture/API changes).
-> Last updated: 2026-09-09
-> Current epic: Epic J — Quality & Trust (pulled forward from V2; implementation done, RLS verification blocked)
+> Last updated: 2026-10-03
+> Current epic: Epic L — Role Creation Discoverability (done — `/roles/new` + "New Role" in the global create menu). Epic K — Visual Design Refresh (v1.1) UI implementation done across all pages, pending live Playwright verification and a dedicated accessibility (WCAG AA) audit. Epic J — Quality & Trust remains separately blocked on RLS verification (see §12) — neither K nor L touched that blocker.
 
 ---
 
@@ -13,7 +13,9 @@ AnchorAgentic.io is a free, community-driven platform where individuals define R
 ## 2) Current status (very short)
 - Completed epics: A (Auth & Platform Access), B (Domain Authoring), C (Sandbox & Version Control), D (Clone), E (Publish), F (Marketplace Browse & Search), G (Ratings), H (Export & API Parity), I (Sustainability)
 - In progress: Epic J — Quality & Trust (US-042–046, pulled forward from its original V2-deferred status at the user's explicit request). Code, migrations, unit/integration tests all written and passing. **Blocked** on live RLS verification — see §12.
-- Next up: finish Epic J verification (below), then re-check ACs one by one (same pattern as H/I), then decide on any remaining V2 items.
+- Also in progress (parallel track): Epic K — Visual Design Refresh, v1.1 (US-047–051, `docs/USER-STORIES.md`). UI implementation complete on every page in `anchor-agentic/web` — Tailwind v4 design tokens, a shared status-color map, and a visual read-only/editable distinction, built from a stakeholder-supplied color palette. Verified via `svelte-check` (0 errors) plus manual grep/dev-server checks against every string/attribute the Playwright suite asserts on. **Not yet verified**: a live run of `web/e2e/*.spec.ts` against this styling (not run so far to avoid writing throwaway accounts into the linked Supabase project without asking first), and a dedicated WCAG AA audit (touch-target sizing, full keyboard-focus sweep) — US-050 is only partially covered by what naturally fell out of the styling pass.
+- Also done: Epic L — Role Creation Discoverability (US-052–053, `docs/USER-STORIES.md`), amending US-013's original Role exclusion from the top-level create menu at the stakeholder's explicit request. Added `anchor-agentic/web/src/routes/roles/new/` (dedicated creation page, mirroring agents/skills/workflows' `/new` pattern, redirects to `/roles/{id}` on success) plus a "New Role" entry in the `+ New` nav menu. The existing `/roles` list page's inline create form was deliberately left untouched — verified by grep that the ~12 e2e call sites across 5 spec files that use it directly (`form[action="?/create"]` on `/roles`) still match byte-for-byte.
+- Next up: finish Epic J verification (below), then re-check ACs one by one (same pattern as H/I), then decide on any remaining V2 items. Separately, close out Epic K (Visual Design Refresh) with an e2e run + accessibility audit when prioritized.
 
 ## 3) Key decisions (bullets only)
 - [2026-09-09] Decision: Epic J's `Removed` status is genuinely terminal (resolves a contradiction between US-046 AC3 and AC4 in favor of AC4). Rationale: user resolved via AskUserQuestion; "unfounded report" is instead handled by dismissing the report *before* removal — dismissing an item's last open report while `UnderReview` restores it to `Published`. Impact: `moderation.ts` remove action has no undo path; only dismiss can restore.
@@ -24,6 +26,10 @@ AnchorAgentic.io is a free, community-driven platform where individuals define R
 - [Earlier] Decision: Serverless/edge-first stack (SvelteKit on Cloudflare Pages, Hono on Cloudflare Workers, Supabase Postgres+Auth) chosen to stay near $0/month, hard $20/month ceiling. See `docs/ARCHITECTURE.md`.
 - [Earlier] Decision: API owns all authorization logic and never trusts client-supplied `owner_id`; Postgres RLS is a second, independent enforcement layer, never the sole one.
 - [Earlier] Decision: Sandbox items are never private by design — "All Sandbox" is read-only visibility into everyone's in-progress work; there is no private/hidden mode.
+- [2026-10-03] Decision (Epic K): design tokens are Tailwind v4 `@theme` CSS variables in `web/src/routes/layout.css` (`--color-bg/surface/ink/primary/caution/attention`), built from only 5 of the stakeholder's 10-color palette — Turquoise/Lime/Golden/Black deliberately left unused because they don't clear WCAG AA contrast in the roles tested, or duplicate a color that does. Rationale: a small, functional, contrast-verified palette over using every supplied color. Impact: if the palette is extended later, re-run the same contrast check before adding a new color's role, don't just drop in a new hex.
+- [2026-10-03] Decision (Epic K): status-color classes (`web/src/lib/statusStyle.ts`) are shared, but each page keeps its own pre-existing exact text format around them (`[Draft]` in list rows vs. plain `Status: Draft` on detail pages) — confirmed by grepping `web/e2e/*.spec.ts` before editing. Impact: don't "simplify" these two formats into one without re-checking every e2e assertion that depends on the difference.
+- [2026-10-03] Decision (Epic K): added a plain-text "Read-only — you're viewing another user's Sandbox item" notice on every domain-entity detail page when a non-owner views a non-archived item (previously inferred only from the absence of a Save button). Impact: purely additive UI copy; did not touch any authorization logic (API ownership checks + RLS are unchanged and remain the actual enforcement).
+- [2026-10-03] Decision (Epic L): Role creation now has two valid entry points — the original inline form on `/roles` (kept, since the existing e2e suite exercises it directly) and the new `/roles/new` dedicated page (reached via the "+ New" menu and the two empty-state links that used to point at `/roles`). Rationale: adding was far lower-risk than migrating ~12 existing e2e call sites across 5 spec files to a redirect-based flow for no functional benefit. Impact: if `/roles`'s inline form is ever removed, the e2e suite must be migrated to `/roles/new` first.
 
 ## 4) Architecture at a glance
 ### 4.1 High-level diagram (text)
@@ -88,11 +94,13 @@ AnchorAgentic.io is a free, community-driven platform where individuals define R
 | `/login`, `/register`, `/logout` | Auth | Supabase Auth email/password + GitHub OAuth | — |
 | `/sandbox`, `/sandbox/all` | Sandbox | My Sandbox (r/w) vs. All Sandbox (r/o, everyone's) | — |
 | `/library`, `/library/all` | Library | search/browse authoring items | — |
-| `/roles`, `/tasks/[id]`, `/agents/[id]`, `/skills/[id]`, `/workflows/[id]` (+`/new` variants) | Authoring | CRUD for each domain entity | — |
+| `/roles` (+`/new`), `/tasks/[id]`, `/agents/[id]`, `/skills/[id]`, `/workflows/[id]` (+`/new` variants) | Authoring | CRUD for each domain entity | `/roles/new` added (Epic L) — `/roles` keeps its own inline create form too |
 | `/marketplace/[itemType]/[id]` | Marketplace detail | public read; rate/clone (registered); report abuse (anyone, Epic J) | report form outside `isRegistered` gate |
 | `/moderation` | Moderation queue (Epic J) | moderator-only; approve/reject or remove/dismiss | guarded by `moderationGuard` in `hooks.server.ts` |
 | `/export/[itemType]` | Export | `.claude`-folder export download | — |
 | `/settings` | Settings | account/GitHub credential management | — |
+
+All routes above are now styled per the v1.1 design system (Epic K) — tokens in `web/src/routes/layout.css`, shared status-color map in `web/src/lib/statusStyle.ts`.
 
 ## 8) Data & persistence
 - Database schema notes: 23 migrations, `anchor-agentic/supabase/migrations/0001`–`0023`; every domain table (`agents`/`skills`/`workflows`) shares the same lifecycle status check constraint including not-yet-fully-wired `UnderReview`/`Removed` values (now activated by Epic J). `abuse_reports` (0021) is the newest table; `profiles.is_moderator` (0020) and `review_feedback` column (0023) are the newest columns.
@@ -122,6 +130,7 @@ AnchorAgentic.io is a free, community-driven platform where individuals define R
 - [ ] `moderators.rls.test.ts` — one test (`lets a moderator update another user's skill via moderator_update`) failed sign-in for the moderator test account on the last run, even though the same account signed in successfully for other test cases in the same run — not yet investigated; may be transient/rate-limit, may be a separate bug. Re-test once the `abuse_reports` blocker above is resolved.
 - [ ] Epic J e2e/manual verification not yet done: full US-044 loop (author requests review -> item leaves marketplace -> moderator approves/rejects) and full US-045/046 loop (anonymous report -> item pulled -> moderator dismisses [restores] or removes [terminal]) against local `wrangler dev` + linked Supabase — needs KV namespace (`RATE_LIMIT_KV`) actually created via `wrangler kv namespace create RATE_LIMIT_KV` and its id filled into `api/wrangler.jsonc` (currently a template placeholder).
 - [ ] No CI pipeline configured for either `web` or `api` (not found in repo) — tests are run locally only.
+- [ ] **Epic K follow-up (not blocking, not yet started)** — two items left to close out the Visual Design Refresh: (1) run the full `web/e2e/*.spec.ts` Playwright suite against the new styling to get real browser-level confirmation, beyond the `svelte-check` + grep-level verification done during implementation; (2) a dedicated WCAG AA audit (US-050) — touch-target sizing (44×44px) was not uniformly swept across every button, only loosely considered on newly-added ones, and keyboard-focus/label coverage wasn't re-tested beyond what already existed.
 
 ## 13) Commands (copy/paste)
 - Install: `cd anchor-agentic/api && npm install` / `cd anchor-agentic/web && npm install`

@@ -129,7 +129,7 @@ A free, community-driven platform where individuals define Roles, Tasks, Agents,
 | F-2.2 | All Sandbox (Read-All, Searchable) | Registered users can browse/search all users' in-progress (unpublished) Agents, Skills, and Workflows, read-only. Sandbox items are never private — always visible to all registered users, with no private/hidden option. | Medium | Enables cross-user learning and avoids duplicated effort | L | F-2.1 |
 | F-2.3 | Clone from Marketplace | Any registered user can clone a published Marketplace item into their My Sandbox, always free. | High | Removes friction for reuse; core to the "start easy" value prop | M | F-1.1, F-2.1 |
 | F-2.4 | Version History | Changes to Sandbox items are tracked with version control. | Medium | Supports safe iteration and rollback; builds contributor trust | M | F-2.1 |
-| F-2.5 | Persistent "+" Create Action | A create button, visible on all pages, to start a new Agent/Skill/Workflow from scratch. | Medium | Reduces friction to begin contributing | S | F-2.1 |
+| F-2.5 | Persistent "+" Create Action | A create button, visible on all pages, to start a new Role/Agent/Skill/Workflow from scratch (Task remains reached via a Role's detail page, not the top-level menu). **Amended 2026-10-03** (Epic L, `USER-STORIES.md`): Role was originally excluded from this menu by design (only Agent/Skill/Workflow were considered first-class); added back at the stakeholder's explicit request because it proved insufficiently discoverable via the Agent-creation empty-state link alone. | Medium | Reduces friction to begin contributing | S | F-2.1 |
 
 ### Feature Category 3: Domain Model & Content Authoring
 
@@ -160,6 +160,18 @@ A free, community-driven platform where individuals define Roles, Tasks, Agents,
 | F-5.3 | Optional Human Review | Optional review step before publish, for creators who want additional validation. | Low | Builds trust for higher-stakes contributions | M | F-5.1, F-5.2 |
 | F-5.4 | Abuse Reporting & Removal | Registered/anonymous users can flag abusive or broken published content; moderators can remove it. | Medium | Protects community trust and platform reputation | M | F-1.3 |
 
+### Feature Category 6: Visual Design & Accessibility (v1.1)
+
+A post-MVP polish increment: the V1 UI is functionally complete but intentionally plain ("pure HTML"). v1.1 applies a small, functional design system — typography, spacing, and a stakeholder-supplied color palette — with no icon sets, illustration, or animation. Goal is readability and a pleasant, trustworthy feel, not decoration; this is also the point at which the long-open accessibility NFR (see Open Questions) is acted on rather than left aspirational.
+
+| Feature ID | Feature Name | Description | Priority | Business Value | Estimated Effort | Depends On |
+|---|---|---|---|---|---|---|
+| F-6.1 | Type Scale & Hierarchy | Consistent heading/body/caption type scale and line-length/vertical-rhythm spacing across all pages, using system or free self-hostable fonts only. | High | Makes dense Role/Task/Agent/Skill/Workflow content scannable; reduces newcomer cognitive load | M | F-4.1 |
+| F-6.2 | Functional Color System | A small palette (neutral text/background, one primary accent, status colors for Draft/Published/UnderReview/Removed, error/warning) built from a stakeholder-supplied palette as Tailwind CSS tokens. Color is used only to communicate state/action, never decoratively. | High | Clear, consistent feedback on actions and item lifecycle state; builds trust | M | F-4.1 |
+| F-6.3 | Read-Only vs. Editable Visual Distinction | Consistent, non-decorative visual indicators distinguishing editable content (My Sandbox) from read-only content (All Sandbox, Marketplace). | High | Removes ambiguity about what a user can change; prevents accidental-edit attempts | M | F-6.1, F-6.2 |
+| F-6.4 | WCAG 2.1 AA Baseline | Audit and remediate text contrast (4.5:1+), touch target size, keyboard focus indicators, and form label association across all pages. | High | Converts the aspirational WCAG AA NFR into a delivered baseline; widens reach | M | F-6.1, F-6.2 |
+| F-6.5 | Light-Mode Baseline | All pages designed and tested in light mode only; verified not to visibly break under an OS-forced dark-mode override. | Low | Keeps scope controlled while remaining usable for forced-dark-mode users | S | F-6.1, F-6.2 |
+
 ---
 
 ## Non-Functional High-Level Requirements
@@ -180,7 +192,7 @@ A free, community-driven platform where individuals define Roles, Tasks, Agents,
 
 **User Experience:**
 - Platform requirements: Web-first, verified on Chrome and Firefox in V1; API access as a first-class alternative channel.
-- Accessibility requirements: Reasonable baseline accessibility (WCAG AA aspirational) though not explicitly prioritized by stakeholder — flagged as open item.
+- Accessibility requirements: WCAG 2.1 AA baseline (contrast, touch targets, keyboard focus, form labels) delivered as part of v1.1 (F-6.4) rather than left aspirational — see Open Questions.
 - Localization requirements: English-only assumed for V1; no localization requirement stated.
 
 ---
@@ -207,6 +219,12 @@ A free, community-driven platform where individuals define Roles, Tasks, Agents,
 - **Target Launch:** End of Month 3.
 - **Key Features:** F-1.1 through F-1.4, F-2.1 through F-2.5, F-3.1 through F-3.5, F-4.1 through F-4.5.
 - **Success Criteria:** Registered users can complete the full loop — clone, customize, integrate into `.claude` folder, publish, and rate — without a moderation bottleneck.
+
+### Phase 1.1: Visual Design Refresh (v1.1)
+- **Scope:** Apply a small, functional design system (type scale, spacing, stakeholder-supplied color palette) across all pages; no icons/illustration/animation. Deliver WCAG 2.1 AA baseline accessibility as part of the same pass. Not a re-opening of MVP functional scope.
+- **Target Launch:** Shortly after Phase 1, before Phase 2 begins.
+- **Key Features:** F-6.1 through F-6.5.
+- **Success Criteria:** Consistent type/spacing/color applied across Marketplace, Sandbox, and auth pages; My Sandbox vs. All Sandbox distinction is immediately visible; all pages meet the WCAG AA baseline (contrast, touch targets, focus indicators, form labels).
 
 ### Phase 2: Quality & Trust (Months 4-6)
 - **Scope:** Automated prompt evaluation, automated structure evaluation, optional human review, abuse reporting/flagging/removal — introduced as a pre-publish quality-gate pipeline.
@@ -299,7 +317,7 @@ Using **MoSCoW**:
 - ~~Should Sandbox items ever be private?~~ **Resolved:** No — Sandbox items are never private; always visible to all registered users.
 - Should there be any lightweight community norms/code-of-conduct for V1, given moderation is fully deferred to V2?
 - What does "optional human review" in V2 look like in practice — self-review, peer review, or platform-designated reviewers?
-- Accessibility (WCAG) and localization requirements were not explicitly discussed — worth revisiting once UI design begins.
+- ~~Accessibility (WCAG) and localization requirements were not explicitly discussed — worth revisiting once UI design begins.~~ **Resolved (accessibility):** v1.1 (Feature Category 6) delivers WCAG 2.1 AA baseline compliance (F-6.4) as a core feature, not an aspirational NFR. **Localization remains deferred** — English-only through v1.1; the type/spacing system (F-6.1) is not deliberately designed against future i18n, but no i18n work is in scope.
 - Should default/seed templates be created and maintained by the platform team, or bootstrapped entirely from early community contributions?
 - Which donation platform to integrate (e.g., Ko-fi, GitHub Sponsors, Open Collective, Buy Me a Coffee) — a technical/operational decision to make closer to launch.
 

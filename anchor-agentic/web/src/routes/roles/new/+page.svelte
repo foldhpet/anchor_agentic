@@ -1,12 +1,11 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
-	import { STATUS_STYLE } from '$lib/statusStyle';
-	import type { PageProps } from './$types';
+	import type { ActionData } from './$types';
 
-	let { data, form }: PageProps = $props();
+	let { form }: { form: ActionData } = $props();
 </script>
 
-<h1 class="text-2xl">Roles</h1>
+<h1 class="text-2xl">New Role</h1>
 <p class="mt-1 text-ink/70">
 	A Role is a job function an Agent fulfills — define it once, then build Agents and Tasks under
 	it.
@@ -32,16 +31,4 @@
 	>
 </form>
 
-{#if data.roles.length === 0}
-	<p class="mt-6 text-ink/70">You haven't created any Roles yet.</p>
-{:else}
-	<ul class="mt-6 flex flex-col gap-2">
-		{#each data.roles as role (role.id)}
-			<li class="flex items-center gap-2 rounded-md border border-ink/10 p-3">
-				<a class="font-semibold" href="/roles/{role.id}">{role.name}</a>
-				<span class="rounded-full px-2 py-0.5 text-xs {STATUS_STYLE[role.status]}">{role.status}</span>
-				<span class="text-sm text-ink/60">v{role.current_version}</span>
-			</li>
-		{/each}
-	</ul>
-{/if}
+<p class="mt-6 text-sm"><a href="/roles">View all Roles</a></p>
