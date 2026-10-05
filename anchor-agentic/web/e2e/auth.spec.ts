@@ -13,6 +13,7 @@ test.describe('Authentication (US-001, US-002)', () => {
 		const password = 'correct-horse-battery-staple';
 
 		await page.goto('/register');
+		await page.waitForLoadState('networkidle');
 		await page.getByLabel('Username').fill(`e2euser${Date.now()}`);
 		await page.getByLabel('Email').fill(email);
 		await page.getByLabel('Password').fill(password);
@@ -39,6 +40,7 @@ test.describe('Authentication (US-001, US-002)', () => {
 		const password = 'correct-horse-battery-staple';
 
 		await page.goto('/register');
+		await page.waitForLoadState('networkidle');
 		await page.getByLabel('Username').fill(`dup1${Date.now()}`);
 		await page.getByLabel('Email').fill(email);
 		await page.getByLabel('Password').fill(password);
@@ -47,6 +49,7 @@ test.describe('Authentication (US-001, US-002)', () => {
 		await page.getByRole('button', { name: 'Log out' }).click();
 
 		await page.goto('/register');
+		await page.waitForLoadState('networkidle');
 		await page.getByLabel('Username').fill(`dup2${Date.now()}`);
 		await page.getByLabel('Email').fill(email);
 		await page.getByLabel('Password').fill(password);

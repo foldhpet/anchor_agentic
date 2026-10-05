@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { LibraryItemType } from '$lib/api/types';
+	import { withOrigin } from '$lib/backLink';
 	import { STATUS_STYLE } from '$lib/statusStyle';
 	import type { PageProps } from './$types';
 
@@ -55,7 +56,7 @@
 	<ul class="mt-6 flex flex-col gap-2">
 		{#each data.items as item (item.id)}
 			<li class="flex items-center gap-2 rounded-md border border-ink/10 p-3">
-				<a class="font-semibold" href="{DETAIL_ROUTE[item.item_type]}/{item.id}"
+				<a class="font-semibold" href={withOrigin(`${DETAIL_ROUTE[item.item_type]}/${item.id}`, 'all')}
 					>{displayName(item)}</a
 				>
 				<span class="rounded-full bg-surface px-2 py-0.5 text-xs text-ink/70">[{item.item_type}]</span>

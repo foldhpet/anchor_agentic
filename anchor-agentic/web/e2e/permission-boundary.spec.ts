@@ -40,6 +40,7 @@ test.describe('Permission boundary enforcement (US-004)', () => {
 
 		// User A registers and creates an item in their own Sandbox.
 		await page.goto('/register');
+		await page.waitForLoadState('networkidle');
 		await page.getByLabel('Username').fill(`usera${stamp}`);
 		await page.getByLabel('Email').fill(`e2e-a-${stamp}@mailinator.com`);
 		await page.getByLabel('Password').fill(password);
@@ -55,6 +56,7 @@ test.describe('Permission boundary enforcement (US-004)', () => {
 		const contextB = await browser.newContext();
 		const pageB = await contextB.newPage();
 		await pageB.goto('/register');
+		await pageB.waitForLoadState('networkidle');
 		await pageB.getByLabel('Username').fill(`userb${stamp}`);
 		await pageB.getByLabel('Email').fill(`e2e-b-${stamp}@mailinator.com`);
 		await pageB.getByLabel('Password').fill(password);
@@ -67,7 +69,9 @@ test.describe('Permission boundary enforcement (US-004)', () => {
 
 		// The "try editing" control only renders for items B does not own — and
 		// attempting the write is rejected with a 403 mapped to a visible error.
-		await pageB.getByRole('button', { name: 'Try editing (expect forbidden)' }).click();
+		// All Sandbox lists every user's leftover items too — scope to our own row.
+		const ownRow = pageB.locator('li', { hasText: itemTitle });
+		await ownRow.getByRole('button', { name: 'Try editing (expect forbidden)' }).click();
 		await expect(pageB.getByRole('alert')).toContainText('Forbidden');
 
 		await contextB.close();

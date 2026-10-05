@@ -7,6 +7,7 @@ async function registerUser(page: import('@playwright/test').Page, tag: string) 
 	const stamp = Date.now();
 	const password = 'correct-horse-battery-staple';
 	await page.goto('/register');
+	await page.waitForLoadState('networkidle');
 	await page.getByLabel('Username').fill(`${tag}${stamp}`);
 	await page.getByLabel('Email').fill(`e2e-${tag}-${stamp}@mailinator.com`);
 	await page.getByLabel('Password').fill(password);
@@ -35,12 +36,11 @@ test.describe('Clone (US-020–US-022)', () => {
 	}) => {
 		const stamp = await registerUser(page, 'clonesrc');
 
-		await page.goto('/roles');
+		await page.goto('/roles/new');
 		const roleName = `Test Analyst ${stamp}`;
 		await page.locator('form[action="?/create"]').getByLabel('Name').fill(roleName);
 		await page.getByRole('button', { name: 'Create Role' }).click();
-		await expect(page.getByRole('link', { name: roleName })).toBeVisible();
-		await page.getByRole('link', { name: roleName }).click();
+		await page.waitForURL(/\/roles\/[0-9a-f-]+$/);
 		await page.waitForURL(/\/roles\/[0-9a-f-]+$/);
 
 		const taskNames = [`Plan tests ${stamp}`, `Run tests ${stamp}`, `Report results ${stamp}`];
@@ -53,7 +53,7 @@ test.describe('Clone (US-020–US-022)', () => {
 
 		await page.goto('/agents/new');
 		await page.getByLabel('Role').selectOption({ label: roleName });
-		await page.getByLabel('System prompt').fill('You are a diligent Test Analyst.');
+		await page.getByLabel('System prompt').fill('You are a diligent Test Analyst who plans, runs and reports on test cycles with clear results.');
 		await page.getByRole('button', { name: 'Create Agent' }).click();
 		await expect(page).toHaveURL(/\/agents\/[0-9a-f-]+$/);
 
@@ -116,7 +116,7 @@ test.describe('Clone (US-020–US-022)', () => {
 		const skillName = `Shelver ${stamp}`;
 		await page.getByLabel('Name').fill(skillName);
 		await page.getByLabel('Path').fill('SKILL.md');
-		await page.getByLabel('Content').fill('# Shelver\nShelve things.');
+		await page.getByLabel('Content').fill('# Shelver\nShelve things carefully: list each item, check it against the catalog, and file it in the right place.');
 		await page.getByRole('button', { name: 'Create Skill' }).click();
 		await expect(page).toHaveURL(/\/skills\/[0-9a-f-]+$/);
 

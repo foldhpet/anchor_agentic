@@ -7,6 +7,7 @@ async function registerUser(page: import('@playwright/test').Page, tag: string) 
 	const stamp = Date.now();
 	const password = 'correct-horse-battery-staple';
 	await page.goto('/register');
+	await page.waitForLoadState('networkidle');
 	await page.getByLabel('Username').fill(`${tag}${stamp}`);
 	await page.getByLabel('Email').fill(`e2e-${tag}-${stamp}@mailinator.com`);
 	await page.getByLabel('Password').fill(password);
@@ -27,12 +28,11 @@ test.describe('Export & API Parity (US-033–US-035, US-037, US-039)', () => {
 	test('owner exports a Draft Agent to .claude/agents/<slug>.md', async ({ page }) => {
 		const stamp = await registerUser(page, 'expagent');
 
-		await page.goto('/roles');
+		await page.goto('/roles/new');
 		const roleName = `Export Reviewer ${stamp}`;
 		await page.locator('form[action="?/create"]').getByLabel('Name').fill(roleName);
 		await page.getByRole('button', { name: 'Create Role' }).click();
-		await expect(page.getByRole('link', { name: roleName })).toBeVisible();
-
+		await page.waitForURL(/\/roles\/[0-9a-f-]+$/);
 		await page.goto('/agents/new');
 		await page.getByLabel('Role').selectOption({ label: roleName });
 		await page.getByLabel('System prompt').fill('You review release notes for accuracy.');
@@ -82,13 +82,11 @@ test.describe('Export & API Parity (US-033–US-035, US-037, US-039)', () => {
 	}) => {
 		const stamp = await registerUser(page, 'expwf');
 
-		await page.goto('/roles');
+		await page.goto('/roles/new');
 		const roleName = `Export Flow Role ${stamp}`;
 		await page.locator('form[action="?/create"]').getByLabel('Name').fill(roleName);
 		await page.getByRole('button', { name: 'Create Role' }).click();
-		await expect(page.getByRole('link', { name: roleName })).toBeVisible();
-		await page.getByRole('link', { name: roleName }).click();
-
+		await page.waitForURL(/\/roles\/[0-9a-f-]+$/);
 		const taskName = `Draft Release Notes ${stamp}`;
 		const taskForm = page.locator('form[action="?/createTask"]');
 		await taskForm.getByLabel('Name').fill(taskName);
@@ -124,12 +122,11 @@ test.describe('Export & API Parity (US-033–US-035, US-037, US-039)', () => {
 		const stamp = await registerUser(page, 'expwf-agent');
 
 		// Create a Role and Agent
-		await page.goto('/roles');
+		await page.goto('/roles/new');
 		const roleName = `Export Agent Role ${stamp}`;
 		await page.locator('form[action="?/create"]').getByLabel('Name').fill(roleName);
 		await page.getByRole('button', { name: 'Create Role' }).click();
-		await expect(page.getByRole('link', { name: roleName })).toBeVisible();
-
+		await page.waitForURL(/\/roles\/[0-9a-f-]+$/);
 		await page.goto('/agents/new');
 		await page.getByLabel('Role').selectOption({ label: roleName });
 		await page.getByLabel('System prompt').fill('Organize files into categories.');
@@ -148,7 +145,7 @@ test.describe('Export & API Parity (US-033–US-035, US-037, US-039)', () => {
 		const addStepForm = page.locator('form[action="?/addStep"]');
 		await addStepForm.locator('select[name="step_type"]').selectOption('AGENT');
 		// The agent's label in the dropdown is typically "Agent for <RoleName>" or similar
-		await addStepForm.locator('select[name="reference_id"]').selectOption({ label: new RegExp(roleName) });
+		await addStepForm.locator('select[name="reference_id"]').selectOption({ label: `Agent for ${roleName}` });
 		await page.getByRole('button', { name: 'Add Step' }).click();
 		await expect(page.locator('ol > li')).toHaveCount(1);
 
@@ -195,13 +192,11 @@ test.describe('Export & API Parity (US-033–US-035, US-037, US-039)', () => {
 	}) => {
 		const stamp = await registerUser(page, 'expdangle');
 
-		await page.goto('/roles');
+		await page.goto('/roles/new');
 		const roleName = `Dangling Role ${stamp}`;
 		await page.locator('form[action="?/create"]').getByLabel('Name').fill(roleName);
 		await page.getByRole('button', { name: 'Create Role' }).click();
-		await expect(page.getByRole('link', { name: roleName })).toBeVisible();
-		await page.getByRole('link', { name: roleName }).click();
-
+		await page.waitForURL(/\/roles\/[0-9a-f-]+$/);
 		const taskName = `Soon Archived Task ${stamp}`;
 		const taskForm = page.locator('form[action="?/createTask"]');
 		await taskForm.getByLabel('Name').fill(taskName);

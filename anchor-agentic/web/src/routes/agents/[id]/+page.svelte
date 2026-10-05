@@ -1,11 +1,15 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
+	import { page } from '$app/state';
+	import { backLink } from '$lib/backLink';
 	import { downloadExport } from '$lib/export';
 	import { STATUS_STYLE } from '$lib/statusStyle';
 	import type { VersionSnapshot } from '$lib/api/types';
 	import type { PageProps } from './$types';
 
 	let { data, form }: PageProps = $props();
+
+	let back = $derived(backLink(page.url.searchParams.get('from'), data.isOwner));
 
 	let viewingVersion = $state<VersionSnapshot | null>(null);
 	let versionsTotalPages = $derived(Math.max(1, Math.ceil(data.versionsTotal / data.versionsPageSize)));
@@ -24,7 +28,7 @@
 
 <h1 class="text-2xl">Agent for {data.role.name}</h1>
 <p class="mt-1 text-sm">
-	<a href="/agents">&larr; All Agents</a> &middot; <a href="/roles/{data.role.id}">View Role</a>
+	<a href={back.href}>&larr; {back.label}</a> &middot; <a href="/roles/{data.role.id}">View Role</a>
 </p>
 
 {#if form?.error}

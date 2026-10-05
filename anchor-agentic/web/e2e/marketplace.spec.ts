@@ -7,6 +7,7 @@ async function registerUser(page: import('@playwright/test').Page, tag: string) 
 	const stamp = Date.now();
 	const password = 'correct-horse-battery-staple';
 	await page.goto('/register');
+	await page.waitForLoadState('networkidle');
 	await page.getByLabel('Username').fill(`${tag}${stamp}`);
 	await page.getByLabel('Email').fill(`e2e-${tag}-${stamp}@mailinator.com`);
 	await page.getByLabel('Password').fill(password);
@@ -35,17 +36,22 @@ test.describe('Marketplace Browse & Search (US-026–US-028)', () => {
 	}) => {
 		const stamp = await registerUser(page, 'mktagent');
 
-		await page.goto('/roles');
+		await page.goto('/roles/new');
 		const roleName = `Test Analyst ${stamp}`;
 		await page.locator('form[action="?/create"]').getByLabel('Name').fill(roleName);
 		await page.getByRole('button', { name: 'Create Role' }).click();
-		await expect(page.getByRole('link', { name: roleName })).toBeVisible();
-
+		await page.waitForURL(/\/roles\/[0-9a-f-]+$/);
+		const taskForm = page.locator('form[action="?/createTask"]');
+		await taskForm.getByLabel('Name').fill(`Check items ${stamp}`);
+		await page.getByRole('button', { name: 'Create Task' }).click();
+		await expect(page.getByRole('link', { name: `Check items ${stamp}` })).toBeVisible();
 		await page.goto('/agents/new');
 		await page.getByLabel('Role').selectOption({ label: roleName });
-		await page.getByLabel('System prompt').fill('You are a diligent Test Analyst.');
+		await page.getByLabel('System prompt').fill('You are a diligent Test Analyst who plans, runs and reports on test cycles with clear results.');
 		await page.getByRole('button', { name: 'Create Agent' }).click();
 		await expect(page).toHaveURL(/\/agents\/[0-9a-f-]+$/);
+		await page.getByRole('button', { name: 'Assign' }).click();
+		await expect(page.getByRole('button', { name: 'Unassign' })).toBeVisible();
 
 		await publish(page);
 		await expect(page.getByText(/Published at v\d+\./)).toBeVisible();
@@ -72,17 +78,22 @@ test.describe('Marketplace Browse & Search (US-026–US-028)', () => {
 	}) => {
 		const stamp = await registerUser(page, 'mktrater');
 
-		await page.goto('/roles');
+		await page.goto('/roles/new');
 		const roleName = `Rated Role ${stamp}`;
 		await page.locator('form[action="?/create"]').getByLabel('Name').fill(roleName);
 		await page.getByRole('button', { name: 'Create Role' }).click();
-		await expect(page.getByRole('link', { name: roleName })).toBeVisible();
-
+		await page.waitForURL(/\/roles\/[0-9a-f-]+$/);
+		const taskForm = page.locator('form[action="?/createTask"]');
+		await taskForm.getByLabel('Name').fill(`Check items ${stamp}`);
+		await page.getByRole('button', { name: 'Create Task' }).click();
+		await expect(page.getByRole('link', { name: `Check items ${stamp}` })).toBeVisible();
 		await page.goto('/agents/new');
 		await page.getByLabel('Role').selectOption({ label: roleName });
-		await page.getByLabel('System prompt').fill('You are a diligent rated Agent.');
+		await page.getByLabel('System prompt').fill('You are a diligent rated Agent who reviews every submission carefully and fairly.');
 		await page.getByRole('button', { name: 'Create Agent' }).click();
 		await expect(page).toHaveURL(/\/agents\/[0-9a-f-]+$/);
+		await page.getByRole('button', { name: 'Assign' }).click();
+		await expect(page.getByRole('button', { name: 'Unassign' })).toBeVisible();
 		await publish(page);
 		await expect(page.getByText(/Published at v\d+\./)).toBeVisible();
 		const agentId = page.url().split('/').pop();
@@ -122,17 +133,22 @@ test.describe('Marketplace Browse & Search (US-026–US-028)', () => {
 	}) => {
 		const stamp = await registerUser(page, 'mktsrc');
 
-		await page.goto('/roles');
+		await page.goto('/roles/new');
 		const roleName = `Librarian ${stamp}`;
 		await page.locator('form[action="?/create"]').getByLabel('Name').fill(roleName);
 		await page.getByRole('button', { name: 'Create Role' }).click();
-		await expect(page.getByRole('link', { name: roleName })).toBeVisible();
-
+		await page.waitForURL(/\/roles\/[0-9a-f-]+$/);
+		const taskForm = page.locator('form[action="?/createTask"]');
+		await taskForm.getByLabel('Name').fill(`Check items ${stamp}`);
+		await page.getByRole('button', { name: 'Create Task' }).click();
+		await expect(page.getByRole('link', { name: `Check items ${stamp}` })).toBeVisible();
 		await page.goto('/agents/new');
 		await page.getByLabel('Role').selectOption({ label: roleName });
-		await page.getByLabel('System prompt').fill('You are a diligent Librarian.');
+		await page.getByLabel('System prompt').fill('You are a diligent Librarian who catalogs, shelves and retrieves every item accurately.');
 		await page.getByRole('button', { name: 'Create Agent' }).click();
 		await expect(page).toHaveURL(/\/agents\/[0-9a-f-]+$/);
+		await page.getByRole('button', { name: 'Assign' }).click();
+		await expect(page.getByRole('button', { name: 'Unassign' })).toBeVisible();
 		await publish(page);
 		await expect(page.getByText(/Published at v\d+\./)).toBeVisible();
 		const agentUrl = page.url();
@@ -140,6 +156,7 @@ test.describe('Marketplace Browse & Search (US-026–US-028)', () => {
 		await page.goto('/workflows/new');
 		const workflowName = `Cataloging Flow ${stamp}`;
 		await page.getByLabel('Name').fill(workflowName);
+		await page.getByLabel('Description').fill('Catalogs every item that enters the library.');
 		await page.getByRole('button', { name: 'Create Workflow' }).click();
 		await expect(page).toHaveURL(/\/workflows\/[0-9a-f-]+$/);
 

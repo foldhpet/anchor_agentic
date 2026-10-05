@@ -30,5 +30,3 @@
 		>Create Role</button
 	>
 </form>
-
-<p class="mt-6 text-sm"><a href="/roles">View all Roles</a></p>

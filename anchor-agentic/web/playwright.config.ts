@@ -16,6 +16,9 @@ try {
 export default defineConfig({
 	testDir: 'e2e',
 	testMatch: '**/*.spec.ts',
+	// Dev-server routes compile on first hit, which easily exceeds the 5s/30s defaults.
+	timeout: 90_000,
+	expect: { timeout: 15_000 },
 	use: { baseURL: 'http://localhost:5173' },
 	webServer: [
 		{

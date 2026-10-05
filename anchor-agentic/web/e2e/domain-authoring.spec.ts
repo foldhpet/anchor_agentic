@@ -7,6 +7,7 @@ async function registerUser(page: import('@playwright/test').Page, tag: string) 
 	const stamp = Date.now();
 	const password = 'correct-horse-battery-staple';
 	await page.goto('/register');
+	await page.waitForLoadState('networkidle');
 	await page.getByLabel('Username').fill(`${tag}${stamp}`);
 	await page.getByLabel('Email').fill(`e2e-${tag}-${stamp}@mailinator.com`);
 	await page.getByLabel('Password').fill(password);
@@ -26,13 +27,11 @@ test.describe('Domain authoring (US-005–US-013)', () => {
 		const stamp = await registerUser(page, 'wf');
 
 		// Role
-		await page.goto('/roles');
+		await page.goto('/roles/new');
 		const roleName = `Reviewer ${stamp}`;
 		await page.locator('form[action="?/create"]').getByLabel('Name').fill(roleName);
 		await page.getByRole('button', { name: 'Create Role' }).click();
-		await expect(page.getByRole('link', { name: roleName })).toBeVisible();
-		await page.getByRole('link', { name: roleName }).click();
-
+		await page.waitForURL(/\/roles\/[0-9a-f-]+$/);
 		// Task, created under the Role
 		const taskName = `Review PR ${stamp}`;
 		const taskForm = page.locator('form[action="?/createTask"]');
@@ -125,7 +124,7 @@ test.describe('Domain authoring (US-005–US-013)', () => {
 	}) => {
 		const stamp = await registerUser(page, 'owner');
 
-		await page.goto('/roles');
+		await page.goto('/roles/new');
 		const roleName = `Support ${stamp}`;
 		await page.locator('form[action="?/create"]').getByLabel('Name').fill(roleName);
 		await page.getByRole('button', { name: 'Create Role' }).click();

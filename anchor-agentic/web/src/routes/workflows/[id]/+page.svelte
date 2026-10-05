@@ -1,11 +1,15 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
+	import { page } from '$app/state';
+	import { backLink } from '$lib/backLink';
 	import { downloadExport } from '$lib/export';
 	import { STATUS_STYLE } from '$lib/statusStyle';
 	import type { VersionSnapshot } from '$lib/api/types';
 	import type { ActionData, PageProps } from './$types';
 
 	let { data, form }: PageProps & { form: ActionData } = $props();
+
+	let back = $derived(backLink(page.url.searchParams.get('from'), data.isOwner));
 
 	let exportError = $state<string | null>(null);
 
@@ -34,7 +38,7 @@
 </script>
 
 <h1 class="text-2xl">{data.workflow.name}</h1>
-<p class="mt-1 text-sm"><a href="/workflows">← Back to Workflows</a></p>
+<p class="mt-1 text-sm"><a href={back.href}>&larr; {back.label}</a></p>
 
 {#if form?.error}
 	<p role="alert" class="mt-4 rounded-md border-l-4 border-attention bg-surface px-4 py-3 text-ink">
