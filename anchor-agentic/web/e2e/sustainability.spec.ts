@@ -1,31 +1,29 @@
 import { expect, test } from '@playwright/test';
+import { MarketplacePage } from './business/pages/marketplace.page';
+import { requireLiveSupabase } from './business/support/live-supabase';
 
-const hasLiveSupabase =
-	!!process.env.PUBLIC_SUPABASE_URL && !process.env.PUBLIC_SUPABASE_URL.includes('placeholder');
+const DONATION_URL = 'https://github.com/sponsors/foldhpet';
 
 test.describe('Donation link-out (US-041)', () => {
-	test.beforeEach(() => {
-		test.skip(!hasLiveSupabase, 'requires a linked Supabase project — see web/.env');
-	});
+	requireLiveSupabase();
 
 	test('anonymous visitor sees a non-intrusive donation link on the Marketplace that opens externally', async ({
 		page
 	}) => {
-		await page.goto('/');
+		const marketplace = new MarketplacePage(page);
+		await marketplace.open();
 
-		const donationLink = page.getByRole('link', { name: /support this project/i });
-		await expect(donationLink).toBeVisible();
-		await expect(donationLink).toHaveAttribute('href', 'https://github.com/sponsors/foldhpet');
-		await expect(donationLink).toHaveAttribute('target', '_blank');
-		await expect(donationLink).toHaveAttribute('rel', /noopener/);
+		await marketplace.expectDonationLinkOpensExternally(DONATION_URL);
 
 		// No feature is gated behind it: Marketplace browsing and item listing still work normally.
-		await expect(page.getByRole('heading', { name: 'Marketplace' })).toBeVisible();
+		await expect(marketplace.heading).toBeVisible();
 	});
 
 	test('donation link is present without logging in and without any account', async ({ page }) => {
-		await page.goto('/');
-		await expect(page.getByRole('link', { name: /support this project/i })).toBeVisible();
-		await expect(page.getByRole('link', { name: 'Log in' })).toBeVisible();
+		const marketplace = new MarketplacePage(page);
+		await marketplace.open();
+
+		await expect(marketplace.donationLink).toBeVisible();
+		await marketplace.expectLoggedOut();
 	});
 });

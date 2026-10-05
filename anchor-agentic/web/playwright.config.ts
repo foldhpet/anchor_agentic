@@ -16,6 +16,8 @@ try {
 export default defineConfig({
 	testDir: 'e2e',
 	testMatch: '**/*.spec.ts',
+	globalSetup: './e2e/global-setup.ts',
+	globalTeardown: './e2e/global-teardown.ts',
 	// Dev-server routes compile on first hit, which easily exceeds the 5s/30s defaults.
 	timeout: 90_000,
 	expect: { timeout: 15_000 },
