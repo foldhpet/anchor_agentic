@@ -20,6 +20,10 @@ export default defineConfig({
 	globalTeardown: './e2e/tests/global-teardown.ts',
 	// Dev-server routes compile on first hit, which easily exceeds the 5s/30s defaults.
 	timeout: 90_000,
+	// Two dev servers and one shared Supabase project: more than a couple of workers makes the
+	// servers drop requests (`fetch failed`) and flakes unrelated tests. One retry absorbs the rest.
+	workers: 2,
+	retries: 1,
 	expect: { timeout: 15_000 },
 	use: { baseURL: 'http://localhost:5173' },
 	webServer: [

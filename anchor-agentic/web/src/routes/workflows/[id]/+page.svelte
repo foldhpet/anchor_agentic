@@ -161,8 +161,14 @@
 					<form
 						method="POST"
 						action="?/editStep"
-						use:enhance
-						onsubmit={() => (editingStepId = null)}
+						use:enhance={() => {
+							// Close the form only once the save succeeded: closing it on submit unmounts the
+							// form before use:enhance sends the request, and a failed save keeps its error visible.
+							return async ({ result, update }) => {
+								await update();
+								if (result.type === 'success') editingStepId = null;
+							};
+						}}
 						class="flex flex-wrap items-center gap-2"
 					>
 						<input type="hidden" name="step_id" value={step.id} />
