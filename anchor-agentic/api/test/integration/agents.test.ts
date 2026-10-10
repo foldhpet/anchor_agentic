@@ -101,7 +101,6 @@ describe('agents routes', () => {
       .mockReturnValueOnce(chain({ data: { id: 'role-1', owner_id: OWNER_ID }, error: null })) // role lookup
       .mockReturnValueOnce(chain({ data: created, error: null })) // insert
       .mockReturnValueOnce(chain({ data: null, error: null })) // version_snapshots insert
-      .mockReturnValueOnce(chain({ data: null, error: null })) // version bump update
     createRequestSupabaseClient.mockReturnValue(authedClientWithFrom(fromMock))
 
     const app = createApp()
@@ -172,7 +171,6 @@ describe('agents routes', () => {
       .mockReturnValueOnce(chain({ data: null, error: null })) // agent_tasks insert
       .mockReturnValueOnce(chain({ data: null, error: null })) // agents version bump (route handler)
       .mockReturnValueOnce(chain({ data: null, error: null })) // version_snapshots insert
-      .mockReturnValueOnce(chain({ data: null, error: null })) // agents version bump (recordVersionSnapshot)
     createRequestSupabaseClient.mockReturnValue(authedClientWithFrom(fromMock))
 
     const app = createApp()
@@ -233,7 +231,6 @@ describe('agents routes', () => {
       .mockReturnValueOnce(chain({ data: null, error: null })) // agent_tasks delete
       .mockReturnValueOnce(chain({ data: null, error: null })) // agents version bump (route handler)
       .mockReturnValueOnce(chain({ data: null, error: null })) // version_snapshots insert
-      .mockReturnValueOnce(chain({ data: null, error: null })) // agents version bump (recordVersionSnapshot)
     createRequestSupabaseClient.mockReturnValue(authedClientWithFrom(fromMock))
 
     const app = createApp()
@@ -320,7 +317,6 @@ describe('agents routes', () => {
       .mockReturnValueOnce(chain({ data: { current_version: 1 }, error: null })) // fetch current_version
       .mockReturnValueOnce(chain({ data: archived, error: null })) // main update
       .mockReturnValueOnce(chain({ data: null, error: null })) // version_snapshots insert
-      .mockReturnValueOnce(chain({ data: null, error: null })) // agents version bump (recordVersionSnapshot)
     createRequestSupabaseClient.mockReturnValue(authedClientWithFrom(fromMock))
 
     const app = createApp()

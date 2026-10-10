@@ -111,7 +111,6 @@ describe('clone routes', () => {
       ) // cloneSkill: select source fields
       .mockReturnValueOnce(chain({ data: newSkill, error: null })) // cloneSkill: insert
       .mockReturnValueOnce(chain({ data: null, error: null })) // version_snapshots insert
-      .mockReturnValueOnce(chain({ data: null, error: null })) // skills update (version bump)
       .mockReturnValueOnce(chain({ data: null, error: null })) // clone_records insert
     createRequestSupabaseClient.mockReturnValue(authedClientWithFrom(fromMock))
 
@@ -127,7 +126,7 @@ describe('clone routes', () => {
     expect(body.cloned).toEqual({ item_type: 'SKILL', id: 'skill-2' })
     expect(fromMock).toHaveBeenCalledWith('version_snapshots')
     expect(fromMock).toHaveBeenCalledWith('clone_records')
-    expect(fromMock.mock.calls.filter((call) => call[0] === 'skills')).toHaveLength(4)
+    expect(fromMock.mock.calls.filter((call) => call[0] === 'skills')).toHaveLength(3)
   })
 
   it('POST /AGENT/:id clones the Role and every assigned Task, wiring new agent_tasks rows to the new ids', async () => {
@@ -170,16 +169,13 @@ describe('clone routes', () => {
       .mockReturnValueOnce(chain({ data: { name: 'Librarian', description: null }, error: null })) // cloneRole: select
       .mockReturnValueOnce(chain({ data: newRole, error: null })) // cloneRole: insert
       .mockReturnValueOnce(chain({ data: null, error: null })) // version_snapshots insert (ROLE)
-      .mockReturnValueOnce(chain({ data: null, error: null })) // roles update bump
       .mockReturnValueOnce(chain({ data: newAgent, error: null })) // cloneAgent: insert
       .mockReturnValueOnce(chain({ data: null, error: null })) // version_snapshots insert (AGENT)
-      .mockReturnValueOnce(chain({ data: null, error: null })) // agents update bump
       .mockReturnValueOnce(
         chain({ data: { name: 'Catalog items', instructions: 'Catalog things', role_id: 'role-1' }, error: null }),
       ) // cloneTask: select (role-1 already cached -> cloneRole dedup, no extra calls)
       .mockReturnValueOnce(chain({ data: newTask, error: null })) // cloneTask: insert
       .mockReturnValueOnce(chain({ data: null, error: null })) // version_snapshots insert (TASK)
-      .mockReturnValueOnce(chain({ data: null, error: null })) // tasks update bump
       .mockReturnValueOnce(chain({ data: null, error: null })) // agent_tasks insert (link)
       .mockReturnValueOnce(chain({ data: null, error: null })) // clone_records insert
     createRequestSupabaseClient.mockReturnValue(authedClientWithFrom(fromMock))
@@ -196,8 +192,8 @@ describe('clone routes', () => {
     expect(body.cloned).toEqual({ item_type: 'AGENT', id: 'agent-2' })
     // Exactly one Role and one Task inserted despite the Agent + its single
     // assigned Task both referencing role-1 (cloneRole dedupes across them).
-    expect(fromMock.mock.calls.filter((call) => call[0] === 'roles')).toHaveLength(3)
-    expect(fromMock.mock.calls.filter((call) => call[0] === 'tasks')).toHaveLength(3)
+    expect(fromMock.mock.calls.filter((call) => call[0] === 'roles')).toHaveLength(2)
+    expect(fromMock.mock.calls.filter((call) => call[0] === 'tasks')).toHaveLength(2)
     expect(fromMock.mock.calls.filter((call) => call[0] === 'agent_tasks')).toHaveLength(2)
   })
 
@@ -271,16 +267,13 @@ describe('clone routes', () => {
       .mockReturnValueOnce(chain({ data: { name: 'Librarian', description: null }, error: null })) // cloneRole: select
       .mockReturnValueOnce(chain({ data: newRole, error: null })) // cloneRole: insert
       .mockReturnValueOnce(chain({ data: null, error: null })) // version_snapshots insert (ROLE)
-      .mockReturnValueOnce(chain({ data: null, error: null })) // roles update bump
       .mockReturnValueOnce(chain({ data: newTask, error: null })) // cloneTask (step 1): insert
       .mockReturnValueOnce(chain({ data: null, error: null })) // version_snapshots insert (TASK)
-      .mockReturnValueOnce(chain({ data: null, error: null })) // tasks update bump
       .mockReturnValueOnce(chain({ data: null, error: null })) // workflow_steps insert (step 1)
       // step 2 references the same source task-1 -> cloneTask dedup hit, zero extra from() calls
       .mockReturnValueOnce(chain({ data: null, error: null })) // workflow_steps insert (step 2)
       .mockReturnValueOnce(chain({ data: newSteps, error: null })) // loadSteps (new workflow, for the final snapshot)
       .mockReturnValueOnce(chain({ data: null, error: null })) // version_snapshots insert (WORKFLOW)
-      .mockReturnValueOnce(chain({ data: null, error: null })) // workflows update bump
       .mockReturnValueOnce(chain({ data: null, error: null })) // clone_records insert
     createRequestSupabaseClient.mockReturnValue(authedClientWithFrom(fromMock))
 
@@ -295,7 +288,7 @@ describe('clone routes', () => {
     expect(res.status).toBe(201)
     expect(body.cloned).toEqual({ item_type: 'WORKFLOW', id: 'wf-2' })
     // Only one Task row inserted for the two steps that both reference task-1.
-    expect(fromMock.mock.calls.filter((call) => call[0] === 'tasks')).toHaveLength(3)
+    expect(fromMock.mock.calls.filter((call) => call[0] === 'tasks')).toHaveLength(2)
     expect(fromMock.mock.calls.filter((call) => call[0] === 'workflow_steps')).toHaveLength(4)
     // One snapshot each for the cloned Role, the deduped Task, and the
     // Workflow itself — exactly one v1 Workflow snapshot, not one per step.

@@ -237,7 +237,6 @@ describe('publish routes', () => {
       .mockReturnValueOnce(chain({ data: null, error: null, count: 1 })) // agent_tasks select
       .mockReturnValueOnce(chain({ data: updatedAgent, error: null })) // agents update
       .mockReturnValueOnce(chain({ data: null, error: null })) // version_snapshots insert
-      .mockReturnValueOnce(chain({ data: null, error: null })) // agents update (version bump inside recordVersionSnapshot)
     createRequestSupabaseClient.mockReturnValue(authedClientWithFrom(fromMock))
 
     const res = await post('/api/v1/publish/AGENT/agent-1')
@@ -246,7 +245,7 @@ describe('publish routes', () => {
     expect(res.status).toBe(200)
     expect(body.published).toEqual({ item_type: 'AGENT', id: 'agent-1', version: 2 })
     expect(fromMock.mock.calls.filter((call) => call[0] === 'version_snapshots')).toHaveLength(1)
-    expect(fromMock.mock.calls.filter((call) => call[0] === 'agents')).toHaveLength(3)
+    expect(fromMock.mock.calls.filter((call) => call[0] === 'agents')).toHaveLength(2)
   })
 
   it('400s agent_has_no_tasks for an Agent with zero assigned tasks', async () => {
@@ -310,7 +309,6 @@ describe('publish routes', () => {
         },
       }) // agents update
       .mockReturnValueOnce(chain({ data: null, error: null })) // version_snapshots insert
-      .mockReturnValueOnce(chain({ data: null, error: null })) // agents update (version bump inside recordVersionSnapshot)
     createRequestSupabaseClient.mockReturnValue(authedClientWithFrom(fromMock))
 
     const res = await post('/api/v1/publish/AGENT/agent-1', { requestReview: true })
@@ -352,7 +350,6 @@ describe('publish routes', () => {
       ) // skills select — already Published at v2, current_version has moved to 3 since
       .mockReturnValueOnce(chain({ data: updatedSkill, error: null })) // skills update
       .mockReturnValueOnce(chain({ data: null, error: null })) // version_snapshots insert
-      .mockReturnValueOnce(chain({ data: null, error: null })) // skills update (version bump inside recordVersionSnapshot)
     createRequestSupabaseClient.mockReturnValue(authedClientWithFrom(fromMock))
 
     const res = await post('/api/v1/publish/SKILL/skill-1')

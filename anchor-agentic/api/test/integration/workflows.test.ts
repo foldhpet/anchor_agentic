@@ -76,7 +76,6 @@ describe('workflows routes', () => {
       .fn()
       .mockReturnValueOnce(chain({ data: WORKFLOW, error: null })) // insert into workflows
       .mockReturnValueOnce(chain({ data: null, error: null })) // version_snapshots insert
-      .mockReturnValueOnce(chain({ data: null, error: null })) // version bump update
     createRequestSupabaseClient.mockReturnValue(authedClientWithFrom(fromMock))
 
     const app = createApp()
@@ -136,7 +135,6 @@ describe('workflows routes', () => {
       .mockReturnValueOnce(chain({ data: updated, error: null })) // main update
       .mockReturnValueOnce(chain({ data: [], error: null })) // loadSteps for snapshot
       .mockReturnValueOnce(chain({ data: null, error: null })) // version_snapshots insert
-      .mockReturnValueOnce(chain({ data: null, error: null })) // version bump update
     createRequestSupabaseClient.mockReturnValue(authedClientWithFrom(fromMock))
 
     const app = createApp()
@@ -212,7 +210,6 @@ describe('workflows routes', () => {
       .mockReturnValueOnce(chain({ data: { ...WORKFLOW, current_version: 2 }, error: null })) // bumpAndSnapshot: workflows update
       .mockReturnValueOnce(chain({ data: newStepList, error: null })) // bumpAndSnapshot: loadSteps
       .mockReturnValueOnce(chain({ data: null, error: null })) // version_snapshots insert
-      .mockReturnValueOnce(chain({ data: null, error: null })) // workflows update (recordVersionSnapshot bump)
     createRequestSupabaseClient.mockReturnValue(authedClientWithFrom(fromMock))
 
     const app = createApp()
@@ -395,7 +392,6 @@ describe('workflows routes', () => {
       .mockReturnValueOnce(chain({ data: archived, error: null })) // main update
       .mockReturnValueOnce(chain({ data: [], error: null })) // loadSteps for snapshot
       .mockReturnValueOnce(chain({ data: null, error: null })) // version_snapshots insert
-      .mockReturnValueOnce(chain({ data: null, error: null })) // version bump update
     createRequestSupabaseClient.mockReturnValue(authedClientWithFrom(fromMock))
 
     const app = createApp()
@@ -611,8 +607,8 @@ const snapshots = (ops: Call[]) => ops.filter((o) => o.table === 'version_snapsh
 const stepWrites = (ops: Call[]) => ops.filter((o) => o.table === 'workflow_steps')
 const workflowWrites = (ops: Call[]) => ops.filter((o) => o.table === 'workflows')
 
-// Expected write shapes. current_version 5 = wfRow's 4 + 1. The route's bumpAndSnapshot and
-// recordVersionSnapshot each write it, so a successful mutation produces two identical workflow updates.
+// Expected write shapes. current_version 5 = wfRow's 4 + 1. The route's bumpAndSnapshot
+// writes it once; recordVersionSnapshot only inserts the snapshot.
 const stepUpdate = (id: string, payload: Record<string, unknown>) => ({
   table: 'workflow_steps',
   op: 'update',
@@ -660,7 +656,7 @@ describe('US-012 edit step (PATCH /:id/steps/:stepId)', () => {
     expect(stepWrites(ops)).toEqual([
       stepUpdate('s0', { step_type: 'TASK', task_id: 'task-c', agent_id: null, skill_id: null }),
     ])
-    expect(workflowWrites(ops)).toEqual([versionBump, versionBump])
+    expect(workflowWrites(ops)).toEqual([versionBump])
     const snaps = snapshots(ops)
     expect(snaps).toHaveLength(1)
     expect(snaps[0].payload).toMatchObject({ item_type: 'WORKFLOW', item_id: 'wf-1', version_number: 5 })
