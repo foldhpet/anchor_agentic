@@ -1,8 +1,8 @@
 import { expect, type Locator } from '@playwright/test';
-import { BasePage } from './base.page';
+import { AnchorBasePage } from './anchor-base.page';
 
 /** `/library/all` — read-only listing of every user's items, searchable. */
-export class AllSandboxPage extends BasePage {
+export class AllSandboxPage extends AnchorBasePage {
 	async open(query?: string) {
 		await this.goto(query ? `/library/all?q=${encodeURIComponent(query)}` : '/library/all');
 	}

@@ -1,13 +1,13 @@
 import { expect, test } from '@playwright/test';
-import { AuthFlow } from './business/flows/auth.flow';
-import { AuthoringFlow } from './business/flows/authoring.flow';
-import { CloneFlow } from './business/flows/clone.flow';
-import { PublishFlow } from './business/flows/publish.flow';
-import { SessionFlow } from './business/flows/session.flow';
-import { AgentDetailPage } from './business/pages/agent.page';
-import { MySandboxPage } from './business/pages/my-sandbox.page';
-import { SkillDetailPage } from './business/pages/skill.page';
-import { requireLiveSupabase } from './business/support/live-supabase';
+import { AuthFlow } from '../business/flows/auth.flow';
+import { AuthoringFlow } from '../business/flows/authoring.flow';
+import { CloneFlow } from '../business/flows/clone.flow';
+import { PublishFlow } from '../business/flows/publish.flow';
+import { SessionFlow } from '../business/flows/session.flow';
+import { AgentDetailPage } from '../business/pages/agent.page';
+import { MySandboxPage } from '../business/pages/my-sandbox.page';
+import { SkillDetailPage } from '../business/pages/skill.page';
+import { requireLiveSupabase } from '../business/support/live-supabase';
 
 test.describe('Clone (US-020–US-022)', () => {
 	requireLiveSupabase();

@@ -1,6 +1,6 @@
 import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { chromium, type FullConfig } from '@playwright/test';
-import { AuthFlow } from './business/flows/auth.flow';
+import { AuthFlow } from '../business/flows/auth.flow';
 import {
 	AUTH_DIR,
 	PERSONAS,
@@ -9,8 +9,8 @@ import {
 	storageStatePath,
 	trackCreatedEmail,
 	type PersonaRecord
-} from './business/support/personas';
-import { hasLiveSupabase, newIdentity } from './business/support/test-data';
+} from '../business/support/personas';
+import { hasLiveSupabase, newIdentity } from '../business/support/test-data';
 
 /**
  * Creates the shared personas once per run. With SUPABASE_SERVICE_ROLE_KEY they are created

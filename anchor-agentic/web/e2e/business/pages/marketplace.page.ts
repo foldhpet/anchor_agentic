@@ -1,5 +1,5 @@
 import { expect, type Locator } from '@playwright/test';
-import { BasePage } from './base.page';
+import { AnchorBasePage } from './anchor-base.page';
 import type { ItemType } from '../support/test-data';
 
 export interface MarketplaceQuery {
@@ -9,7 +9,7 @@ export interface MarketplaceQuery {
 }
 
 /** `/` — public Marketplace listing with search, type and role filters. */
-export class MarketplacePage extends BasePage {
+export class MarketplacePage extends AnchorBasePage {
 	get heading(): Locator {
 		return this.page.getByRole('heading', { name: 'Marketplace' });
 	}

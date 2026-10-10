@@ -13,10 +13,10 @@ paths:
 
 ## e2e (Playwright, Flow Model pattern)
 
-Follow `e2e/business/docs/FLOW_MODELS_DESIGN.md`:
-- **Spec** (`e2e/*.spec.ts`): thin; scenario narrative, unique test data, the final business assertion. No selectors.
+Follow `e2e/business/docs/FLOW_MODELS_DESIGN.md`. The suite is organised as the Tri-Layer Testing Architecture (`docs/TRI-LAYER.md`): `e2e/tests` (test scripts), `e2e/business` (flows, pages, support) and `e2e/core` (application-independent libraries). Dependencies point downward only (tests -> business -> core); `core` never imports from `business` or contains AnchorAgentic-specific locators, routes or data.
+- **Spec** (`e2e/tests/*.spec.ts`): thin; scenario narrative, unique test data, the final business assertion. No selectors.
 - **Flow Model** (`business/flows/*.flow.ts`): multi-page journeys; log with `log.step/ok/warn/fail`. No raw selectors.
-- **Page Model** (`business/pages/*.page.ts`): locators, one-page actions, page assertions. Extend `BasePage`.
+- **Page Model** (`business/pages/*.page.ts`): locators, one-page actions, page assertions. Extend `AnchorBasePage` (`business/pages/anchor-base.page.ts`), which extends the core `BasePage` in `core/base.page.ts`.
 - Wait on form-action responses (`waitForAction('...')`) and call `waitForHydration()` before filling forms.
 - New pages need a Page Model, and new journeys a Flow Model; update the inventory table in the design doc.
 

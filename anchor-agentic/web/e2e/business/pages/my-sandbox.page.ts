@@ -1,10 +1,10 @@
 import { expect, type Locator } from '@playwright/test';
-import { BasePage } from './base.page';
+import { AnchorBasePage } from './anchor-base.page';
 
 export type GroupHeading = 'Roles' | 'Tasks' | 'Agents' | 'Skills' | 'Workflows';
 
 /** `/library` — "My Sandbox": the owner's items grouped by type, with status badges. */
-export class MySandboxPage extends BasePage {
+export class MySandboxPage extends AnchorBasePage {
 	get showArchivedCheckbox(): Locator {
 		return this.page.getByLabel('Show archived');
 	}

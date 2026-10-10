@@ -1,9 +1,9 @@
 import { expect, type Locator } from '@playwright/test';
-import { BasePage } from './base.page';
+import { AnchorBasePage } from './anchor-base.page';
 import { ItemDetailPage } from './item-detail.page';
 
 /** `/agents/new` */
-export class NewAgentPage extends BasePage {
+export class NewAgentPage extends AnchorBasePage {
 	get roleSelect(): Locator {
 		return this.page.getByLabel('Role');
 	}

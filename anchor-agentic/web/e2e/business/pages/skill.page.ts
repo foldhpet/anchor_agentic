@@ -1,9 +1,9 @@
 import { expect, type Locator } from '@playwright/test';
-import { BasePage } from './base.page';
+import { AnchorBasePage } from './anchor-base.page';
 import { ItemDetailPage } from './item-detail.page';
 
 /** `/skills/new` */
-export class NewSkillPage extends BasePage {
+export class NewSkillPage extends AnchorBasePage {
 	async open() {
 		await this.goto('/skills/new');
 	}

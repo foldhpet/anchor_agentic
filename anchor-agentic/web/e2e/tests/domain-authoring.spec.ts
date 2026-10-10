@@ -1,10 +1,10 @@
 import { expect, test } from '@playwright/test';
-import { AuthFlow } from './business/flows/auth.flow';
-import { AuthoringFlow } from './business/flows/authoring.flow';
-import { SessionFlow } from './business/flows/session.flow';
-import { AgentDetailPage, NewAgentPage } from './business/pages/agent.page';
-import { WorkflowDetailPage } from './business/pages/workflow.page';
-import { requireLiveSupabase } from './business/support/live-supabase';
+import { AuthFlow } from '../business/flows/auth.flow';
+import { AuthoringFlow } from '../business/flows/authoring.flow';
+import { SessionFlow } from '../business/flows/session.flow';
+import { AgentDetailPage, NewAgentPage } from '../business/pages/agent.page';
+import { WorkflowDetailPage } from '../business/pages/workflow.page';
+import { requireLiveSupabase } from '../business/support/live-supabase';
 
 test.describe('Domain authoring (US-005–US-013)', () => {
 	requireLiveSupabase();

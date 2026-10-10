@@ -1,13 +1,13 @@
 import { test } from '@playwright/test';
-import { AuthFlow } from './business/flows/auth.flow';
-import { AuthoringFlow } from './business/flows/authoring.flow';
-import { CloneFlow } from './business/flows/clone.flow';
-import { MarketplaceFlow } from './business/flows/marketplace.flow';
-import { PublishFlow } from './business/flows/publish.flow';
-import { SessionFlow } from './business/flows/session.flow';
-import { AgentDetailPage } from './business/pages/agent.page';
-import { requireLiveSupabase } from './business/support/live-supabase';
-import { PUBLISHABLE } from './business/support/test-data';
+import { AuthFlow } from '../business/flows/auth.flow';
+import { AuthoringFlow } from '../business/flows/authoring.flow';
+import { CloneFlow } from '../business/flows/clone.flow';
+import { MarketplaceFlow } from '../business/flows/marketplace.flow';
+import { PublishFlow } from '../business/flows/publish.flow';
+import { SessionFlow } from '../business/flows/session.flow';
+import { AgentDetailPage } from '../business/pages/agent.page';
+import { requireLiveSupabase } from '../business/support/live-supabase';
+import { PUBLISHABLE } from '../business/support/test-data';
 
 test.describe('Marketplace Browse & Search (US-026–US-028)', () => {
 	requireLiveSupabase();

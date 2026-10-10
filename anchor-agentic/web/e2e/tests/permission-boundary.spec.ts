@@ -1,10 +1,10 @@
 import { expect, test } from '@playwright/test';
-import { SandboxFlow } from './business/flows/sandbox.flow';
-import { SessionFlow } from './business/flows/session.flow';
-import { LoginPage } from './business/pages/login.page';
-import { MarketplacePage } from './business/pages/marketplace.page';
-import { hasLiveSupabase } from './business/support/test-data';
-import { requireLiveSupabase } from './business/support/live-supabase';
+import { SandboxFlow } from '../business/flows/sandbox.flow';
+import { SessionFlow } from '../business/flows/session.flow';
+import { LoginPage } from '../business/pages/login.page';
+import { MarketplacePage } from '../business/pages/marketplace.page';
+import { hasLiveSupabase } from '../business/support/test-data';
+import { requireLiveSupabase } from '../business/support/live-supabase';
 
 test.describe('Anonymous browsing (US-003)', () => {
 	// The Marketplace list is server-rendered via a call to the api/ Worker,

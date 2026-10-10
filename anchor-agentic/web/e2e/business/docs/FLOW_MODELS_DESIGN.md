@@ -2,15 +2,24 @@
 
 Page Models and Flow Models for the Playwright suite in `anchor-agentic/web/e2e`.
 
+The suite follows the Tri-Layer Testing Architecture (`docs/TRI-LAYER.md`): test scripts, application-specific business logic, and reusable core libraries.
+
 ```
 e2e/
-├── *.spec.ts                  # Test scripts — thin: arrange via flows, assert via pages
-└── business/
-    ├── flows/    *.flow.ts    # Flow Models: user journeys that orchestrate pages
-    ├── pages/    *.page.ts    # Page Models: selectors + single-page interactions/assertions
-    ├── support/               # test-data (identities, publishable content), log, live-supabase guard
-    └── docs/FLOW_MODELS_DESIGN.md
+├── tests/                     # LAYER 1 — Test Scripts (runnable; thin: arrange via flows, assert via pages)
+│   ├── *.spec.ts
+│   └── global-setup.ts / global-teardown.ts   # Playwright hooks (create/delete the shared personas)
+├── business/                  # LAYER 2 — Business Logic (everything specific to AnchorAgentic.io)
+│   ├── flows/    *.flow.ts    # Flow Models: user journeys that orchestrate pages
+│   ├── pages/    *.page.ts    # Page Models: selectors + single-page interactions/assertions
+│   ├── support/               # Environment/test data: test-data, personas, live-supabase guard
+│   └── docs/FLOW_MODELS_DESIGN.md
+└── core/                      # LAYER 3 — Core Libraries (application-independent, reusable in other TAFs)
+    ├── base.page.ts           # Base Page: goto, url, currentId, waitForNetworkIdle
+    └── log.ts                 # Logger
 ```
+
+Dependency direction is strictly downward: `tests` -> `business` -> `core`. `core` must not import from `business` or `tests`, and must not mention AnchorAgentic.io routes, locators or test data. Anything that does belongs in `business`.
 
 ## Layering rules
 
@@ -28,7 +37,7 @@ freshly-loaded pages, because `use:enhance` resets a form that was filled before
 
 | Page Model | Route | Used by |
 |---|---|---|
-| `BasePage` | header/footer shared by all pages (Log out, Log in, donation link, alert) | all pages |
+| `AnchorBasePage` (`business/pages/anchor-base.page.ts`) | application-specific base page; extends the core `BasePage`; adds header/footer (Log out, Log in, donation link, alert), `waitForHydration`, `waitForAction` | all pages |
 | `RegisterPage` | `/register` | AuthFlow |
 | `LoginPage` | `/login` | AuthFlow, permission-boundary spec |
 | `MarketplacePage` | `/` (search `q`, filter `type`, `role`) | MarketplaceFlow, sustainability spec |
@@ -150,6 +159,6 @@ Flows: none needed (single-page assertions through `LoginPage`/`MarketplacePage`
 ## Maintenance notes
 
 - **UI change** → edit the single page model; specs and flows stay untouched.
-- **New publish gate** → adjust `support/test-data.ts` (`PUBLISHABLE`) and/or `AuthoringFlow.createPublishableAgent`.
+- **New publish gate** → adjust `business/support/test-data.ts` (`PUBLISHABLE`) and/or `AuthoringFlow.createPublishableAgent`.
 - **New item type** → add `New<Type>Page` + `<Type>DetailPage extends ItemDetailPage`, then extend `AuthoringFlow`.
 - Known overlap kept on purpose: `LegacySandboxPage` mirrors the pre-v1.1 generic Sandbox that `/sandbox` still serves; delete it together with the route.

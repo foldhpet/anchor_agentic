@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
-import { MarketplacePage } from './business/pages/marketplace.page';
-import { requireLiveSupabase } from './business/support/live-supabase';
+import { MarketplacePage } from '../business/pages/marketplace.page';
+import { requireLiveSupabase } from '../business/support/live-supabase';
 
 const DONATION_URL = 'https://github.com/sponsors/foldhpet';
 

@@ -1,9 +1,9 @@
 import { expect, type Locator } from '@playwright/test';
-import { BasePage } from './base.page';
+import { AnchorBasePage } from './anchor-base.page';
 import { ItemDetailPage } from './item-detail.page';
 
 /** `/roles/new` */
-export class NewRolePage extends BasePage {
+export class NewRolePage extends AnchorBasePage {
 	get form(): Locator {
 		return this.page.locator('form[action="?/create"]');
 	}

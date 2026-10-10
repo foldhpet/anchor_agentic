@@ -1,9 +1,9 @@
 import { expect, type Locator } from '@playwright/test';
-import { BasePage } from './base.page';
+import { AnchorBasePage } from './anchor-base.page';
 import type { ItemType } from '../support/test-data';
 
 /** `/marketplace/[itemType]/[id]` — published item detail with rating, clone and report. */
-export class MarketplaceDetailPage extends BasePage {
+export class MarketplaceDetailPage extends AnchorBasePage {
 	get cloneButton(): Locator {
 		return this.page.getByRole('button', { name: 'Clone into My Sandbox' });
 	}

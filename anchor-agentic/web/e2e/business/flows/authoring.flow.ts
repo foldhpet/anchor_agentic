@@ -3,7 +3,7 @@ import { AgentDetailPage, NewAgentPage } from '../pages/agent.page';
 import { NewRolePage, RoleDetailPage } from '../pages/role.page';
 import { NewSkillPage, SkillDetailPage } from '../pages/skill.page';
 import { NewWorkflowPage, WorkflowDetailPage, type StepType } from '../pages/workflow.page';
-import { log } from '../support/log';
+import { log } from '../../core/log';
 import { PUBLISHABLE } from '../support/test-data';
 
 const FLOW = 'AuthoringFlow';

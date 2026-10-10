@@ -1,10 +1,10 @@
 import { test } from '@playwright/test';
-import { AuthFlow } from './business/flows/auth.flow';
-import { AuthoringFlow } from './business/flows/authoring.flow';
-import { PublishFlow } from './business/flows/publish.flow';
-import { SandboxFlow } from './business/flows/sandbox.flow';
-import { SessionFlow } from './business/flows/session.flow';
-import { requireLiveSupabase } from './business/support/live-supabase';
+import { AuthFlow } from '../business/flows/auth.flow';
+import { AuthoringFlow } from '../business/flows/authoring.flow';
+import { PublishFlow } from '../business/flows/publish.flow';
+import { SandboxFlow } from '../business/flows/sandbox.flow';
+import { SessionFlow } from '../business/flows/session.flow';
+import { requireLiveSupabase } from '../business/support/live-supabase';
 
 test.describe('Sandbox & Version Control (US-014–US-019)', () => {
 	requireLiveSupabase();

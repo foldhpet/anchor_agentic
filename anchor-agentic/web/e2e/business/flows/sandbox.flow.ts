@@ -5,7 +5,7 @@ import { MySandboxPage } from '../pages/my-sandbox.page';
 import type { RoleDetailPage } from '../pages/role.page';
 import { SkillDetailPage } from '../pages/skill.page';
 import { TaskDetailPage } from '../pages/task.page';
-import { log } from '../support/log';
+import { log } from '../../core/log';
 import type { UserSession } from './session.flow';
 
 const FLOW = 'SandboxFlow';

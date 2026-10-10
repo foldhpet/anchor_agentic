@@ -1,11 +1,11 @@
 import { expect, type Locator } from '@playwright/test';
-import { BasePage } from './base.page';
+import { AnchorBasePage } from './anchor-base.page';
 
 /**
  * Behaviour shared by every Sandbox detail page (Role, Task, Agent, Skill, Workflow):
  * status line, Save/Publish/Archive/Clone controls, provenance and Version History.
  */
-export abstract class ItemDetailPage extends BasePage {
+export abstract class ItemDetailPage extends AnchorBasePage {
 	/** Route segment this page lives under, e.g. 'agents'. */
 	protected abstract readonly routeSegment: string;
 

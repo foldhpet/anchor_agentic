@@ -1,6 +1,6 @@
 import { expect, type Page } from '@playwright/test';
 import type { ItemDetailPage } from '../pages/item-detail.page';
-import { log } from '../support/log';
+import { log } from '../../core/log';
 
 const FLOW = 'PublishFlow';
 

@@ -1,11 +1,11 @@
 import { expect, type Locator } from '@playwright/test';
-import { BasePage } from './base.page';
+import { AnchorBasePage } from './anchor-base.page';
 import { ItemDetailPage } from './item-detail.page';
 
 export type StepType = 'TASK' | 'AGENT' | 'SKILL';
 
 /** `/workflows/new` */
-export class NewWorkflowPage extends BasePage {
+export class NewWorkflowPage extends AnchorBasePage {
 	async open() {
 		await this.goto('/workflows/new');
 	}

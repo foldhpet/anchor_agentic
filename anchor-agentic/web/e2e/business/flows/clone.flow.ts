@@ -1,6 +1,6 @@
 import type { ItemDetailPage } from '../pages/item-detail.page';
 import { MarketplaceDetailPage } from '../pages/marketplace-detail.page';
-import { log } from '../support/log';
+import { log } from '../../core/log';
 import type { UserSession } from './session.flow';
 
 const FLOW = 'CloneFlow';

@@ -1,7 +1,7 @@
 import { expect, type Locator } from '@playwright/test';
-import { BasePage } from './base.page';
+import { AnchorBasePage } from './anchor-base.page';
 
-export class RegisterPage extends BasePage {
+export class RegisterPage extends AnchorBasePage {
 	get usernameInput(): Locator {
 		return this.page.getByLabel('Username');
 	}

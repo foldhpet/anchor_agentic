@@ -1,5 +1,5 @@
 import { expect, type Page } from '@playwright/test';
-import { log } from '../support/log';
+import { log } from '../../core/log';
 import type { ItemType } from '../support/test-data';
 
 const FLOW = 'ExportFlow';

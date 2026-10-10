@@ -1,5 +1,5 @@
 import type { Browser, BrowserContext, Page } from '@playwright/test';
-import { log } from '../support/log';
+import { log } from '../../core/log';
 import { readPersonas, storageStatePath, type Persona } from '../support/personas';
 import type { UserIdentity } from '../support/test-data';
 

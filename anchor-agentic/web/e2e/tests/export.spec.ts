@@ -1,10 +1,10 @@
 import { expect, test } from '@playwright/test';
-import { AuthFlow } from './business/flows/auth.flow';
-import { AuthoringFlow } from './business/flows/authoring.flow';
-import { ExportFlow } from './business/flows/export.flow';
-import { SessionFlow } from './business/flows/session.flow';
-import { TaskDetailPage } from './business/pages/task.page';
-import { requireLiveSupabase } from './business/support/live-supabase';
+import { AuthFlow } from '../business/flows/auth.flow';
+import { AuthoringFlow } from '../business/flows/authoring.flow';
+import { ExportFlow } from '../business/flows/export.flow';
+import { SessionFlow } from '../business/flows/session.flow';
+import { TaskDetailPage } from '../business/pages/task.page';
+import { requireLiveSupabase } from '../business/support/live-supabase';
 
 // US-039: the proxy route (web/src/routes/export/[itemType]/[id]/+server.ts)
 // is the same manifest a direct API caller gets from POST /api/v1/export

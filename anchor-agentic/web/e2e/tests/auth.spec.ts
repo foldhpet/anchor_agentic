@@ -1,6 +1,6 @@
 import { test } from '@playwright/test';
-import { AuthFlow } from './business/flows/auth.flow';
-import { requireLiveSupabase } from './business/support/live-supabase';
+import { AuthFlow } from '../business/flows/auth.flow';
+import { requireLiveSupabase } from '../business/support/live-supabase';
 
 test.describe('Authentication (US-001, US-002)', () => {
 	requireLiveSupabase();

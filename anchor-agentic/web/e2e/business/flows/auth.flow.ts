@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { expect, type Page } from '@playwright/test';
 import { LoginPage } from '../pages/login.page';
 import { RegisterPage } from '../pages/register.page';
-import { log } from '../support/log';
+import { log } from '../../core/log';
 import { readPersonas, storageStatePath, trackCreatedEmail, type Persona } from '../support/personas';
 import { newIdentity, type UserIdentity } from '../support/test-data';
 

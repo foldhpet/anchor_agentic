@@ -1,7 +1,7 @@
 import { expect, type Page } from '@playwright/test';
 import { MarketplaceDetailPage } from '../pages/marketplace-detail.page';
 import { MarketplacePage, type MarketplaceQuery } from '../pages/marketplace.page';
-import { log } from '../support/log';
+import { log } from '../../core/log';
 import type { ItemType } from '../support/test-data';
 
 const FLOW = 'MarketplaceFlow';

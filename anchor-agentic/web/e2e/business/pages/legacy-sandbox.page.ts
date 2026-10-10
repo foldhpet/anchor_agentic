@@ -1,8 +1,8 @@
 import { expect, type Locator } from '@playwright/test';
-import { BasePage } from './base.page';
+import { AnchorBasePage } from './anchor-base.page';
 
 /** `/sandbox` — the original generic Sandbox item list (still routed, not in the nav). */
-export class LegacySandboxPage extends BasePage {
+export class LegacySandboxPage extends AnchorBasePage {
 	async open() {
 		await this.goto('/sandbox');
 	}
@@ -15,7 +15,7 @@ export class LegacySandboxPage extends BasePage {
 }
 
 /** `/sandbox/all` — every user's generic items, with a "try editing" probe on non-owned rows. */
-export class LegacyAllSandboxPage extends BasePage {
+export class LegacyAllSandboxPage extends AnchorBasePage {
 	async open() {
 		await this.goto('/sandbox/all');
 	}

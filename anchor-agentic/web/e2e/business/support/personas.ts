@@ -1,7 +1,7 @@
 import { appendFileSync, existsSync, mkdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { createClient } from '@supabase/supabase-js';
-import { log } from './log';
+import { log } from '../../core/log';
 import { PASSWORD, type UserIdentity } from './test-data';
 
 const FLOW = 'Personas';
