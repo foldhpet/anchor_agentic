@@ -251,21 +251,17 @@ describe('workflows routes', () => {
     expect(body.error).toBe('step_not_found')
   })
 
-  it('DELETE /:id/steps/:stepId removes the last remaining step with no renumbering needed', async () => {
+  it('DELETE /:id/steps/:stepId delegates the delete, renumber and version bump to the RPC', async () => {
     const existingSteps = [
       { id: 'step-1', workflow_id: 'wf-1', order_index: 0, step_type: 'TASK', task_id: 'task-1', agent_id: null, skill_id: null, created_at: 't' },
     ]
+    const rpcResult = { workflow: { ...WORKFLOW, current_version: 2 }, steps: [] }
+    const rpc = vi.fn().mockResolvedValue({ data: rpcResult, error: null })
     const fromMock = vi
       .fn()
       .mockReturnValueOnce(chain({ data: { id: 'wf-1', owner_id: OWNER_ID, current_version: 1 }, error: null })) // checkOwnership
       .mockReturnValueOnce(chain({ data: existingSteps, error: null })) // loadSteps (existing)
-      .mockReturnValueOnce(chain({ data: null, error: null })) // delete workflow_steps
-      // no renumber calls: zero steps remain
-      .mockReturnValueOnce(chain({ data: { ...WORKFLOW, current_version: 2 }, error: null })) // bumpAndSnapshot: workflows update
-      .mockReturnValueOnce(chain({ data: [], error: null })) // bumpAndSnapshot: loadSteps
-      .mockReturnValueOnce(chain({ data: null, error: null })) // version_snapshots insert
-      .mockReturnValueOnce(chain({ data: null, error: null })) // workflows update (recordVersionSnapshot bump)
-    createRequestSupabaseClient.mockReturnValue(authedClientWithFrom(fromMock))
+    createRequestSupabaseClient.mockReturnValue({ ...authedClientWithFrom(fromMock), rpc })
 
     const app = createApp()
     const res = await app.request(
@@ -276,6 +272,8 @@ describe('workflows routes', () => {
     const body = await res.json<{ workflow: { current_version: number }; steps: unknown[] }>()
 
     expect(res.status).toBe(200)
+    expect(rpc).toHaveBeenCalledWith('delete_workflow_step', { p_workflow_id: 'wf-1', p_step_id: 'step-1' })
+    expect(fromMock).toHaveBeenCalledTimes(2) // reads only: the route itself writes nothing
     expect(body.workflow.current_version).toBe(2)
     expect(body.steps).toEqual([])
   })
@@ -306,26 +304,21 @@ describe('workflows routes', () => {
     expect(body.error).toBe('step_set_mismatch')
   })
 
-  it('PUT /:id/steps/reorder renumbers to match the given order', async () => {
+  it('PUT /:id/steps/reorder delegates the renumber and version bump to the RPC', async () => {
     const existingSteps = [
       { id: 'step-1', workflow_id: 'wf-1', order_index: 0, step_type: 'TASK', task_id: 'task-1', agent_id: null, skill_id: null, created_at: 't' },
       { id: 'step-2', workflow_id: 'wf-1', order_index: 1, step_type: 'TASK', task_id: 'task-2', agent_id: null, skill_id: null, created_at: 't' },
     ]
     const reorderedSteps = [existingSteps[1], existingSteps[0]]
+    const rpc = vi.fn().mockResolvedValue({
+      data: { workflow: { ...WORKFLOW, current_version: 2 }, steps: reorderedSteps },
+      error: null,
+    })
     const fromMock = vi
       .fn()
       .mockReturnValueOnce(chain({ data: { id: 'wf-1', owner_id: OWNER_ID, current_version: 1 }, error: null })) // checkOwnership
       .mockReturnValueOnce(chain({ data: existingSteps, error: null })) // loadSteps (existing)
-      // renumberSteps: 2 steps -> negative pass (2 calls) + positive pass (2 calls)
-      .mockReturnValueOnce(chain({ data: null, error: null }))
-      .mockReturnValueOnce(chain({ data: null, error: null }))
-      .mockReturnValueOnce(chain({ data: null, error: null }))
-      .mockReturnValueOnce(chain({ data: null, error: null }))
-      .mockReturnValueOnce(chain({ data: { ...WORKFLOW, current_version: 2 }, error: null })) // bumpAndSnapshot: workflows update
-      .mockReturnValueOnce(chain({ data: reorderedSteps, error: null })) // bumpAndSnapshot: loadSteps
-      .mockReturnValueOnce(chain({ data: null, error: null })) // version_snapshots insert
-      .mockReturnValueOnce(chain({ data: null, error: null })) // workflows update (recordVersionSnapshot bump)
-    createRequestSupabaseClient.mockReturnValue(authedClientWithFrom(fromMock))
+    createRequestSupabaseClient.mockReturnValue({ ...authedClientWithFrom(fromMock), rpc })
 
     const app = createApp()
     const res = await app.request(
@@ -340,6 +333,8 @@ describe('workflows routes', () => {
     const body = await res.json<{ workflow: { current_version: number }; steps: typeof reorderedSteps }>()
 
     expect(res.status).toBe(200)
+    expect(rpc).toHaveBeenCalledWith('reorder_workflow_steps', { p_workflow_id: 'wf-1', p_step_ids: ['step-2', 'step-1'] })
+    expect(fromMock).toHaveBeenCalledTimes(2)
     expect(body.workflow.current_version).toBe(2)
     expect(body.steps).toEqual(reorderedSteps)
   })
@@ -520,7 +515,18 @@ type Call = {
 }
 type Res = { data: unknown; error: unknown }
 
-function recordingClient(userId: string, queues: Record<string, Res[]>) {
+const RPC_OK = { workflow: { id: 'wf-1', current_version: 5 }, steps: [{ id: 's0', order_index: 0 }] }
+
+function recordingClient(
+  userId: string,
+  queues: Record<string, Res[]>,
+  rpcResult: Res = { data: RPC_OK, error: null },
+) {
+  const rpcCalls: { fn: string; args: unknown }[] = []
+  const rpc = vi.fn((fn: string, args: unknown) => {
+    rpcCalls.push({ fn, args })
+    return Promise.resolve(rpcResult)
+  })
   const calls: Call[] = []
   const ops: Call[] = [] // writes only, in call order
   const from = vi.fn((table: string) => {
@@ -554,9 +560,10 @@ function recordingClient(userId: string, queues: Record<string, Res[]>) {
     return builder
   })
   return {
-    client: { auth: { getUser: () => Promise.resolve({ data: { user: { id: userId } }, error: null }) }, from },
+    client: { auth: { getUser: () => Promise.resolve({ data: { user: { id: userId } }, error: null }) }, from, rpc },
     ops,
     calls,
+    rpcCalls,
   }
 }
 
@@ -856,134 +863,73 @@ describe('US-012 remove step (DELETE /:id/steps/:stepId)', () => {
     createRequestSupabaseClient.mockReset()
   })
 
-  // existing = steps before the delete; after = what loadSteps returns post-renumber
-  function setup(existing: unknown[], after: unknown[]) {
-    const { client, ops, calls } = recordingClient(OWNER_ID, {
-      workflows: [
-        { data: wfRow(), error: null },
-        { data: { ...WORKFLOW, current_version: 5 }, error: null },
-      ],
-      workflow_steps: [
-        { data: existing, error: null },
-        { data: null, error: null },
-        { data: after, error: null },
-      ],
-      version_snapshots: [{ data: null, error: null }],
-    })
+  function setup(existing: unknown[], status = 'Draft', rpcResult?: Res) {
+    const { client, ops, calls, rpcCalls } = recordingClient(
+      OWNER_ID,
+      { workflows: [{ data: wfRow({ status }), error: null }], workflow_steps: [{ data: existing, error: null }] },
+      rpcResult,
+    )
     createRequestSupabaseClient.mockReturnValue(client)
-    return { ops, calls }
+    return { ops, calls, rpcCalls }
   }
 
   const three = () => [step('s0', 0), step('s1', 1), step('s2', 2)]
 
-  it('TC-06 deleting the middle step of 3 deletes exactly s1, then renumbers s0,s2 in two phases (AC2)', async () => {
-    const { ops } = setup(three(), [step('s0', 0), step('s2', 1)])
+  it('AC2 deleting a step makes one RPC call and no direct writes (delete, renumber, bump and snapshot are atomic in Postgres)', async () => {
+    const { ops, rpcCalls } = setup(three())
     const res = await deleteStep('s1')
 
     expect(res.status).toBe(200)
-    expect(stepWrites(ops)).toEqual([
-      stepDelete('s1'),
-      // phase 1: distinct negative indices (-(i+1)), each filtered by its own id
-      orderUpdate('s0', -1),
-      orderUpdate('s2', -2),
-      // phase 2: final gapless indices
-      orderUpdate('s0', 0),
-      orderUpdate('s2', 1),
-    ])
-    expect(workflowWrites(ops)).toEqual([versionBump, versionBump])
-    expect(snapshots(ops)).toHaveLength(1)
+    expect(await res.json()).toEqual(RPC_OK)
+    expect(rpcCalls).toEqual([{ fn: 'delete_workflow_step', args: { p_workflow_id: 'wf-1', p_step_id: 's1' } }])
+    expect(ops).toEqual([])
   })
 
-  it('TC-07 deleting the first of 3 deletes exactly s0 and renumbers s1,s2 from 0', async () => {
-    const { ops } = setup(three(), [step('s1', 0), step('s2', 1)])
+  it('AC4 deleting the only step of a Draft workflow is allowed', async () => {
+    const { rpcCalls } = setup([step('s0', 0)])
     const res = await deleteStep('s0')
 
     expect(res.status).toBe(200)
-    expect(stepWrites(ops)).toEqual([
-      stepDelete('s0'),
-      orderUpdate('s1', -1),
-      orderUpdate('s2', -2),
-      orderUpdate('s1', 0),
-      orderUpdate('s2', 1),
-    ])
-    expect(snapshots(ops)).toHaveLength(1)
+    expect(rpcCalls).toHaveLength(1)
   })
 
-  it('TC-07 deleting the last of 3 deletes exactly s2 and renumbers s0,s1 as 0,1', async () => {
-    const { ops } = setup(three(), [step('s0', 0), step('s1', 1)])
-    const res = await deleteStep('s2')
-
-    expect(res.status).toBe(200)
-    expect(stepWrites(ops)).toEqual([
-      stepDelete('s2'),
-      orderUpdate('s0', -1),
-      orderUpdate('s1', -2),
-      orderUpdate('s0', 0),
-      orderUpdate('s1', 1),
-    ])
-  })
-
-  it('never renumbers the deleted step: no update is filtered on its id', async () => {
-    const { ops } = setup(three(), [step('s0', 0), step('s2', 1)])
-    await deleteStep('s1')
-
-    const updates = stepWrites(ops).filter((o) => o.op === 'update')
-    expect(updates).toHaveLength(4)
-    expect(updates.flatMap((o) => o.filters.map(([, v]) => v))).not.toContain('s1')
-  })
-
-  it('TC-07 / TC-14 deleting the only step of a Draft workflow: 200, no status write, version bumped and snapshotted (AC4)', async () => {
-    const { ops } = setup([step('s0', 0)], [])
-    const res = await deleteStep('s0')
-
-    expect(res.status).toBe(200)
-    // Only the delete touches workflow_steps; there is nothing left to renumber.
-    expect(stepWrites(ops)).toEqual([stepDelete('s0')])
-    // The workflow row is only version-bumped; its status is never written.
-    const wfWrites = workflowWrites(ops)
-    expect(wfWrites).toEqual([versionBump, versionBump])
-    for (const w of wfWrites) expect(w.payload).not.toHaveProperty('status')
-    const snaps = snapshots(ops)
-    expect(snaps).toHaveLength(1)
-    expect(snaps[0].payload).toMatchObject({ item_type: 'WORKFLOW', item_id: 'wf-1', version_number: 5 })
-  })
-
-  it('AC4 deleting the only step of a Published workflow 400s workflow_has_no_steps with no write or snapshot', async () => {
-    const { client, ops } = recordingClient(OWNER_ID, {
-      workflows: [{ data: wfRow({ status: 'Published' }), error: null }],
-      workflow_steps: [{ data: [step('s0', 0)], error: null }],
-    })
-    createRequestSupabaseClient.mockReturnValue(client)
+  it('AC4 deleting the only step of a Published workflow 400s workflow_has_no_steps without calling the RPC', async () => {
+    const { ops, rpcCalls } = setup([step('s0', 0)], 'Published')
     const res = await deleteStep('s0')
     const body = await res.json<{ error: string }>()
 
     expect(res.status).toBe(400)
     expect(body.error).toBe('workflow_has_no_steps')
+    expect(rpcCalls).toEqual([])
     expect(ops).toEqual([])
   })
 
   it('AC4 deleting one of two steps of a Published workflow is still allowed', async () => {
-    const { client, ops } = recordingClient(OWNER_ID, {
-      workflows: [
-        { data: wfRow({ status: 'Published' }), error: null },
-        { data: { ...WORKFLOW, current_version: 5 }, error: null },
-      ],
-      workflow_steps: [
-        { data: [step('s0', 0), step('s1', 1)], error: null },
-        { data: null, error: null },
-        { data: [step('s1', 0)], error: null },
-      ],
-      version_snapshots: [{ data: null, error: null }],
-    })
-    createRequestSupabaseClient.mockReturnValue(client)
+    const { rpcCalls } = setup([step('s0', 0), step('s1', 1)], 'Published')
     const res = await deleteStep('s0')
 
     expect(res.status).toBe(200)
-    expect(stepWrites(ops)[0]).toEqual(stepDelete('s0'))
+    expect(rpcCalls).toHaveLength(1)
+  })
+
+  it('maps a known RPC failure (a concurrent request won the row lock) to its status instead of a 500', async () => {
+    setup(three(), 'Draft', { data: null, error: { message: 'step_not_found' } })
+    const res = await deleteStep('s1')
+    const body = await res.json<{ error: string }>()
+
+    expect(res.status).toBe(404)
+    expect(body.error).toBe('step_not_found')
+  })
+
+  it('an unrecognised RPC failure surfaces as a 500', async () => {
+    setup(three(), 'Draft', { data: null, error: new Error('deadlock detected') })
+    const res = await deleteStep('s1')
+
+    expect(res.status).toBe(500)
   })
 
   it('TC-08 deleting an already-removed step 404s step_not_found with no write or snapshot', async () => {
-    const { ops, calls } = setup([step('s0', 0)], [])
+    const { ops, calls, rpcCalls } = setup([step('s0', 0)])
     const res = await deleteStep('s-gone')
     const body = await res.json<{ error: string }>()
 
@@ -992,6 +938,7 @@ describe('US-012 remove step (DELETE /:id/steps/:stepId)', () => {
     // The existence check lists the steps of the path workflow only.
     expect(calls.find((c) => c.table === 'workflow_steps')!.filters).toEqual([['workflow_id', 'wf-1']])
     expect(ops).toEqual([])
+    expect(rpcCalls).toEqual([])
   })
 
   it('TC-17 403s a non-owner and deletes nothing', async () => {

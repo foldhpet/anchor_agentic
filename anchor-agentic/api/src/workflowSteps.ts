@@ -18,11 +18,3 @@ export function hasExactlyOneReference(ref: StepReference): boolean {
   if (ref.step_type === 'SKILL') return !!ref.skill_id
   return false
 }
-
-// Renumbers a list of step ids, given in the desired final order, to
-// gapless 0..n-1 order_index values. Used both for "remove one step, close
-// the gap" (US-012) and "reorder to this exact sequence" (US-011) — the
-// caller supplies the ids already in the order they should end up in.
-export function renumber(stepIdsInOrder: string[]): { id: string; order_index: number }[] {
-  return stepIdsInOrder.map((id, index) => ({ id, order_index: index }))
-}

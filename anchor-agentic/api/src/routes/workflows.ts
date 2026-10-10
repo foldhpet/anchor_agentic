@@ -6,7 +6,7 @@ import { requireAuth } from '../middleware/auth'
 import { logRejection } from '../middleware/errorHandler'
 import { recordVersionSnapshot } from '../versioning'
 import { validateStatusTransition } from '../lifecycle'
-import { hasExactlyOneReference, renumber } from '../workflowSteps'
+import { hasExactlyOneReference } from '../workflowSteps'
 
 export const workflowsRouter = new Hono<AppEnv>()
 
@@ -153,21 +153,20 @@ function referenceTable(stepType: string): 'tasks' | 'agents' | 'skills' | null 
   return null
 }
 
-// Two-phase renumber: first push every affected row to a distinct negative
-// order_index, then assign the final 0..n-1 values. This avoids tripping the
-// unique(workflow_id, order_index) constraint mid-sequence, since Postgres
-// enforces it immediately (not deferred) and a naive single-pass renumber
-// can momentarily collide with a row that hasn't moved yet.
-async function renumberSteps(supabase: SupabaseClient, orderedStepIds: string[]) {
-  const targets = renumber(orderedStepIds)
-  for (const { id, order_index } of targets) {
-    const { error } = await supabase.from('workflow_steps').update({ order_index: -(order_index + 1) }).eq('id', id)
-    if (error) throw error
-  }
-  for (const { id, order_index } of targets) {
-    const { error } = await supabase.from('workflow_steps').update({ order_index }).eq('id', id)
-    if (error) throw error
-  }
+// Errors raised by the step RPCs (0024_workflow_step_rpcs.sql) that can still occur
+// after the route's own pre-checks, e.g. when a concurrent request wins the row lock.
+const RPC_ERROR_STATUS: Record<string, 400 | 404> = {
+  not_found: 404,
+  step_not_found: 404,
+  archived_item_is_terminal: 400,
+  workflow_has_no_steps: 400,
+  step_set_mismatch: 400,
+}
+
+function rpcFailure(c: Context<AppEnv>, error: { message: string }) {
+  const status = RPC_ERROR_STATUS[error.message]
+  if (!status) throw error
+  return c.json({ error: error.message, requestId: c.get('requestId') }, status)
 }
 
 async function bumpAndSnapshot(c: Context<AppEnv>, id: string, workflow: { current_version: number }) {
@@ -321,14 +320,10 @@ workflowsRouter.delete('/:id/steps/:stepId', async (c) => {
     return c.json({ error: 'workflow_has_no_steps', requestId: c.get('requestId') }, 400)
   }
 
-  const { error: deleteError } = await supabase.from('workflow_steps').delete().eq('id', stepId)
-  if (deleteError) throw deleteError
-
-  const remainingIds = existingSteps.filter((s) => s.id !== stepId).map((s) => s.id)
-  await renumberSteps(supabase, remainingIds)
-
-  const { workflow, steps } = await bumpAndSnapshot(c, workflowId, ownership.workflow!)
-  return c.json({ workflow, steps })
+  // One transaction in Postgres: delete, close gaps, one version bump + snapshot.
+  const { data, error } = await supabase.rpc('delete_workflow_step', { p_workflow_id: workflowId, p_step_id: stepId })
+  if (error) return rpcFailure(c, error)
+  return c.json(data)
 })
 
 // US-011: full reorder — body carries every existing step id in its new order.
@@ -356,8 +351,8 @@ workflowsRouter.put('/:id/steps/reorder', async (c) => {
   const sameSet = stepIds.length === existingIds.size && stepIds.every((id: string) => existingIds.has(id))
   if (!sameSet) return c.json({ error: 'step_set_mismatch', requestId: c.get('requestId') }, 400)
 
-  await renumberSteps(supabase, stepIds)
-
-  const { workflow, steps } = await bumpAndSnapshot(c, workflowId, ownership.workflow!)
-  return c.json({ workflow, steps })
+  // One transaction in Postgres: renumber, one version bump + snapshot.
+  const { data, error } = await supabase.rpc('reorder_workflow_steps', { p_workflow_id: workflowId, p_step_ids: stepIds })
+  if (error) return rpcFailure(c, error)
+  return c.json(data)
 })

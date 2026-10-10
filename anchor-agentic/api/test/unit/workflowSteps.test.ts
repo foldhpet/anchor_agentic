@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { hasExactlyOneReference, renumber } from '../../src/workflowSteps'
+import { hasExactlyOneReference } from '../../src/workflowSteps'
 
 describe('hasExactlyOneReference', () => {
   it('accepts a TASK step with only task_id set', () => {
@@ -40,31 +40,5 @@ describe('hasExactlyOneReference', () => {
 
   it('treats empty-string reference fields as unpopulated', () => {
     expect(hasExactlyOneReference({ step_type: 'TASK', task_id: '', agent_id: null, skill_id: null })).toBe(false)
-  })
-})
-
-describe('renumber', () => {
-  it('assigns gapless 0..n-1 order_index in the given order', () => {
-    expect(renumber(['c', 'a', 'b'])).toEqual([
-      { id: 'c', order_index: 0 },
-      { id: 'a', order_index: 1 },
-      { id: 'b', order_index: 2 },
-    ])
-  })
-
-  it('returns an empty array for an empty input', () => {
-    expect(renumber([])).toEqual([])
-  })
-
-  it('closes the gap left by a removed middle step, keeping relative order', () => {
-    const remaining = ['s0', 's1', 's2'].filter((id) => id !== 's1')
-    expect(renumber(remaining)).toEqual([
-      { id: 's0', order_index: 0 },
-      { id: 's2', order_index: 1 },
-    ])
-  })
-
-  it('handles a single step', () => {
-    expect(renumber(['only'])).toEqual([{ id: 'only', order_index: 0 }])
   })
 })
