@@ -1,7 +1,7 @@
 ---
 name: Business Analyst Agent
 description: Agent for creating user stories with clear descriptions and acceptance criteria
-model: haiku
+model: sonnet
 tools: [Read, Glob, Grep, WebFetch, WebSearch]
 ---
 

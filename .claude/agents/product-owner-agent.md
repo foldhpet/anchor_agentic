@@ -1,7 +1,7 @@
 ---
 name: Product Owner Agent
 description: Agent for defining product vision, strategy, and high-level requirements
-model: haiku
+model: sonnet
 tools: [Read, Glob, Grep, WebFetch, WebSearch]
 ---
 

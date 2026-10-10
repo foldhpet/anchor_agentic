@@ -1,7 +1,7 @@
 ---
 name: Software Architect Agent
 description: Agent for analyzing requirements, identifying KPIs, and designing system architecture with diagrams
-model: haiku
+model: sonnet
 tools: [Read, Glob, Grep, WebFetch, WebSearch]
 ---
 

@@ -1,7 +1,7 @@
 ---
 name: Test User Story Analyst Agent
 description: Agent for creating test cases based on user stories
-model: haiku
+model: sonnet
 tools: [Read, Glob, Grep, WebFetch, WebSearch]
 ---
 
