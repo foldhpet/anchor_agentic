@@ -51,7 +51,7 @@ The removed list pages (`/roles`, `/agents`, `/skills`, `/workflows`) have no mo
 |---|---|---|
 | `AuthFlow` | `registerNewUser`, `logIn`, `logOut`, `registerLogOutAndLogBackIn`, `registerDuplicateEmail`, `logInWithInvalidCredentials` | Register, Login |
 | `SessionFlow` | `startAnonymous`, `startRegistered` — isolated browser contexts for "other user" scenarios | (AuthFlow) |
-| `AuthoringFlow` | `createRole`, `createRoleWithTasks`, `createAgentForRole`, `assignTasks`, `createPublishableAgent`, `createSkill`, `createWorkflow(WithSteps)`, `reorderAndRemoveSteps` | New*/…Detail pages |
+| `AuthoringFlow` | `createRole`, `createRoleWithTasks`, `createAgentForRole`, `assignTasks`, `createPublishableAgent`, `createSkill`, `createWorkflow(WithSteps)`, `editStep`, `removeStepAndExpectRemaining`, `reorderAndRemoveSteps` | New*/…Detail pages |
 | `PublishFlow` | `publishItem`, `publishExpectingRejection` (quality gates) | ItemDetailPage |
 | `CloneFlow` | `cloneFromSandboxUrl`, `cloneFromMarketplace`, `expectCloneCount` | ItemDetailPage, MarketplaceDetailPage |
 | `MarketplaceFlow` | `browseAndOpenDetail`, `expectFound`, `expectFilteredOut`, `rateTwiceAndVerifyUpsert`, `expectAggregateWithoutRatingControl`, `expectDraftNotFound` | MarketplacePage, MarketplaceDetailPage |

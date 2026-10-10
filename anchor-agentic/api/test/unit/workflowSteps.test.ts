@@ -30,6 +30,14 @@ describe('hasExactlyOneReference', () => {
     expect(hasExactlyOneReference({ step_type: 'BOGUS', task_id: 't1' })).toBe(false)
   })
 
+  it('rejects when all three reference fields are populated', () => {
+    expect(hasExactlyOneReference({ step_type: 'TASK', task_id: 't1', agent_id: 'a1', skill_id: 's1' })).toBe(false)
+  })
+
+  it('rejects an AGENT step that still carries a task_id alongside agent_id (type switch must clear the old field)', () => {
+    expect(hasExactlyOneReference({ step_type: 'AGENT', task_id: 't1', agent_id: 'a1' })).toBe(false)
+  })
+
   it('treats empty-string reference fields as unpopulated', () => {
     expect(hasExactlyOneReference({ step_type: 'TASK', task_id: '', agent_id: null, skill_id: null })).toBe(false)
   })
@@ -46,6 +54,14 @@ describe('renumber', () => {
 
   it('returns an empty array for an empty input', () => {
     expect(renumber([])).toEqual([])
+  })
+
+  it('closes the gap left by a removed middle step, keeping relative order', () => {
+    const remaining = ['s0', 's1', 's2'].filter((id) => id !== 's1')
+    expect(renumber(remaining)).toEqual([
+      { id: 's0', order_index: 0 },
+      { id: 's2', order_index: 1 },
+    ])
   })
 
   it('handles a single step', () => {

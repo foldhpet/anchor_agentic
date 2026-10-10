@@ -115,6 +115,30 @@ export class AuthoringFlow {
 		return workflow;
 	}
 
+	/** US-012: change a step's type and/or referenced item in place. */
+	async editStep(workflow: WorkflowDetailPage, index: number, type: StepType, label: string) {
+		log.step(FLOW, `Editing step ${index + 1} to ${type} "${label}"`);
+		await workflow.editStep(index, type, label);
+		log.ok(FLOW, `Step ${index + 1} is now ${type} "${label}"`);
+	}
+
+	/** US-012: remove a step, then confirm the remaining steps stay contiguous after a reload. */
+	async removeStepAndExpectRemaining(
+		workflow: WorkflowDetailPage,
+		index: number,
+		remaining: { type: StepType; label: string }[]
+	) {
+		log.step(FLOW, `Removing step ${index + 1}`);
+		await workflow.removeStep(index);
+		await workflow.expectStepCount(remaining.length);
+		await this.page.reload();
+		await workflow.expectStepCount(remaining.length);
+		for (const [i, step] of remaining.entries()) {
+			await workflow.expectStepAt(i, step.type, step.label);
+		}
+		log.ok(FLOW, 'Remaining steps are contiguous and in order');
+	}
+
 	/** US-012: reorder (move last step up) and remove (gapless renumbering), then verify persistence. */
 	async reorderAndRemoveSteps(workflow: WorkflowDetailPage) {
 		log.step(FLOW, 'Moving last step up');

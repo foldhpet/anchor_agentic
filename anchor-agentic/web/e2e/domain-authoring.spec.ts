@@ -3,6 +3,7 @@ import { AuthFlow } from './business/flows/auth.flow';
 import { AuthoringFlow } from './business/flows/authoring.flow';
 import { SessionFlow } from './business/flows/session.flow';
 import { AgentDetailPage, NewAgentPage } from './business/pages/agent.page';
+import { WorkflowDetailPage } from './business/pages/workflow.page';
 import { requireLiveSupabase } from './business/support/live-supabase';
 
 test.describe('Domain authoring (US-005–US-013)', () => {
@@ -43,6 +44,46 @@ test.describe('Domain authoring (US-005–US-013)', () => {
 		await workflow.expectStepTypes('TASK', 'AGENT', 'SKILL');
 
 		await authoring.reorderAndRemoveSteps(workflow);
+	});
+
+	test('US-012: owner edits a step reference and type, removes a middle step; a non-owner gets no step controls', async ({
+		page,
+		browser
+	}) => {
+		const { stamp } = await new AuthFlow(page).signInAs('owner');
+		const authoring = new AuthoringFlow(page);
+
+		const roleName = `Editor ${stamp}`;
+		const task1 = `Draft ${stamp}`;
+		const task2 = `Polish ${stamp}`;
+		await authoring.createRoleWithTasks(roleName, [{ name: task1 }, { name: task2 }]);
+		await authoring.createAgentForRole(roleName, 'You edit documents.');
+		const skillName = `Spellcheck ${stamp}`;
+		await authoring.createSkill(skillName);
+
+		const workflow = await authoring.createWorkflowWithSteps(`Edit Flow ${stamp}`, [
+			{ type: 'TASK', label: task1 },
+			{ type: 'TASK', label: task1 },
+			{ type: 'SKILL', label: skillName }
+		]);
+
+		// TC-13b: change the reference (Task -> another Task), then the type (Task -> Agent).
+		await authoring.editStep(workflow, 0, 'TASK', task2);
+		await authoring.editStep(workflow, 1, 'AGENT', `Agent for ${roleName}`);
+		await workflow.expectStepAt(2, 'SKILL', skillName);
+
+		// TC-24: removing the middle step leaves no gap.
+		await authoring.removeStepAndExpectRemaining(workflow, 1, [
+			{ type: 'TASK', label: task2 },
+			{ type: 'SKILL', label: skillName }
+		]);
+
+		const viewer = await new SessionFlow(browser).startRegistered('viewer');
+		await viewer.page.goto(workflow.url);
+		const viewerWorkflow = new WorkflowDetailPage(viewer.page);
+		await viewerWorkflow.expectStepCount(2);
+		await viewerWorkflow.expectNoStepControls();
+		await viewer.close();
 	});
 
 	test('a non-owner sees a read-only Agent page rather than an edit form', async ({

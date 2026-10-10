@@ -30,6 +30,12 @@ export class WorkflowDetailPage extends ItemDetailPage {
 	get addStepForm(): Locator {
 		return this.page.locator('form[action="?/addStep"]');
 	}
+	get editStepForms(): Locator {
+		return this.page.locator('form[action="?/editStep"]');
+	}
+	get removeStepForms(): Locator {
+		return this.page.locator('form[action="?/removeStep"]');
+	}
 
 	/**
 	 * Adds a step. `referenceLabel` picks a specific option; omit it to take the
@@ -53,7 +59,37 @@ export class WorkflowDetailPage extends ItemDetailPage {
 	}
 
 	async removeStep(index: number) {
-		await this.steps.nth(index).getByRole('button', { name: 'Remove' }).click();
+		await this.steps.nth(index).getByRole('button', { name: 'Remove', exact: true }).click();
+	}
+
+	/**
+	 * US-012: edits a step in place — opens the inline form, picks the type and the
+	 * referenced item by label, saves and waits for the `editStep` action.
+	 */
+	async editStep(index: number, type: StepType, referenceLabel: string) {
+		const step = this.steps.nth(index);
+		await step.getByRole('button', { name: 'Edit', exact: true }).click();
+		const form = this.editStepForms.and(step.locator('form'));
+		await form.locator('select[name="step_type"]').selectOption(type);
+		await form.locator('select[name="reference_id"]').selectOption({ label: referenceLabel });
+		await Promise.all([
+			this.waitForAction('editStep'),
+			form.getByRole('button', { name: 'Save' }).click()
+		]);
+		await expect(step).toContainText(`${type}: ${referenceLabel}`);
+	}
+
+	/** Asserts the step at `index` shows `TYPE: label`. */
+	async expectStepAt(index: number, type: StepType, label: string) {
+		await expect(this.steps.nth(index)).toContainText(`${type}: ${label}`);
+	}
+
+	/** A non-owner / read-only viewer gets no per-step controls. */
+	async expectNoStepControls() {
+		await expect(this.page.getByRole('button', { name: 'Edit', exact: true })).toHaveCount(0);
+		await expect(this.page.getByRole('button', { name: 'Remove', exact: true })).toHaveCount(0);
+		await expect(this.editStepForms).toHaveCount(0);
+		await expect(this.removeStepForms).toHaveCount(0);
 	}
 
 	async expectStepCount(count: number) {
