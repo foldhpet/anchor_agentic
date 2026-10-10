@@ -8,6 +8,7 @@ export type StepType = 'TASK' | 'AGENT' | 'SKILL';
 export class NewWorkflowPage extends AnchorBasePage {
 	async open() {
 		await this.goto('/workflows/new');
+		await this.waitForHydration();
 	}
 
 	/** Creates a Workflow; redirects to its detail page. A description is needed to publish later. */

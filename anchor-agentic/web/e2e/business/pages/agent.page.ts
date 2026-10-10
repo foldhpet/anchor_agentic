@@ -13,6 +13,7 @@ export class NewAgentPage extends AnchorBasePage {
 
 	async open() {
 		await this.goto('/agents/new');
+		await this.waitForHydration();
 	}
 
 	/** Creates the Agent for a Role (one Agent per Role); redirects to its detail page. */

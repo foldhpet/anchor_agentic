@@ -10,6 +10,7 @@ export class NewRolePage extends AnchorBasePage {
 
 	async open() {
 		await this.goto('/roles/new');
+		await this.waitForHydration();
 	}
 
 	/** Creates the Role; the app redirects straight to its detail page. */
@@ -41,6 +42,7 @@ export class RoleDetailPage extends ItemDetailPage {
 	}
 
 	async createTask(name: string, instructions?: string) {
+		await this.waitForHydration();
 		await this.taskForm.getByLabel('Name').fill(name);
 		if (instructions) await this.taskForm.getByLabel('Instructions').fill(instructions);
 		await this.page.getByRole('button', { name: 'Create Task' }).click();

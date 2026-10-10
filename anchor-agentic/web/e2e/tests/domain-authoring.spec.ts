@@ -50,7 +50,9 @@ test.describe('Domain authoring (US-005–US-013)', () => {
 		page,
 		browser
 	}) => {
-		const { stamp } = await new AuthFlow(page).signInAs('owner');
+		// Registers its own user instead of sharing the "owner" persona, so this test's session is never
+		// reused by tests running in parallel.
+		const { stamp } = await new AuthFlow(page).registerNewUser('editor');
 		const authoring = new AuthoringFlow(page);
 
 		const roleName = `Editor ${stamp}`;

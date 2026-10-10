@@ -6,6 +6,7 @@ import { ItemDetailPage } from './item-detail.page';
 export class NewSkillPage extends AnchorBasePage {
 	async open() {
 		await this.goto('/skills/new');
+		await this.waitForHydration();
 	}
 
 	/** Creates a Skill with one file; redirects to its detail page. */
