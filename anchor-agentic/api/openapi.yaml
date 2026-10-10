@@ -1098,7 +1098,9 @@ paths:
     delete:
       tags: [Workflows]
       summary: Remove a Workflow step
-      description: Remaining steps are renumbered to stay contiguous.
+      description: >-
+        Remaining steps are renumbered to stay contiguous. The only step of a
+        Published Workflow cannot be removed (a Published Workflow needs at least one step).
       security:
         - bearerAuth: []
       parameters:
@@ -1116,6 +1118,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/WorkflowWithSteps'
+        '400':
+          description: archived_item_is_terminal | workflow_has_no_steps
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '404':
           description: not_found | step_not_found
           content:

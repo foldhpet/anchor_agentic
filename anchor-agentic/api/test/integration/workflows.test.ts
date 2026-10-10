@@ -948,6 +948,40 @@ describe('US-012 remove step (DELETE /:id/steps/:stepId)', () => {
     expect(snaps[0].payload).toMatchObject({ item_type: 'WORKFLOW', item_id: 'wf-1', version_number: 5 })
   })
 
+  it('AC4 deleting the only step of a Published workflow 400s workflow_has_no_steps with no write or snapshot', async () => {
+    const { client, ops } = recordingClient(OWNER_ID, {
+      workflows: [{ data: wfRow({ status: 'Published' }), error: null }],
+      workflow_steps: [{ data: [step('s0', 0)], error: null }],
+    })
+    createRequestSupabaseClient.mockReturnValue(client)
+    const res = await deleteStep('s0')
+    const body = await res.json<{ error: string }>()
+
+    expect(res.status).toBe(400)
+    expect(body.error).toBe('workflow_has_no_steps')
+    expect(ops).toEqual([])
+  })
+
+  it('AC4 deleting one of two steps of a Published workflow is still allowed', async () => {
+    const { client, ops } = recordingClient(OWNER_ID, {
+      workflows: [
+        { data: wfRow({ status: 'Published' }), error: null },
+        { data: { ...WORKFLOW, current_version: 5 }, error: null },
+      ],
+      workflow_steps: [
+        { data: [step('s0', 0), step('s1', 1)], error: null },
+        { data: null, error: null },
+        { data: [step('s1', 0)], error: null },
+      ],
+      version_snapshots: [{ data: null, error: null }],
+    })
+    createRequestSupabaseClient.mockReturnValue(client)
+    const res = await deleteStep('s0')
+
+    expect(res.status).toBe(200)
+    expect(stepWrites(ops)[0]).toEqual(stepDelete('s0'))
+  })
+
   it('TC-08 deleting an already-removed step 404s step_not_found with no write or snapshot', async () => {
     const { ops, calls } = setup([step('s0', 0)], [])
     const res = await deleteStep('s-gone')

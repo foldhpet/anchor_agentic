@@ -316,6 +316,10 @@ workflowsRouter.delete('/:id/steps/:stepId', async (c) => {
   if (!existingSteps.some((s) => s.id === stepId)) {
     return c.json({ error: 'step_not_found', requestId: c.get('requestId') }, 404)
   }
+  // US-012 AC4: a Published workflow may never have zero steps (same rule publish enforces).
+  if (ownership.workflow!.status === 'Published' && existingSteps.length === 1) {
+    return c.json({ error: 'workflow_has_no_steps', requestId: c.get('requestId') }, 400)
+  }
 
   const { error: deleteError } = await supabase.from('workflow_steps').delete().eq('id', stepId)
   if (deleteError) throw deleteError
