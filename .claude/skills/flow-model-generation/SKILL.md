@@ -19,11 +19,19 @@ Test Case Definition is a structured description of a test scenario, including i
 ## What It Does
 
 1. **Analyzes Test Files** — Reads selected test cases or test script files to understand user workflows
-2. **Updates Documentation** — Creates or updates flow diagrams in `src/business/docs/FLOW_MODELS_DESIGN.md`
-3. **Generates Flow Models** — Creates or updates flow model classes in `src/business/flows/`
-4. **Generates Page Models** — Creates or updates page model classes in `src/business/pages/`
+2. **Updates Documentation** — Creates or updates flow diagrams in `FLOW_MODELS_DESIGN.md` (located in Step 0)
+3. **Generates Flow Models** — Creates or updates flow model classes in the project's flows directory
+4. **Generates Page Models** — Creates or updates page model classes in the project's pages directory
 
 ## Process
+
+### Step 0: Locate Project Paths
+- Do not assume a fixed layout. Find where this project keeps its models:
+  - Check CLAUDE.md and `.claude/rules/` for a stated test-framework location
+  - Search for existing `*.flow.ts` / `*.page.ts` files and `FLOW_MODELS_DESIGN.md`; their directories are the flows, pages, and docs directories
+  - If none exist yet, propose a layout next to the test directory (`<test-root>/business/{flows,pages,docs}`) and confirm with the user before creating it
+- Use these paths for every step below
+
 
 ### Step 1: Analyze Test & Identify Flow Models
 - Read the selected test file(s)
@@ -38,7 +46,7 @@ Test Case Definition is a structured description of a test scenario, including i
 - Link to corresponding flow model and page model classes
 
 ### Step 3: Create or Update Flow Models
-- Create flow model files in `src/business/flows/` directory
+- Create flow model files in the project's flows directory
 - Follow naming convention: `{flow-name}.flow.ts`
 - Each flow model should:
   - Orchestrate page interactions into cohesive workflows
@@ -48,7 +56,7 @@ Test Case Definition is a structured description of a test scenario, including i
   - Have proper error handling
 
 ### Step 4: Create or Update Page Models
-- Create page model files in `src/business/pages/` directory
+- Create page model files in the project's pages directory
 - Follow naming convention: `{page-name}.page.ts`
 - Each page model should:
   - Encapsulate selectors and interactions for a specific page
