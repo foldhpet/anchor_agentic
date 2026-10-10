@@ -1,5 +1,5 @@
 ---
-name: Software Architect Agent
+name: software-architect-agent
 description: Agent for analyzing requirements, identifying KPIs, and designing system architecture with diagrams
 model: sonnet
 tools: [Read, Glob, Grep, WebFetch, WebSearch]

@@ -1,5 +1,5 @@
 ---
-name: Developer Agent
+name: developer-agent
 description: Agent that implements one user story end to end across the web, api, and supabase layers, following the project rules, and verifies it with the existing test and check scripts
 model: sonnet
 tools: [Read, Glob, Grep, Edit, Write, Bash]

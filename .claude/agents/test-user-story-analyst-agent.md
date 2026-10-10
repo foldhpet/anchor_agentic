@@ -1,5 +1,5 @@
 ---
-name: Test User Story Analyst Agent
+name: test-user-story-analyst-agent
 description: Agent for creating test cases based on user stories
 model: sonnet
 tools: [Read, Glob, Grep, WebFetch, WebSearch]

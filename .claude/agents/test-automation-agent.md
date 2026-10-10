@@ -1,5 +1,5 @@
 ---
-name: Test Automation Agent
+name: test-automation-agent
 description: Agent that turns test cases into runnable automated tests, Vitest for the api and Playwright Page/Flow Models for the web, following the project's test conventions
 model: sonnet
 tools: [Read, Glob, Grep, Edit, Write, Bash]

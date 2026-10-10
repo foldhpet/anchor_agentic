@@ -17,13 +17,13 @@ Standing rules for the whole run:
 Read the story, its acceptance criteria, and its row in the Dependency Matrix in `docs/USER-STORIES.md`. If a dependency story is not yet implemented (check the code and tests), stop and report it instead of continuing. Then check whether the story is already implemented, fully or partly, by searching the routes, pages, and migrations it would touch; tell the Developer Agent what you found. Summarize the story and acceptance criteria in a few lines.
 
 ## 2. Test cases
-Use the **Test User Story Analyst Agent** with the full story text to produce test cases. It is read-only and returns them as text; keep them for steps 3 and 4. Note any acceptance-criteria wording problems and open questions it raises.
+Use the **test-user-story-analyst-agent** agent with the full story text to produce test cases. It is read-only and returns them as text; keep them for steps 3 and 4. Note any acceptance-criteria wording problems and open questions it raises.
 
 ## 3. Implement
-Use the **Developer Agent**. Give it the story ID, the full acceptance criteria, the test cases from step 2, and what you found in step 1. Tell it to determine first which criteria are already implemented and to change only what is missing; not to rewrite working code; and to add the missing tests. It must follow `.claude/rules/` and must not commit, push, deploy, or apply migrations. Pass along the open product questions from step 2 and tell it not to decide them.
+Use the **developer-agent** agent. Give it the story ID, the full acceptance criteria, the test cases from step 2, and what you found in step 1. Tell it to determine first which criteria are already implemented and to change only what is missing; not to rewrite working code; and to add the missing tests. It must follow `.claude/rules/` and must not commit, push, deploy, or apply migrations. Pass along the open product questions from step 2 and tell it not to decide them.
 
 ## 4. Automate remaining tests
-Use the **Test Automation Agent** with the test cases and the Developer Agent's list of changed files. Ask it to automate the cases not already covered, to avoid duplicating the Developer Agent's tests, and to report any application defect rather than altering assertions. Tell it not to write tests for behavior the story leaves undecided; those go under "Not automated". If a defect is reported, send it back to the Developer Agent once, then re-run the failing tests.
+Use the **test-automation-agent** agent with the test cases and the Developer Agent's list of changed files. Ask it to automate the cases not already covered, to avoid duplicating the Developer Agent's tests, and to report any application defect rather than altering assertions. Tell it not to write tests for behavior the story leaves undecided; those go under "Not automated". If a defect is reported, send it back to the Developer Agent once, then re-run the failing tests.
 
 ## Verify, don't trust
 After steps 3 and 4, check before continuing:
@@ -47,8 +47,8 @@ The reviewers are read-only and cannot run git, so prepare their input yourself:
 - Give each reviewer the diff file path, the file list, the story reference, and anything they cannot judge (for example "the e2e spec has not been run", the open product questions to leave out of scope).
 
 Run in parallel:
-- **Code Reviewer Agent**: correctness, test quality, conventions. Ask it to say explicitly whether assertions would catch wrong behavior.
-- **Security Reviewer Agent**: authorization, RLS, secrets, test-data hygiene.
+- **code-reviewer-agent**: correctness, test quality, conventions. Ask it to say explicitly whether assertions would catch wrong behavior.
+- **security-reviewer-agent**: authorization, RLS, secrets, test-data hygiene.
 
 Reviewers also make mistakes. Before reporting a finding, check it against the files if it is cheap to do so, and say when a finding is wrong or already covered.
 

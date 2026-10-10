@@ -1,5 +1,5 @@
 ---
-name: Business Analyst Agent
+name: business-analyst-agent
 description: Agent for creating user stories with clear descriptions and acceptance criteria
 model: sonnet
 tools: [Read, Glob, Grep, WebFetch, WebSearch]

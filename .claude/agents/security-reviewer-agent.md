@@ -1,5 +1,5 @@
 ---
-name: Security Reviewer Agent
+name: security-reviewer-agent
 description: Read-only agent that reviews code, migrations, and configuration for security issues such as broken authorization, RLS gaps, secret exposure, and injection, without editing files
 model: sonnet
 tools: [Read, Glob, Grep]

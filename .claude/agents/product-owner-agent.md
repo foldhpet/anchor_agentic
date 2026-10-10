@@ -1,5 +1,5 @@
 ---
-name: Product Owner Agent
+name: product-owner-agent
 description: Agent for defining product vision, strategy, and high-level requirements
 model: sonnet
 tools: [Read, Glob, Grep, WebFetch, WebSearch]

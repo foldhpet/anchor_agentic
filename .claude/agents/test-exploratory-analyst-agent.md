@@ -1,5 +1,5 @@
 ---
-name: Test Exploratory Analyst Agent
+name: test-exploratory-analyst-agent
 description: Agent for creating test cases based on exploratory test sessions
 model: haiku
 tools: [Read, Glob, Grep, WebFetch, WebSearch]

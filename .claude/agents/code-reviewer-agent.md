@@ -1,5 +1,5 @@
 ---
-name: Code Reviewer Agent
+name: code-reviewer-agent
 description: Read-only agent that reviews pending code changes in its own context window before they are pushed to the remote repository, flagging issues without editing files
 model: sonnet
 tools: [Read, Glob, Grep]
