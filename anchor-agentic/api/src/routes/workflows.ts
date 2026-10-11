@@ -169,22 +169,6 @@ function rpcFailure(c: Context<AppEnv>, error: { message: string }) {
   return c.json({ error: error.message, requestId: c.get('requestId') }, status)
 }
 
-async function bumpAndSnapshot(c: Context<AppEnv>, id: string, workflow: { current_version: number }) {
-  const supabase = c.get('supabase')
-  const userId = c.get('userId')
-  const nextVersion = workflow.current_version + 1
-  const { data, error } = await supabase
-    .from('workflows')
-    .update({ current_version: nextVersion, updated_at: new Date().toISOString() })
-    .eq('id', id)
-    .select(WORKFLOW_COLUMNS)
-    .single()
-  if (error) throw error
-  const steps = await loadSteps(supabase, id)
-  await recordVersionSnapshot(supabase, 'WORKFLOW', id, nextVersion, { ...data, steps }, userId!)
-  return { workflow: data, steps }
-}
-
 // US-010/US-012: append a step, server-assigned order_index, exactly one
 // reference matching step_type, and only referencing an allowed item.
 workflowsRouter.post('/:id/steps', async (c) => {
@@ -220,19 +204,16 @@ workflowsRouter.post('/:id/steps', async (c) => {
     return c.json({ error: 'reference_not_allowed', requestId: c.get('requestId') }, 400)
   }
 
-  const existingSteps = await loadSteps(supabase, workflowId)
-  const { error: insertError } = await supabase.from('workflow_steps').insert({
-    workflow_id: workflowId,
-    order_index: existingSteps.length,
-    step_type: ref.step_type,
-    task_id: ref.task_id,
-    agent_id: ref.agent_id,
-    skill_id: ref.skill_id,
+  // One transaction in Postgres: append the step, one version bump + snapshot.
+  const { data, error } = await supabase.rpc('add_workflow_step', {
+    p_workflow_id: workflowId,
+    p_step_type: ref.step_type,
+    p_task_id: ref.task_id,
+    p_agent_id: ref.agent_id,
+    p_skill_id: ref.skill_id,
   })
-  if (insertError) throw insertError
-
-  const { workflow, steps } = await bumpAndSnapshot(c, workflowId, ownership.workflow!)
-  return c.json({ workflow, steps }, 201)
+  if (error) return rpcFailure(c, error)
+  return c.json(data, 201)
 })
 
 // US-011/US-012: edit a step's type/reference in place; order_index is untouched.
@@ -279,19 +260,17 @@ workflowsRouter.patch('/:id/steps/:stepId', async (c) => {
     return c.json({ error: 'reference_not_allowed', requestId: c.get('requestId') }, 400)
   }
 
-  const { error: updateError } = await supabase
-    .from('workflow_steps')
-    .update({
-      step_type: ref.step_type,
-      task_id: ref.task_id,
-      agent_id: ref.agent_id,
-      skill_id: ref.skill_id,
-    })
-    .eq('id', stepId)
-  if (updateError) throw updateError
-
-  const { workflow, steps } = await bumpAndSnapshot(c, workflowId, ownership.workflow!)
-  return c.json({ workflow, steps })
+  // One transaction in Postgres: update the step in place, one version bump + snapshot.
+  const { data, error } = await supabase.rpc('update_workflow_step', {
+    p_workflow_id: workflowId,
+    p_step_id: stepId,
+    p_step_type: ref.step_type,
+    p_task_id: ref.task_id,
+    p_agent_id: ref.agent_id,
+    p_skill_id: ref.skill_id,
+  })
+  if (error) return rpcFailure(c, error)
+  return c.json(data)
 })
 
 // US-012: remove a step, then renumber the rest so order_index stays gapless.

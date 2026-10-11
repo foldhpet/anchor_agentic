@@ -197,20 +197,19 @@ describe('workflows routes', () => {
     expect(body.error).toBe('reference_not_allowed')
   })
 
-  it('POST /:id/steps appends a step at the end and bumps the workflow version', async () => {
+  it('POST /:id/steps delegates the append and version bump to the RPC', async () => {
     const newStepList = [
       { id: 'step-1', workflow_id: 'wf-1', order_index: 0, step_type: 'TASK', task_id: 'task-1', agent_id: null, skill_id: null, created_at: 't' },
     ]
+    const rpc = vi.fn().mockResolvedValue({
+      data: { workflow: { ...WORKFLOW, current_version: 2 }, steps: newStepList },
+      error: null,
+    })
     const fromMock = vi
       .fn()
       .mockReturnValueOnce(chain({ data: { id: 'wf-1', owner_id: OWNER_ID, current_version: 1 }, error: null })) // checkOwnership
       .mockReturnValueOnce(chain({ data: { id: 'task-1', owner_id: OWNER_ID, status: 'Draft' }, error: null })) // canReference (own item)
-      .mockReturnValueOnce(chain({ data: [], error: null })) // loadSteps (existing, empty -> order_index 0)
-      .mockReturnValueOnce(chain({ data: null, error: null })) // insert workflow_steps
-      .mockReturnValueOnce(chain({ data: { ...WORKFLOW, current_version: 2 }, error: null })) // bumpAndSnapshot: workflows update
-      .mockReturnValueOnce(chain({ data: newStepList, error: null })) // bumpAndSnapshot: loadSteps
-      .mockReturnValueOnce(chain({ data: null, error: null })) // version_snapshots insert
-    createRequestSupabaseClient.mockReturnValue(authedClientWithFrom(fromMock))
+    createRequestSupabaseClient.mockReturnValue({ ...authedClientWithFrom(fromMock), rpc })
 
     const app = createApp()
     const res = await app.request(
@@ -225,6 +224,14 @@ describe('workflows routes', () => {
     const body = await res.json<{ workflow: { current_version: number }; steps: typeof newStepList }>()
 
     expect(res.status).toBe(201)
+    expect(rpc).toHaveBeenCalledWith('add_workflow_step', {
+      p_workflow_id: 'wf-1',
+      p_step_type: 'TASK',
+      p_task_id: 'task-1',
+      p_agent_id: null,
+      p_skill_id: null,
+    })
+    expect(fromMock).toHaveBeenCalledTimes(2) // reads only: the route itself writes nothing
     expect(body.workflow.current_version).toBe(2)
     expect(body.steps).toEqual(newStepList)
   })
@@ -603,67 +610,51 @@ function deleteStep(stepId: string) {
   )
 }
 
-const snapshots = (ops: Call[]) => ops.filter((o) => o.table === 'version_snapshots' && o.op === 'insert')
-const stepWrites = (ops: Call[]) => ops.filter((o) => o.table === 'workflow_steps')
-const workflowWrites = (ops: Call[]) => ops.filter((o) => o.table === 'workflows')
-
-// Expected write shapes. current_version 5 = wfRow's 4 + 1. The route's bumpAndSnapshot
-// writes it once; recordVersionSnapshot only inserts the snapshot.
-const stepUpdate = (id: string, payload: Record<string, unknown>) => ({
-  table: 'workflow_steps',
-  op: 'update',
-  payload,
-  filters: [['id', id]],
-})
-const orderUpdate = (id: string, order_index: number) => stepUpdate(id, { order_index })
-const stepDelete = (id: string) => ({ table: 'workflow_steps', op: 'delete', payload: undefined, filters: [['id', id]] })
-const versionBump = {
-  table: 'workflows',
-  op: 'update',
-  payload: { current_version: 5, updated_at: expect.any(String) },
-  filters: [['id', 'wf-1']],
-}
-
 describe('US-012 edit step (PATCH /:id/steps/:stepId)', () => {
   beforeEach(() => {
     createRequestSupabaseClient.mockReset()
   })
 
-  function setup(refTable: string, ref: Res, existing = step('s0', 0), after: unknown[] = [step('s0', 0)]) {
-    const { client, ops, calls } = recordingClient(OWNER_ID, {
-      workflows: [
-        { data: wfRow(), error: null },
-        { data: { ...WORKFLOW, current_version: 5 }, error: null },
-      ],
-      workflow_steps: [
-        { data: existing, error: null },
-        { data: null, error: null },
-        { data: after, error: null },
-      ],
-      [refTable]: [ref],
-      version_snapshots: [{ data: null, error: null }],
-    })
+  function setup(refTable: string, ref: Res, existing = step('s0', 0), rpcResult?: Res) {
+    const { client, ops, calls, rpcCalls } = recordingClient(
+      OWNER_ID,
+      {
+        workflows: [{ data: wfRow(), error: null }],
+        workflow_steps: [{ data: existing, error: null }],
+        [refTable]: [ref],
+      },
+      rpcResult,
+    )
     createRequestSupabaseClient.mockReturnValue(client)
-    return { ops, calls }
+    return { ops, calls, rpcCalls }
   }
 
-  it('TC-01 changes Task A to Task C in place, bumps the version and records a new snapshot (AC1)', async () => {
-    const { ops } = setup('tasks', { data: { id: 'task-c', owner_id: OWNER_ID, status: 'Draft' }, error: null })
+  // The one RPC call an edit makes: update in place, one version bump + snapshot, all in Postgres.
+  const editCall = (stepId: string, ref: Record<string, unknown>) => ({
+    fn: 'update_workflow_step',
+    args: {
+      p_workflow_id: 'wf-1',
+      p_step_id: stepId,
+      p_step_type: ref.step_type,
+      p_task_id: ref.task_id ?? null,
+      p_agent_id: ref.agent_id ?? null,
+      p_skill_id: ref.skill_id ?? null,
+    },
+  })
+
+  it('TC-01 changes Task A to Task C in place with a single RPC call and no direct writes (AC1)', async () => {
+    const { ops, rpcCalls } = setup('tasks', { data: { id: 'task-c', owner_id: OWNER_ID, status: 'Draft' }, error: null })
     const res = await patchStep({ step_type: 'TASK', task_id: 'task-c' })
 
     expect(res.status).toBe(200)
-    // order_index is not part of the payload, and only the targeted step is written.
-    expect(stepWrites(ops)).toEqual([
-      stepUpdate('s0', { step_type: 'TASK', task_id: 'task-c', agent_id: null, skill_id: null }),
-    ])
-    expect(workflowWrites(ops)).toEqual([versionBump])
-    const snaps = snapshots(ops)
-    expect(snaps).toHaveLength(1)
-    expect(snaps[0].payload).toMatchObject({ item_type: 'WORKFLOW', item_id: 'wf-1', version_number: 5 })
+    expect(await res.json()).toEqual(RPC_OK)
+    // order_index is not part of the call, and only the targeted step is addressed.
+    expect(rpcCalls).toEqual([editCall('s0', { step_type: 'TASK', task_id: 'task-c' })])
+    expect(ops).toEqual([])
   })
 
-  it('TC-02 same-type AGENT edit sets only agent_id, one snapshot', async () => {
-    const { ops } = setup(
+  it('TC-02 same-type AGENT edit sends only agent_id', async () => {
+    const { rpcCalls } = setup(
       'agents',
       { data: { id: 'agent-y', owner_id: OWNER_ID, status: 'Draft' }, error: null },
       step('s0', 0, { step_type: 'AGENT', task_id: null, agent_id: 'agent-x' }),
@@ -671,14 +662,11 @@ describe('US-012 edit step (PATCH /:id/steps/:stepId)', () => {
     const res = await patchStep({ step_type: 'AGENT', agent_id: 'agent-y' })
 
     expect(res.status).toBe(200)
-    expect(stepWrites(ops)).toEqual([
-      stepUpdate('s0', { step_type: 'AGENT', task_id: null, agent_id: 'agent-y', skill_id: null }),
-    ])
-    expect(snapshots(ops)).toHaveLength(1)
+    expect(rpcCalls).toEqual([editCall('s0', { step_type: 'AGENT', agent_id: 'agent-y' })])
   })
 
-  it('TC-02 same-type SKILL edit sets only skill_id, one snapshot', async () => {
-    const { ops } = setup(
+  it('TC-02 same-type SKILL edit sends only skill_id', async () => {
+    const { rpcCalls } = setup(
       'skills',
       { data: { id: 'skill-q', owner_id: OWNER_ID, status: 'Draft' }, error: null },
       step('s0', 0, { step_type: 'SKILL', task_id: null, skill_id: 'skill-p' }),
@@ -686,25 +674,19 @@ describe('US-012 edit step (PATCH /:id/steps/:stepId)', () => {
     const res = await patchStep({ step_type: 'SKILL', skill_id: 'skill-q' })
 
     expect(res.status).toBe(200)
-    expect(stepWrites(ops)).toEqual([
-      stepUpdate('s0', { step_type: 'SKILL', task_id: null, agent_id: null, skill_id: 'skill-q' }),
-    ])
-    expect(snapshots(ops)).toHaveLength(1)
+    expect(rpcCalls).toEqual([editCall('s0', { step_type: 'SKILL', skill_id: 'skill-q' })])
   })
 
   it('TC-10 changing TASK to AGENT clears task_id and sets exactly agent_id (AC3)', async () => {
-    const { ops } = setup('agents', { data: { id: 'agent-y', owner_id: OWNER_ID, status: 'Draft' }, error: null })
+    const { rpcCalls } = setup('agents', { data: { id: 'agent-y', owner_id: OWNER_ID, status: 'Draft' }, error: null })
     const res = await patchStep({ step_type: 'AGENT', agent_id: 'agent-y' })
 
     expect(res.status).toBe(200)
-    expect(stepWrites(ops)).toEqual([
-      stepUpdate('s0', { step_type: 'AGENT', task_id: null, agent_id: 'agent-y', skill_id: null }),
-    ])
-    expect(snapshots(ops)).toHaveLength(1)
+    expect(rpcCalls).toEqual([editCall('s0', { step_type: 'AGENT', agent_id: 'agent-y' })])
   })
 
   it('falls back to the existing step type when step_type is omitted', async () => {
-    const { ops, calls } = setup(
+    const { rpcCalls, calls } = setup(
       'agents',
       { data: { id: 'agent-y', owner_id: OWNER_ID, status: 'Draft' }, error: null },
       step('s0', 0, { step_type: 'AGENT', task_id: null, agent_id: 'agent-x' }),
@@ -715,13 +697,11 @@ describe('US-012 edit step (PATCH /:id/steps/:stepId)', () => {
     // The reference is checked against the agents table, not tasks, because the existing type is AGENT.
     expect(calls.some((c) => c.table === 'agents')).toBe(true)
     expect(calls.some((c) => c.table === 'tasks')).toBe(false)
-    expect(stepWrites(ops)).toEqual([
-      stepUpdate('s0', { step_type: 'AGENT', task_id: null, agent_id: 'agent-y', skill_id: null }),
-    ])
+    expect(rpcCalls).toEqual([editCall('s0', { step_type: 'AGENT', agent_id: 'agent-y' })])
   })
 
   it('400s invalid_reference when step_type is omitted and the id does not match the existing step type', async () => {
-    const { ops } = setup(
+    const { rpcCalls } = setup(
       'tasks',
       { data: { id: 't', owner_id: OWNER_ID, status: 'Draft' }, error: null },
       step('s0', 0, { step_type: 'AGENT', task_id: null, agent_id: 'agent-x' }),
@@ -731,11 +711,11 @@ describe('US-012 edit step (PATCH /:id/steps/:stepId)', () => {
 
     expect(res.status).toBe(400)
     expect(body.error).toBe('invalid_reference')
-    expect(ops).toEqual([])
+    expect(rpcCalls).toEqual([])
   })
 
   it('accepts a Published item owned by someone else as a reference, checking it by id', async () => {
-    const { ops, calls } = setup('tasks', {
+    const { rpcCalls, calls } = setup('tasks', {
       data: { id: 'task-pub', owner_id: OTHER_USER_ID, status: 'Published' },
       error: null,
     })
@@ -743,35 +723,33 @@ describe('US-012 edit step (PATCH /:id/steps/:stepId)', () => {
 
     expect(res.status).toBe(200)
     expect(calls.find((c) => c.table === 'tasks')!.filters).toEqual([['id', 'task-pub']])
-    expect(stepWrites(ops)).toEqual([
-      stepUpdate('s0', { step_type: 'TASK', task_id: 'task-pub', agent_id: null, skill_id: null }),
-    ])
+    expect(rpcCalls).toEqual([editCall('s0', { step_type: 'TASK', task_id: 'task-pub' })])
   })
 
-  it('TC-03 / TC-12 400s reference_not_allowed for a missing or foreign non-Published reference, no write', async () => {
+  it('TC-03 / TC-12 400s reference_not_allowed for a missing or foreign non-Published reference, no RPC call', async () => {
     for (const ref of [
       { data: null, error: null },
       { data: { id: 'task-z', owner_id: OTHER_USER_ID, status: 'Draft' }, error: null },
     ]) {
       createRequestSupabaseClient.mockReset()
-      const { ops } = setup('tasks', ref)
+      const { rpcCalls } = setup('tasks', ref)
       const res = await patchStep({ step_type: 'TASK', task_id: 'task-z' })
       const body = await res.json<{ error: string }>()
 
       expect(res.status).toBe(400)
       expect(body.error).toBe('reference_not_allowed')
-      expect(ops).toEqual([])
+      expect(rpcCalls).toEqual([])
     }
   })
 
   it('TC-12 400s reference_not_allowed for a nonexistent agent_id', async () => {
-    const { ops } = setup('agents', { data: null, error: null })
+    const { rpcCalls } = setup('agents', { data: null, error: null })
     const res = await patchStep({ step_type: 'AGENT', agent_id: 'ghost' })
     const body = await res.json<{ error: string }>()
 
     expect(res.status).toBe(400)
     expect(body.error).toBe('reference_not_allowed')
-    expect(ops).toEqual([])
+    expect(rpcCalls).toEqual([])
   })
 
   it.each([
@@ -783,19 +761,19 @@ describe('US-012 edit step (PATCH /:id/steps/:stepId)', () => {
     ['unknown step_type', { step_type: 'BOGUS', task_id: 't' }],
     ['wrong JSON type for id', { step_type: 'TASK', task_id: 123 }],
     ['invalid JSON', '{not json'],
-  ])('TC-04 / TC-11 400s invalid_reference for %s, no write and no snapshot', async (_name, body) => {
-    const { ops } = setup('tasks', { data: { id: 't', owner_id: OWNER_ID, status: 'Draft' }, error: null })
+  ])('TC-04 / TC-11 400s invalid_reference for %s, no RPC call', async (_name, body) => {
+    const { rpcCalls } = setup('tasks', { data: { id: 't', owner_id: OWNER_ID, status: 'Draft' }, error: null })
     const res = await patchStep(body)
     const json = await res.json<{ error: string }>()
 
     expect(res.status).toBe(400)
     expect(json.error).toBe('invalid_reference')
-    expect(ops).toEqual([])
+    expect(rpcCalls).toEqual([])
   })
 
   it('TC-05 404s step_not_found, looking the step up by id AND the path workflow_id', async () => {
     // The lookup is scoped to workflow_id, so a step of another workflow also comes back null.
-    const { client, ops, calls } = recordingClient(OWNER_ID, {
+    const { client, ops, calls, rpcCalls } = recordingClient(OWNER_ID, {
       workflows: [{ data: wfRow(), error: null }],
       workflow_steps: [{ data: null, error: null }],
     })
@@ -813,20 +791,34 @@ describe('US-012 edit step (PATCH /:id/steps/:stepId)', () => {
       ['workflow_id', 'wf-1'],
     ])
     expect(ops).toEqual([])
+    expect(rpcCalls).toEqual([])
+  })
+
+  it('maps a known RPC failure (a concurrent request deleted the step first) to its status instead of a 500', async () => {
+    setup('tasks', { data: { id: 'task-c', owner_id: OWNER_ID, status: 'Draft' }, error: null }, step('s0', 0), {
+      data: null,
+      error: { message: 'step_not_found' },
+    })
+    const res = await patchStep({ step_type: 'TASK', task_id: 'task-c' })
+    const body = await res.json<{ error: string }>()
+
+    expect(res.status).toBe(404)
+    expect(body.error).toBe('step_not_found')
   })
 
   it('TC-17 403s a non-owner before reading the body and writes nothing', async () => {
-    const { client, ops, calls } = recordingClient(OTHER_USER_ID, { workflows: [{ data: wfRow(), error: null }] })
+    const { client, ops, calls, rpcCalls } = recordingClient(OTHER_USER_ID, { workflows: [{ data: wfRow(), error: null }] })
     createRequestSupabaseClient.mockReturnValue(client)
     const res = await patchStep({ step_type: 'TASK', task_id: 't' })
 
     expect(res.status).toBe(403)
     expect(ops).toEqual([])
+    expect(rpcCalls).toEqual([])
     expect(calls.map((c) => c.table)).toEqual(['workflows'])
   })
 
-  it('TC-17 ignores owner_id / id / workflow_id in the owner request body: none reach a write', async () => {
-    const { ops } = setup('tasks', { data: { id: 'task-c', owner_id: OWNER_ID, status: 'Draft' }, error: null })
+  it('TC-17 ignores owner_id / id / workflow_id in the owner request body: none reach the RPC', async () => {
+    const { rpcCalls } = setup('tasks', { data: { id: 'task-c', owner_id: OWNER_ID, status: 'Draft' }, error: null })
     const res = await patchStep({
       step_type: 'TASK',
       task_id: 'task-c',
@@ -836,14 +828,8 @@ describe('US-012 edit step (PATCH /:id/steps/:stepId)', () => {
     })
 
     expect(res.status).toBe(200)
-    expect(ops.length).toBeGreaterThan(0)
-    for (const op of ops) {
-      const keys = Object.keys(op.payload ?? {})
-      expect(keys).not.toContain('owner_id')
-      expect(keys).not.toContain('workflow_id')
-      expect(keys).not.toContain('id')
-      expect(JSON.stringify(op)).not.toMatch(/attacker|evil/)
-    }
+    expect(rpcCalls).toEqual([editCall('s0', { step_type: 'TASK', task_id: 'task-c' })])
+    expect(JSON.stringify(rpcCalls)).not.toMatch(/attacker|evil/)
   })
 
   it('TC-18 401s without a session', async () => {

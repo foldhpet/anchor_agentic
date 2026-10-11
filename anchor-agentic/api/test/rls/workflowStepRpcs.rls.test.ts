@@ -217,4 +217,122 @@ describe.skipIf(!canRun)('workflow step RPCs (atomic, invoker-rights)', () => {
       await cleanupProbe(a, probe)
     }
   })
+
+  it('add_workflow_step appends at the end, bumps the version once and writes one snapshot', async () => {
+    const a = await signIn(env.RLS_TEST_USER_A_EMAIL, env.RLS_TEST_USER_A_PASSWORD)
+    const probe: Probe = { stepIds: [] }
+    try {
+      await seedWorkflowWithSteps(a, probe, 2)
+      const before = await currentVersion(a.client, probe.workflowId!)
+
+      const { data, error } = await a.client.rpc('add_workflow_step', {
+        p_workflow_id: probe.workflowId,
+        p_step_type: 'TASK',
+        p_task_id: probe.taskId,
+        p_agent_id: null,
+        p_skill_id: null,
+      })
+      expect(error).toBeNull()
+      expect(data.workflow.current_version).toBe(before + 1)
+      expect(data.steps.map((s: { order_index: number }) => s.order_index)).toEqual([0, 1, 2])
+      expect(await currentVersion(a.client, probe.workflowId!)).toBe(before + 1)
+
+      const { data: snapshots } = await a.client
+        .from('version_snapshots')
+        .select('snapshot_data')
+        .eq('item_type', 'WORKFLOW')
+        .eq('item_id', probe.workflowId!)
+        .eq('version_number', before + 1)
+      expect(snapshots).toHaveLength(1)
+      expect(snapshots![0].snapshot_data.steps).toHaveLength(3)
+    } finally {
+      await cleanupProbe(a, probe)
+    }
+  })
+
+  it('add_workflow_step rejects a reference that breaks the one-field invariant and changes nothing', async () => {
+    const a = await signIn(env.RLS_TEST_USER_A_EMAIL, env.RLS_TEST_USER_A_PASSWORD)
+    const probe: Probe = { stepIds: [] }
+    try {
+      await seedWorkflowWithSteps(a, probe, 1)
+      const before = await currentVersion(a.client, probe.workflowId!)
+
+      const { error } = await a.client.rpc('add_workflow_step', {
+        p_workflow_id: probe.workflowId,
+        p_step_type: 'TASK',
+        p_task_id: probe.taskId,
+        p_agent_id: probe.taskId, // a second reference field: the table CHECK must refuse it
+        p_skill_id: null,
+      })
+      expect(error).not.toBeNull()
+      expect(await stepOrder(a.client, probe.workflowId!)).toHaveLength(1)
+      expect(await currentVersion(a.client, probe.workflowId!)).toBe(before)
+    } finally {
+      await cleanupProbe(a, probe)
+    }
+  })
+
+  it('update_workflow_step edits in place without touching order, bumps once; an unknown step changes nothing', async () => {
+    const a = await signIn(env.RLS_TEST_USER_A_EMAIL, env.RLS_TEST_USER_A_PASSWORD)
+    const probe: Probe = { stepIds: [] }
+    try {
+      await seedWorkflowWithSteps(a, probe, 2)
+      const before = await currentVersion(a.client, probe.workflowId!)
+
+      const { error: missing } = await a.client.rpc('update_workflow_step', {
+        p_workflow_id: probe.workflowId,
+        p_step_id: '00000000-0000-0000-0000-000000000000',
+        p_step_type: 'TASK',
+        p_task_id: probe.taskId,
+        p_agent_id: null,
+        p_skill_id: null,
+      })
+      expect(missing?.message).toBe('step_not_found')
+      expect(await currentVersion(a.client, probe.workflowId!)).toBe(before)
+
+      const { data, error } = await a.client.rpc('update_workflow_step', {
+        p_workflow_id: probe.workflowId,
+        p_step_id: probe.stepIds[0],
+        p_step_type: 'TASK',
+        p_task_id: probe.taskId,
+        p_agent_id: null,
+        p_skill_id: null,
+      })
+      expect(error).toBeNull()
+      expect(data.workflow.current_version).toBe(before + 1)
+      expect((await stepOrder(a.client, probe.workflowId!)).map((s) => s.id)).toEqual(probe.stepIds)
+      expect(await currentVersion(a.client, probe.workflowId!)).toBe(before + 1)
+    } finally {
+      await cleanupProbe(a, probe)
+    }
+  })
+
+  it("blocks a non-owner from adding or editing steps on another user's workflow, and anon from calling them", async () => {
+    const a = await signIn(env.RLS_TEST_USER_A_EMAIL, env.RLS_TEST_USER_A_PASSWORD)
+    const b = await signIn(env.RLS_TEST_USER_B_EMAIL, env.RLS_TEST_USER_B_PASSWORD)
+    const anon = createClient(env.SUPABASE_URL, env.SUPABASE_ANON_KEY)
+    const probe: Probe = { stepIds: [] }
+    try {
+      await seedWorkflowWithSteps(a, probe, 1)
+      const before = await currentVersion(a.client, probe.workflowId!)
+      const addArgs = {
+        p_workflow_id: probe.workflowId,
+        p_step_type: 'TASK',
+        p_task_id: probe.taskId,
+        p_agent_id: null,
+        p_skill_id: null,
+      }
+      const editArgs = { ...addArgs, p_step_id: probe.stepIds[0] }
+
+      expect((await b.client.rpc('add_workflow_step', addArgs)).error?.message).toBe('not_found')
+      expect((await b.client.rpc('update_workflow_step', editArgs)).error?.message).toBe('not_found')
+      expect((await anon.rpc('add_workflow_step', addArgs)).error).not.toBeNull()
+      expect((await anon.rpc('update_workflow_step', editArgs)).error).not.toBeNull()
+
+      expect(await stepOrder(a.client, probe.workflowId!)).toHaveLength(1)
+      expect(await currentVersion(a.client, probe.workflowId!)).toBe(before)
+    } finally {
+      await cleanupProbe(a, probe)
+    }
+  })
 })
