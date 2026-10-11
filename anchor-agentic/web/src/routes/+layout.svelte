@@ -2,9 +2,15 @@
 	import './layout.css';
 	import favicon from '$lib/assets/favicon.svg';
 	import Icon from '$lib/Icon.svelte';
+	import { navCurrent } from '$lib/navCurrent';
+	import { page } from '$app/state';
 	import type { LayoutProps } from './$types';
 
 	let { data, children }: LayoutProps = $props();
+
+	const current = (href: string) => navCurrent(page.url.pathname, href);
+	// The current page is also marked by weight, so it is never colour alone.
+	const CURRENT = 'aria-[current=page]:font-semibold';
 </script>
 
 <svelte:head><link rel="icon" href={favicon} /></svelte:head>
@@ -13,9 +19,9 @@
 	<header class="border-b border-ink/10 bg-surface">
 		<nav class="mx-auto flex max-w-4xl flex-wrap items-center gap-4 px-4 py-3 text-sm">
 			<a class="font-semibold no-underline" href="/">AnchorAgentic</a>
-			<a href="/">Marketplace</a>
-			<a href="/library">My Sandbox</a>
-			<a href="/library/all">All Sandbox</a>
+			<a class={CURRENT} href="/" aria-current={current('/')}>Marketplace</a>
+			<a class={CURRENT} href="/library" aria-current={current('/library')}>My Sandbox</a>
+			<a class={CURRENT} href="/library/all" aria-current={current('/library/all')}>All Sandbox</a>
 			<span class="flex-1"></span>
 			{#if data.session}
 				<details class="relative">
@@ -33,14 +39,16 @@
 						<a href="/workflows/new">New Workflow</a>
 					</div>
 				</details>
-				<a href="/settings">Settings</a>
+				<a class={CURRENT} href="/settings" aria-current={current('/settings')}>Settings</a>
 				<form method="POST" action="/logout">
 					<button type="submit" class="rounded-md px-2 py-1.5 hover:bg-ink/5">Log out</button>
 				</form>
 			{:else}
-				<a href="/login">Log in</a>
-				<a href="/register" class="rounded-md bg-primary px-3 py-1.5 text-white no-underline"
-					>Register</a
+				<a class={CURRENT} href="/login" aria-current={current('/login')}>Log in</a>
+				<a
+					href="/register"
+					aria-current={current('/register')}
+					class="{CURRENT} rounded-md bg-primary px-3 py-1.5 text-white no-underline">Register</a
 				>
 			{/if}
 		</nav>
