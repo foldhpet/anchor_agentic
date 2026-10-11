@@ -114,6 +114,7 @@
 | [US-049](#us-049) | Visual distinction between editable and read-only content | F-6.3 | High | 5 |
 | [US-050](#us-050) | WCAG 2.1 AA baseline accessibility | F-6.4 | High | 8 |
 | [US-051](#us-051) | Light-mode baseline robust to OS-forced dark mode | F-6.5 | Low | 3 |
+| [US-054](#us-054) | Functional icons for state and action (web app and e2e report) | F-6.6 | Medium | 5 |
 
 ### Epic L — Role Creation Discoverability
 | ID | Title | Feature ID(s) | Priority | Estimate |
@@ -179,6 +180,7 @@
 | US-051 | US-048 | Forced-dark-mode robustness reuses the color tokens, not a separate palette |
 | US-052 | US-005, US-013 | Amends the existing create-menu story to add Role; Role authoring (US-005) must exist |
 | US-053 | US-005, US-052 | The dedicated page needs both Role authoring and the menu entry pointing to it |
+| US-054 | US-047, US-048, US-050, US-051 | Icons use the type/spacing and color tokens (US-047/048), must meet the contrast rules of the accessibility baseline (US-050), and stay light-mode-safe under forced dark mode (US-051) |
 
 ---
 
@@ -1515,7 +1517,7 @@ Maps to F-5.4's removal half. Completes the `UnderReview → Removed` state tran
 
 ## Epic K — Visual Design Refresh (v1.1)
 
-> Post-MVP polish increment, not a reopening of Epics A-J's functional scope. Per `PRODUCT-CONCEPT.md`'s Phase 1.1 roadmap entry: applies a small, functional design system (type, spacing, a stakeholder-supplied color palette) and a WCAG 2.1 AA baseline across the existing V1 pages. Explicitly excludes icon libraries, illustration, animation, rebranding, and a true dark theme — see `PRODUCT-CONCEPT.md` Feature Category 6 for the full non-goals list.
+> Post-MVP polish increment, not a reopening of Epics A-J's functional scope. Per `PRODUCT-CONCEPT.md`'s Phase 1.1 roadmap entry: applies a small, functional design system (type, spacing, a stakeholder-supplied color palette) and a WCAG 2.1 AA baseline across the existing V1 pages. Explicitly excludes icon libraries, illustration, animation, rebranding, and a true dark theme — see `PRODUCT-CONCEPT.md` Feature Category 6 for the full non-goals list. US-054 later lifts the restriction for custom-drawn **functional icons only** (never libraries or decoration).
 
 ### US-047
 **User Story Title:** Type Scale & Spacing System Applied Site-Wide
@@ -1654,6 +1656,64 @@ Maps to F-6.5. Light mode is the only designed/tested experience in v1.1; this s
 **Dependencies:** US-048
 
 **Notes:** A true dark theme is an explicit non-goal of v1.1 (see `PRODUCT-CONCEPT.md` Feature Category 6) — this story is deliberately scoped to "don't break," not "support."
+
+---
+
+### US-054
+**User Story Title:** Functional Icons for State and Action (Web App and E2E Report)
+
+**User Story ID:** US-054
+
+**As a** visitor, registered user, or developer reading the e2e test report
+**I want** small, consistent icons beside the text that names a state or action (passed, failed, connected, next, external link, and so on)
+**So that** I can recognise state and action at a glance, without relying on colour or emoji, and without any decoration being added
+
+**Description:**
+Maps to F-6.6. A follow-up to the v1.1 Epic K increment that lifts the "no icons" restriction for **functional icons only**; icon libraries, illustration, animation and decorative imagery remain out of scope (see `PRODUCT-CONCEPT.md` Feature Category 6). Icons are custom-drawn by us as inline SVG: no icon library and no new dependency. They share one style: 24px grid, 1.5px stroke, `currentColor`, round caps and joins, no fill except where a glyph needs it. An icon is used only to communicate a state or an action, and always sits beside its text label. It is never the only carrier of meaning (extends the "never colour alone" principle in `STYLE-GUIDE.md`). A purely decorative or redundant icon is `aria-hidden="true"`.
+
+Fixed icon vocabulary (anything else needs a new story):
+- State icons: passed, failed, flaky, skipped, quarantined, connected, new (the "+ New" action).
+- Action icons: next, previous, external link, support.
+
+Surfaces in scope:
+- Web app: footer support link, Settings "connected" state, pagination next/previous, "+ New" button, lifecycle status badges (Draft, Published, UnderReview, Removed/Deprecated, Archived).
+- E2E Reporter HTML report (`web/e2e/core/reporter/html.ts`).
+- Reporter Markdown summary and terminal output, which must not use emoji. Instead they use a monochrome text-glyph tier: non-emoji Unicode glyphs mapped to the same meanings as the SVG icons. Each glyph must render as text (not emoji) presentation; do not use characters that browsers or terminals substitute with colour emoji, and do not append U+FE0F.
+
+Boundaries:
+- The Reporter core stays application-independent. Icon and glyph definitions live in the Reporter's own module and must not import from `src/` of the web app. The web app may share the same drawn paths only by copy or a build-neutral shared asset, never by the Reporter importing app code.
+- `STYLE-GUIDE.md` (Principle 1 and sections 2, 5, 6, 7) is updated in the same change.
+
+**Acceptance Criteria:**
+- [ ] Given the icon set is implemented, When the SVG source of each icon in the vocabulary is inspected, Then every icon has `viewBox="0 0 24 24"`, `fill="none"` (or an explicit fill only where the glyph requires it), `stroke="currentColor"`, `stroke-width="1.5"`, `stroke-linecap="round"` and `stroke-linejoin="round"`, with no hard-coded colour value.
+- [ ] Given `package.json` of `web` is compared before and after the change, When dependencies are inspected, Then no new dependency (runtime or dev) is added and no icon library or icon font is imported anywhere in `web/src` or `web/e2e`.
+- [ ] Given any icon is rendered in the web app or the HTML report, When the DOM is inspected, Then the icon is an adjacent sibling of visible text that names the same state or action, and the icon element has `aria-hidden="true"` and `focusable="false"` (it never provides the control's or status's accessible name).
+- [ ] Given an icon-bearing control or badge (footer support link, pagination next/previous, "+ New", lifecycle badge, Settings "connected"), When its accessible name is computed, Then it equals the visible text label (for example "Next", "+ New", "Support", "[Draft]"), and removing the icon leaves that name unchanged.
+- [ ] Given the footer support link is rendered, When inspected, Then it shows the support icon and the external-link icon beside its text, and the external-link icon appears only on links that leave the site.
+- [ ] Given lifecycle status badges render for Draft, Published, UnderReview, Removed/Deprecated and Archived, When they are compared, Then each status has its own icon and the same icon is used on every page that shows that status, taken from the existing `STATUS_STYLE` mapping in `src/lib/statusStyle.ts` (no second status map); each badge keeps its existing bracketed text (for example `[Draft]`).
+- [ ] Given the Settings page shows a connected GitHub account, When it renders, Then the "connected" icon appears beside the existing "connected" text, and the not-connected state shows no connected icon.
+- [ ] Given a paginated list has a next and/or previous page, When it renders, Then the next/previous icons appear beside the "Next"/"Previous" text, and when a direction is unavailable its control is disabled (or omitted) exactly as before, with the icon never rendered alone.
+- [ ] Given the Reporter HTML report renders a run containing passed, failed, flaky, skipped and quarantined tests, When it is opened, Then each outcome shows its icon beside its outcome word in the summary, tables and chart legend, using the outcome-to-token mapping in `STYLE-GUIDE.md` section 2 (passed `primary`; flaky `caution` fill with `ink` icon; failed `attention`; skipped/quarantined `ink/50` or `surface`).
+- [ ] Given the Reporter HTML report is opened as a standalone file with no network, When rendered, Then icons display from inline SVG only (no external request, no web font, no CDN), and the file is still a single self-contained artifact.
+- [ ] Given the Reporter Markdown summary and terminal output are generated, When their text is scanned, Then they contain no emoji characters (no code points with Emoji_Presentation, no U+FE0F variation selector), and a unit test asserts this over a run containing every outcome.
+- [ ] Given the Markdown summary and terminal output show each outcome, When inspected, Then each uses one monochrome non-emoji Unicode glyph (documented in one table in `STYLE-GUIDE.md` section 7) plus the outcome word, the glyph-to-meaning mapping matches the SVG icon meanings one-to-one, and every outcome has a distinct glyph.
+- [ ] Given a non-text icon must be distinguishable from its neighbour, When a failed and a skipped test are compared with colour removed (grayscale rendering), Then the two icons still differ in shape.
+- [ ] Given each icon is rendered over the background it is actually used on (white `bg`, `surface`, or a status badge fill), When the icon-versus-background contrast is calculated with the WCAG relative-luminance formula, Then it is at least 3:1 (WCAG 1.4.11), and each pairing is recorded in `STYLE-GUIDE.md` section 6.
+- [ ] Given any text next to an icon, When the text-versus-background contrast is calculated, Then it is at least 4.5:1 (3:1 for large or bold text), unchanged from US-050.
+- [ ] Given the `attention` colour (about 3.0:1 on white and roughly 2.7:1 on `surface`), When it is used for an icon, Then it appears only on `bg`/white or alongside an `ink` text label on a pairing that calculates to 3:1 or more; where it does not, the icon uses `ink` and the `attention` border or left-rule carries the colour.
+- [ ] Given existing Playwright and Vitest assertions on visible text (for example `[Draft]`, "Next", "+ New"), When the suite runs, Then all assertions still pass without edits, except assertions on Reporter verdict strings (for example "✅ Passed") that are updated in the same change as the Reporter's own tests; no `web/e2e/*.spec.ts` application spec is modified to accommodate an icon.
+- [ ] Given the Reporter core (`web/e2e/core/reporter/`), When its imports are inspected, Then it imports nothing from `src/` of the web app or from application-specific e2e helpers, and an import-boundary check or test enforces this.
+- [ ] Given a keyboard-only user tabs through the footer, pagination and "+ New", When focus moves, Then focus lands on the control (not the icon), the existing `:focus-visible` ring is shown, and icons add no extra tab stops.
+- [ ] Given the page is viewed with browser zoom at 200% and in forced-colours mode, When icons render, Then they scale with the text and use the system text colour (because of `currentColor`), and nothing clips.
+- [ ] Given this story is complete, When `STYLE-GUIDE.md` is reviewed, Then Principle 1's "No icon sets, illustration or animation" is reworded to allow functional icons only, an Icons section records the vocabulary, grid, stroke, usage rules and glyph table, and the same file's section 8 lists no open icon deviation.
+
+**Priority:** Medium
+
+**Estimate:** 5 story points
+
+**Dependencies:** US-047, US-048, US-050, US-051 (see the dependency table row)
+
+**Notes:** Deliberately narrow. Adding any new icon requires a documented state/action meaning first (the vocabulary above is the whole set for this story). Hand-drawn SVG avoids a dependency and a licensing question, consistent with the $20/month ceiling and "no new dependency" decision. Suggested split if it does not fit one sprint: (a) icon set, web surfaces and style guide; (b) Reporter HTML plus Markdown/terminal glyph tier. The Reporter core's application independence is a hard constraint on (b). The unicode glyph tier is chosen so terminals without SVG support still carry the meaning; verify glyph rendering in Windows Terminal and a CI log viewer.
 
 ---
 

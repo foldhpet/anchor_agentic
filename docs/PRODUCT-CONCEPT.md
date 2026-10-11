@@ -162,7 +162,7 @@ A free, community-driven platform where individuals define Roles, Tasks, Agents,
 
 ### Feature Category 6: Visual Design & Accessibility (v1.1)
 
-A post-MVP polish increment: the V1 UI is functionally complete but intentionally plain ("pure HTML"). v1.1 applies a small, functional design system — typography, spacing, and a stakeholder-supplied color palette — with no icon sets, illustration, or animation. Goal is readability and a pleasant, trustworthy feel, not decoration; this is also the point at which the long-open accessibility NFR (see Open Questions) is acted on rather than left aspirational.
+A post-MVP polish increment: the V1 UI is functionally complete but intentionally plain ("pure HTML"). v1.1 applies a small, functional design system — typography, spacing, and a stakeholder-supplied color palette — with no icon sets, illustration, or animation. **Amendment (F-6.6):** custom-drawn functional icons are later allowed for state and action only; icon libraries, illustration, animation and decoration stay out. Goal is readability and a pleasant, trustworthy feel, not decoration; this is also the point at which the long-open accessibility NFR (see Open Questions) is acted on rather than left aspirational.
 
 | Feature ID | Feature Name | Description | Priority | Business Value | Estimated Effort | Depends On |
 |---|---|---|---|---|---|---|
@@ -171,6 +171,7 @@ A post-MVP polish increment: the V1 UI is functionally complete but intentionall
 | F-6.3 | Read-Only vs. Editable Visual Distinction | Consistent, non-decorative visual indicators distinguishing editable content (My Sandbox) from read-only content (All Sandbox, Marketplace). | High | Removes ambiguity about what a user can change; prevents accidental-edit attempts | M | F-6.1, F-6.2 |
 | F-6.4 | WCAG 2.1 AA Baseline | Audit and remediate text contrast (4.5:1+), touch target size, keyboard focus indicators, and form label association across all pages. | High | Converts the aspirational WCAG AA NFR into a delivered baseline; widens reach | M | F-6.1, F-6.2 |
 | F-6.5 | Light-Mode Baseline | All pages designed and tested in light mode only; verified not to visibly break under an OS-forced dark-mode override. | Low | Keeps scope controlled while remaining usable for forced-dark-mode users | S | F-6.1, F-6.2 |
+| F-6.6 | Functional Icons | A small, custom-drawn inline-SVG icon set (24px grid, 1.5px stroke, `currentColor`, round caps; no icon library or new dependency) used only to communicate state or action: passed, failed, flaky, skipped, quarantined, connected, new, next, previous, external link, support. Always beside text, never the only carrier of meaning, `aria-hidden` when decorative. Applies to the web app and the e2e Reporter HTML; the Reporter Markdown summary and terminal output use a monochrome non-emoji text-glyph tier with the same meanings. Icon/background pairs meet 3:1 (WCAG 1.4.11), text 4.5:1. | Medium | Faster recognition of state and action without relying on colour or emoji; consistent look across the app and test report | M | F-6.1, F-6.2, F-6.4 |
 
 ---
 
@@ -221,9 +222,9 @@ A post-MVP polish increment: the V1 UI is functionally complete but intentionall
 - **Success Criteria:** Registered users can complete the full loop — clone, customize, integrate into `.claude` folder, publish, and rate — without a moderation bottleneck.
 
 ### Phase 1.1: Visual Design Refresh (v1.1)
-- **Scope:** Apply a small, functional design system (type scale, spacing, stakeholder-supplied color palette) across all pages; no icons/illustration/animation. Deliver WCAG 2.1 AA baseline accessibility as part of the same pass. Not a re-opening of MVP functional scope.
+- **Scope:** Apply a small, functional design system (type scale, spacing, stakeholder-supplied color palette) across all pages; no icon libraries/illustration/animation (functional custom-drawn icons added later by F-6.6). Deliver WCAG 2.1 AA baseline accessibility as part of the same pass. Not a re-opening of MVP functional scope.
 - **Target Launch:** Shortly after Phase 1, before Phase 2 begins.
-- **Key Features:** F-6.1 through F-6.5.
+- **Key Features:** F-6.1 through F-6.6.
 - **Success Criteria:** Consistent type/spacing/color applied across Marketplace, Sandbox, and auth pages; My Sandbox vs. All Sandbox distinction is immediately visible; all pages meet the WCAG AA baseline (contrast, touch targets, focus indicators, form labels).
 
 ### Phase 2: Quality & Trust (Months 4-6)
