@@ -356,16 +356,21 @@ describe('Markdown and HTML reports', () => {
 		expect(html).not.toMatch(/https?:\/\/(?!localhost)/); // no external resources
 	});
 
-	it('HTML charts keep a bounded aspect ratio however few runs there are', () => {
-		for (const runs of [[run(1, [rec('t')])], [run(1, [rec('t')]), failing]]) {
-			const html = renderHtml(runs, { tests: testStats(runs), pending: [], decisions: [] });
-			const boxes = [...html.matchAll(/<svg viewBox="0 0 (\d+) (\d+)"/g)];
-			expect(boxes).toHaveLength(2);
-			for (const [, w, h] of boxes) expect(Number(w) / Number(h)).toBeGreaterThan(2); // 10x84 rendered ~8000px tall
-		}
-		const html = renderHtml([run(1, [rec('t')])], { tests: [], pending: [], decisions: [] });
-		expect(html).toMatch(/svg \{[^}]*height:120px/);
-		expect(html).toMatch(/<path d="M[\d.]+ [\d.]+h0"/); // a lone run still draws a visible point
+	it('HTML charts are short and keep a bounded aspect ratio', () => {
+		const runs = [run(1, [rec('t')]), failing];
+		const html = renderHtml(runs, { tests: testStats(runs), pending: [], decisions: [] });
+		const boxes = [...html.matchAll(/<svg viewBox="0 0 (\d+) (\d+)"/g)];
+		expect(boxes).toHaveLength(2);
+		for (const [, w, h] of boxes) expect(Number(w) / Number(h)).toBeGreaterThan(2); // 10x84 rendered ~8000px tall
+		expect(html).toMatch(/svg \{[^}]*height:72px/);
+		expect(html).toMatch(/<path d="M[\d.]+ [\d.]+h0"/); // each run still draws a visible point
+	});
+
+	it('HTML shows a note instead of empty charts until there are two runs', () => {
+		const runs = [run(1, [rec('t')])];
+		const html = renderHtml(runs, { tests: testStats(runs), pending: [], decisions: [] });
+		expect(html).not.toContain('<svg viewBox');
+		expect(html).toContain('at least 2 runs');
 	});
 
 	it('HTML copes with no runs', () => {

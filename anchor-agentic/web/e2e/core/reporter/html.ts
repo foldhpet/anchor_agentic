@@ -41,7 +41,7 @@ table { width:100%; border-collapse:collapse; }
 th, td { text-align:left; padding:.375rem .625rem; border-bottom:1px solid var(--line); font-size:.875rem; vertical-align:top; }
 th { font-weight:600; } td.n, th.n { text-align:right; font-variant-numeric:tabular-nums; }
 .scroll { overflow-x:auto; }
-svg { display:block; width:100%; height:120px; background:var(--color-bg); border:1px solid var(--line); border-radius:.375rem; }
+svg { display:block; width:100%; height:72px; background:var(--color-bg); border:1px solid var(--line); border-radius:.375rem; }
 .banner { border-left:4px solid var(--color-attention); background:var(--color-surface); border-radius:.375rem; padding:.75rem 1rem; margin:1rem 0; }
 svg.icon { display:inline-block; width:1em; height:1em; margin:0 .25em 0 0; vertical-align:-.125em; flex:none; border:0; border-radius:0; background:none; }
 .i-passed { color:var(--color-primary); } .i-failed { color:var(--color-attention); }
@@ -71,6 +71,9 @@ function statusClass(run: RunSummary): Outcome {
 const MIN_SLOTS = 30;
 const STEP = 10;
 const slots = (runs: RunSummary[]) => Math.max(runs.length, MIN_SLOTS);
+
+/** A trend needs two points; with one run the charts would be an empty box around a stub. */
+const MIN_TREND_RUNS = 2;
 
 /** Bars: one per run, height = pass ratio, colour = outcome. Newest on the right. */
 function legend(): string {
@@ -135,6 +138,13 @@ function table(
 		)
 		.join('');
 	return `<div class="scroll"><table><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table></div>`;
+}
+
+function trends(runs: RunSummary[]): string {
+	if (runs.length < MIN_TREND_RUNS)
+		return `<h2>Trends</h2><p class="muted">Trend charts appear once there are at least ${MIN_TREND_RUNS} runs in the history; this is run ${runs.length}.</p>`;
+	return `<h2>Pass ratio, last ${runs.length} runs</h2>${passRateChart(runs)}${legend()}
+<h2>Run time, last ${runs.length} runs</h2>${durationChart(runs)}`;
 }
 
 export function renderHtml(runs: RunSummary[], ctx: Context): string {
@@ -208,8 +218,7 @@ ${card(String(run.skipped), 'skipped', '', 'skipped')}
 ${card(String(run.serverErrors.count), 'server-side errors', run.serverErrors.count ? 'failed' : '')}
 ${card(formatDuration(run.timing.avgMs), `avg test (min ${formatDuration(run.timing.minMs)}, max ${formatDuration(run.timing.maxMs)})`)}
 </div>
-<h2>Pass ratio, last ${runs.length} runs</h2>${passRateChart(runs)}${legend()}
-<h2>Run time, last ${runs.length} runs</h2>${durationChart(runs)}
+${trends(runs)}
 <h2>${outcomeIcon('failed')}Failures: ${c['product-bug']} product bug · ${c['test-automation-bug']} test automation bug · ${c['server-error']} server-side error</h2>
 ${table([{ text: 'Test' }, { text: 'Category' }, { text: 'Failure artifacts' }], failedRows)}
 <h2>Suites</h2>
