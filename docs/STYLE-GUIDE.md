@@ -118,10 +118,6 @@ The e2e report is opened on its own (file or CI artifact) and cannot use Tailwin
 
 | Where | Deviation | Target |
 |---|---|---|
-| `e2e/core/reporter/html.ts` `STYLE` | Own palette (`--ok`, `--warn`, `--bad`, `--accent`, `--bg:#fafaf9`...) and non-system-token names | Replace with the tokens in section 7 |
-| `e2e/core/reporter/html.ts` `STYLE` | `prefers-color-scheme: dark` palette | Remove (light only) |
-| `e2e/core/reporter/html.ts` | `max-width:1000px`, `font: 15px/1.5 system-ui` | `56rem`, 1rem/1.6 with `--font-sans` |
-| `e2e/core/reporter/html.ts` | Failure shown in red and flaky in orange-brown text on white | Outcome mapping in section 2 (border/left-rule, not text colour) |
 | `src/routes/+layout.svelte` nav | No `aria-current="page"` on the active link | Section 6 |
 
 ## 9. Changing this guide

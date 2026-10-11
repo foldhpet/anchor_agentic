@@ -12,30 +12,41 @@ interface Context {
 	decisions: Decision[];
 }
 
+/*
+ * Mirrors the design tokens in src/routes/layout.css (same names and values) so the report matches the
+ * web app. core/ must not import from src/, so the values are copied (docs/STYLE-GUIDE.md section 7).
+ * Light only. Secondary text stays full ink: ink at 70% is only 4.46:1 on white, below AA for small text.
+ */
 const STYLE = `
-:root { --bg:#fafaf9; --card:#fff; --ink:#1c1917; --muted:#78716c; --line:#e7e5e4; --ok:#15803d; --warn:#b45309; --bad:#b91c1c; --accent:#1d4ed8; }
-@media (prefers-color-scheme: dark) { :root { --bg:#141210; --card:#1d1a17; --ink:#f5f5f4; --muted:#a8a29e; --line:#33302c; --ok:#4ade80; --warn:#fbbf24; --bad:#f87171; --accent:#60a5fa; } }
+:root { color-scheme: light; --color-bg:#ffffff; --color-surface:#f2f2f2; --color-ink:#413c3e; --color-primary:#367051; --color-caution:#ffbf00; --color-attention:#ff6000; --font-sans:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; --line:color-mix(in srgb, var(--color-ink) 10%, transparent); }
 * { box-sizing: border-box; }
-body { margin:0; padding:24px 16px; background:var(--bg); color:var(--ink); font:15px/1.5 system-ui, sans-serif; }
-main { max-width:1000px; margin:0 auto; }
-h1 { font-size:22px; margin:0 0 4px; } h2 { font-size:16px; margin:28px 0 8px; }
-.muted { color:var(--muted); font-size:13px; }
-.cards { display:grid; grid-template-columns:repeat(auto-fit,minmax(130px,1fr)); gap:10px; margin:16px 0; }
-.card { background:var(--card); border:1px solid var(--line); border-radius:8px; padding:10px 12px; }
-.card b { display:block; font-size:22px; } .card span { color:var(--muted); font-size:12px; }
-.ok { color:var(--ok); } .warn { color:var(--warn); } .bad { color:var(--bad); }
-table { width:100%; border-collapse:collapse; background:var(--card); border:1px solid var(--line); border-radius:8px; }
-th, td { text-align:left; padding:6px 10px; border-bottom:1px solid var(--line); font-size:13px; vertical-align:top; }
-th { color:var(--muted); font-weight:600; } td.n, th.n { text-align:right; font-variant-numeric:tabular-nums; }
+body { margin:0; padding:1.5rem 1rem; background:var(--color-bg); color:var(--color-ink); font-family:var(--font-sans); font-size:1rem; line-height:1.6; }
+main { max-width:56rem; margin:0 auto; }
+h1, h2 { font-weight:600; line-height:1.25; }
+h1 { font-size:1.5rem; margin:0 0 .5rem; } h2 { font-size:1.125rem; margin:2rem 0 .5rem; }
+p, li { max-width:70ch; }
+a { color:var(--color-primary); text-decoration:underline; text-decoration-thickness:1px; } a:hover { text-decoration-thickness:2px; }
+:focus-visible { outline:2px solid var(--color-primary); outline-offset:2px; }
+.muted { font-size:.875rem; }
+.cards { display:grid; grid-template-columns:repeat(auto-fit,minmax(8rem,1fr)); gap:.5rem; margin:1rem 0; }
+.card { border:1px solid var(--line); border-radius:.375rem; padding:.75rem; }
+.card b { display:block; font-size:1.5rem; line-height:1.25; } .card span { font-size:.75rem; }
+.card.passed { border-left:4px solid var(--color-primary); } .card.flaky { border-left:4px solid var(--color-caution); } .card.failed { border-left:4px solid var(--color-attention); }
+.badge { display:inline-block; border-radius:9999px; padding:.125rem .5rem; font-size:.75rem; line-height:1.5; }
+.badge.passed { background:var(--color-primary); color:var(--color-bg); } .badge.flaky { background:var(--color-caution); } .badge.failed { border:1px solid var(--color-attention); }
+table { width:100%; border-collapse:collapse; }
+th, td { text-align:left; padding:.375rem .625rem; border-bottom:1px solid var(--line); font-size:.875rem; vertical-align:top; }
+th { font-weight:600; } td.n, th.n { text-align:right; font-variant-numeric:tabular-nums; }
 .scroll { overflow-x:auto; }
-svg { display:block; width:100%; height:120px; background:var(--card); border:1px solid var(--line); border-radius:8px; }
+svg { display:block; width:100%; height:120px; background:var(--color-bg); border:1px solid var(--line); border-radius:.375rem; }
+.banner { border-left:4px solid var(--color-attention); background:var(--color-surface); border-radius:.375rem; padding:.75rem 1rem; margin:1rem 0; }
 @media print { svg, tr, .card, .banner { break-inside:avoid; } h2 { break-after:avoid; } }
-a { color:var(--accent); }
-.banner { border:1px solid var(--warn); background:var(--card); border-radius:8px; padding:10px 12px; margin:16px 0; }
 `;
 
-function statusClass(run: RunSummary): string {
-	return run.blockingFailed > 0 ? 'bad' : run.flaky > 0 ? 'warn' : 'ok';
+type Outcome = 'passed' | 'flaky' | 'failed';
+
+function statusClass(run: RunSummary): Outcome {
+	return run.blockingFailed > 0 ? 'failed' : run.flaky > 0 ? 'flaky' : 'passed';
 }
 
 /**
@@ -52,13 +63,24 @@ function passRateChart(runs: RunSummary[]): string {
 	const bars = runs
 		.map((run, i) => {
 			const h = Math.max(2, run.passRate * 70);
-			const color =
-				run.blockingFailed > 0 ? 'var(--bad)' : run.flaky > 0 ? 'var(--warn)' : 'var(--ok)';
-			const label = `${run.startedAt.slice(0, 16).replace('T', ' ')}: ${pct(run.passRate)} passed, ${run.failed} failed, ${run.flaky} flaky`;
-			return `<rect x="${i * step}" y="${80 - h}" width="8" height="${h}" fill="${color}"><title>${esc(label)}</title></rect>`;
+			const outcome = statusClass(run);
+			const color = {
+				failed: 'var(--color-attention)',
+				flaky: 'var(--color-caution)',
+				passed: 'var(--color-primary)'
+			}[outcome];
+			// Caution on white is too pale for a graphic; an ink outline keeps flaky bars visible.
+			const edge =
+				outcome === 'flaky'
+					? ' stroke="var(--color-ink)" stroke-width="1" vector-effect="non-scaling-stroke"'
+					: '';
+			const label = `${run.startedAt.slice(0, 16).replace('T', ' ')}: ${outcome}, ${pct(run.passRate)} passed, ${run.failed} failed, ${run.flaky} flaky`;
+			return `<rect x="${i * step}" y="${80 - h}" width="8" height="${h}" fill="${color}"${edge}><title>${esc(label)}</title></rect>`;
 		})
 		.join('');
-	return `<svg viewBox="0 0 ${slots(runs) * step} 84" preserveAspectRatio="none" role="img" aria-label="Pass ratio of the last ${runs.length} runs">${bars}</svg>`;
+	const last = runs[runs.length - 1];
+	const latest = last ? `; latest ${statusClass(last)}, ${pct(last.passRate)} passed` : '';
+	return `<svg viewBox="0 0 ${slots(runs) * step} 84" preserveAspectRatio="none" role="img" aria-label="Pass ratio of the last ${runs.length} runs${latest}">${bars}</svg>`;
 }
 
 /** Line of the wall-clock time of each run. */
@@ -70,10 +92,10 @@ function durationChart(runs: RunSummary[]): string {
 	const dots = coords
 		.map(
 			([x, y], i) =>
-				`<path d="M${x} ${y}h0" stroke="var(--accent)" stroke-width="6" stroke-linecap="round" vector-effect="non-scaling-stroke"><title>${esc(`${runs[i].startedAt.slice(0, 16).replace('T', ' ')}: ${formatDuration(runs[i].durationMs)}`)}</title></path>`
+				`<path d="M${x} ${y}h0" stroke="var(--color-primary)" stroke-width="6" stroke-linecap="round" vector-effect="non-scaling-stroke"><title>${esc(`${runs[i].startedAt.slice(0, 16).replace('T', ' ')}: ${formatDuration(runs[i].durationMs)}`)}</title></path>`
 		)
 		.join('');
-	return `<svg viewBox="0 0 ${slots(runs) * STEP} 84" preserveAspectRatio="none" role="img" aria-label="Run time of the last ${runs.length} runs"><polyline points="${points}" fill="none" stroke="var(--accent)" stroke-width="1.5" vector-effect="non-scaling-stroke"/>${dots}</svg>`;
+	return `<svg viewBox="0 0 ${slots(runs) * STEP} 84" preserveAspectRatio="none" role="img" aria-label="Run time of the last ${runs.length} runs${runs.length ? `; latest ${formatDuration(runs[runs.length - 1].durationMs)}` : ''}"><polyline points="${points}" fill="none" stroke="var(--color-primary)" stroke-width="1.5" vector-effect="non-scaling-stroke"/>${dots}</svg>`;
 }
 
 function table(headers: { text: string; num?: boolean }[], rows: string[][]): string {
@@ -92,8 +114,8 @@ export function renderHtml(runs: RunSummary[], ctx: Context): string {
 	const run = runs[runs.length - 1];
 	if (!run) return '<!doctype html><title>No runs yet</title><p>No test runs recorded yet.</p>';
 	const c = run.failuresByCategory;
-	const card = (value: string, label: string, cls = '') =>
-		`<div class="card"><b class="${cls}">${esc(value)}</b><span>${esc(label)}</span></div>`;
+	const card = (value: string, label: string, cls: Outcome | '' = '') =>
+		`<div class="card${cls ? ` ${cls}` : ''}"><b>${esc(value)}</b><span>${esc(label)}</span></div>`;
 
 	const flakyRows = [...ctx.tests]
 		.filter((t) => t.flaky > 0)
@@ -124,7 +146,7 @@ export function renderHtml(runs: RunSummary[], ctx: Context): string {
 	]);
 	const requirementRows = run.requirements.map((r) => [
 		esc(r.id),
-		`<span class="${r.status === 'passing' ? 'ok' : r.status === 'flaky' ? 'warn' : 'bad'}">${r.status}</span>`,
+		`<span class="badge ${r.status === 'passing' ? 'passed' : r.status === 'flaky' ? 'flaky' : 'failed'}">${r.status}</span>`,
 		String(r.tests)
 	]);
 	const suiteRows = run.suites.map((s) => [
@@ -136,7 +158,7 @@ export function renderHtml(runs: RunSummary[], ctx: Context): string {
 	]);
 	const pendingBanner =
 		ctx.pending.length > 0
-			? `<div class="banner"><b class="warn">⚠️ ${ctx.pending.length} test(s) waiting for a quarantine decision</b><br>${ctx.pending
+			? `<div class="banner" role="status"><b>⚠️ ${ctx.pending.length} test(s) waiting for a quarantine decision</b><br>${ctx.pending
 					.map((p) => `${esc(p.title)} — flaky in ${p.flakyRuns} of its last ${p.window} runs`)
 					.join(
 						'<br>'
@@ -152,9 +174,9 @@ ${pendingBanner}
 <div class="cards">
 ${card(pct(run.passRate), 'pass ratio', statusClass(run))}
 ${card(`${run.passed}/${run.total}`, 'passed')}
-${card(String(run.failed), 'failed', run.failed ? 'bad' : '')}
-${card(String(run.flaky), 'flaky', run.flaky ? 'warn' : '')}
-${card(String(run.serverErrors.count), 'server-side errors', run.serverErrors.count ? 'bad' : '')}
+${card(String(run.failed), 'failed', run.failed ? 'failed' : '')}
+${card(String(run.flaky), 'flaky', run.flaky ? 'flaky' : '')}
+${card(String(run.serverErrors.count), 'server-side errors', run.serverErrors.count ? 'failed' : '')}
 ${card(formatDuration(run.timing.avgMs), `avg test (min ${formatDuration(run.timing.minMs)}, max ${formatDuration(run.timing.maxMs)})`)}
 </div>
 <h2>Pass ratio, last ${runs.length} runs</h2>${passRateChart(runs)}

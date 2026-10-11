@@ -33,6 +33,15 @@ export function renderMarkdown(
 		`Test time: min ${formatDuration(run.timing.minMs)} · avg ${formatDuration(run.timing.avgMs)} · max ${formatDuration(run.timing.maxMs)}`
 	);
 
+	if (pending.length > 0) {
+		lines.push('', `### ⚠️ ${pending.length} test(s) waiting for a quarantine decision`, '');
+		for (const c of pending)
+			lines.push(`- ${md(c.title)}: flaky in ${c.flakyRuns} of its last ${c.window} runs`);
+		lines.push(
+			'',
+			'Decide with `node e2e/core/reporter/quarantine-cli.ts decide` (a person has to choose).'
+		);
+	}
 	if (run.failed > 0) {
 		const c = run.failuresByCategory;
 		lines.push(
@@ -45,15 +54,6 @@ export function renderMarkdown(
 			lines.push(`- \`${f.category}\` ${md(f.title)}${tag}`);
 		}
 	}
-	if (run.flaky > 0) {
-		lines.push('', '### Flaky tests', '');
-		for (const title of run.flakyTests) lines.push(`- ${md(title)}`);
-	}
-	if (run.serverErrors.count > 0) {
-		lines.push('', `### Server-side errors (${run.serverErrors.count})`, '');
-		for (const e of run.serverErrors.samples)
-			lines.push(`- \`${e.method} ${md(e.path)}\`: ${md(e.error)}`);
-	}
 	const attention = run.requirements.filter((r) => r.status !== 'passing');
 	if (attention.length > 0) {
 		lines.push(
@@ -65,14 +65,14 @@ export function renderMarkdown(
 		);
 		for (const r of attention) lines.push(`| ${r.id} | ${r.status} | ${r.tests} |`);
 	}
-	if (pending.length > 0) {
-		lines.push('', `### ⚠️ ${pending.length} test(s) waiting for a quarantine decision`, '');
-		for (const c of pending)
-			lines.push(`- ${md(c.title)}: flaky in ${c.flakyRuns} of its last ${c.window} runs`);
-		lines.push(
-			'',
-			'Decide with `node e2e/core/reporter/quarantine-cli.ts decide` (a person has to choose).'
-		);
+	if (run.flaky > 0) {
+		lines.push('', '### Flaky tests', '');
+		for (const title of run.flakyTests) lines.push(`- ${md(title)}`);
+	}
+	if (run.serverErrors.count > 0) {
+		lines.push('', `### Server-side errors (${run.serverErrors.count})`, '');
+		for (const e of run.serverErrors.samples)
+			lines.push(`- \`${e.method} ${md(e.path)}\`: ${md(e.error)}`);
 	}
 	lines.push('');
 	return lines.join('\n');
