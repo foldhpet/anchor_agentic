@@ -11,6 +11,7 @@ The platform is intentionally lightweight and community/passion-project scoped �
 - `docs/PRODUCT-CONCEPT.md` — full product concept: personas, journeys, features, roadmap, NFRs, success metrics.
 - `docs/ARCHITECTURE.md` — system architecture, KPIs, and the technical stack rationale.
 - `docs/USER-STORIES.md` — epics and user stories (with acceptance criteria) derived from the product concept.
+- `docs/STYLE-GUIDE.md` — visual design tokens, component recipes and accessibility baseline for the web app **and** the e2e report; apply it for any UI work (UI Designer Agent), with the UX Designer Agent reviewing navigation and readability.
 
 ## Core Domain Model
 
