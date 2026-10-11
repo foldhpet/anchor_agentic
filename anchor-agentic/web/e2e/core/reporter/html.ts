@@ -158,7 +158,7 @@ export function renderHtml(runs: RunSummary[], ctx: Context): string {
 	]);
 	const pendingBanner =
 		ctx.pending.length > 0
-			? `<div class="banner" role="status"><b>⚠️ ${ctx.pending.length} test(s) waiting for a quarantine decision</b><br>${ctx.pending
+			? `<div class="banner" role="status"><b>${ctx.pending.length} test(s) waiting for a quarantine decision</b><br>${ctx.pending
 					.map((p) => `${esc(p.title)} — flaky in ${p.flakyRuns} of its last ${p.window} runs`)
 					.join(
 						'<br>'

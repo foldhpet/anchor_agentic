@@ -16,11 +16,7 @@ export function renderMarkdown(
 ): string {
 	const lines: string[] = [];
 	const verdict =
-		run.blockingFailed > 0
-			? '❌ Failed'
-			: run.flaky > 0
-				? '⚠️ Passed with flaky tests'
-				: '✅ Passed';
+		run.blockingFailed > 0 ? '❌ Failed' : run.flaky > 0 ? 'Passed with flaky tests' : '✅ Passed';
 	lines.push(`## E2E test run: ${verdict}`, '');
 	lines.push('| Total | Passed | Failed | Flaky | Skipped | Pass ratio | Wall time |');
 	lines.push('|---:|---:|---:|---:|---:|---:|---:|');
@@ -34,7 +30,7 @@ export function renderMarkdown(
 	);
 
 	if (pending.length > 0) {
-		lines.push('', `### ⚠️ ${pending.length} test(s) waiting for a quarantine decision`, '');
+		lines.push('', `### ${pending.length} test(s) waiting for a quarantine decision`, '');
 		for (const c of pending)
 			lines.push(`- ${md(c.title)}: flaky in ${c.flakyRuns} of its last ${c.window} runs`);
 		lines.push(
