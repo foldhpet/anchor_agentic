@@ -1,10 +1,12 @@
 <script lang="ts">
+	import Icon from '$lib/Icon.svelte';
 	import DegradedNotice from '$lib/DegradedNotice.svelte';
 	import { enhance } from '$app/forms';
 	import { page } from '$app/state';
 	import { backLink } from '$lib/backLink';
 	import { downloadExport } from '$lib/export';
 	import { STATUS_STYLE } from '$lib/statusStyle';
+	import StatusIcon from '$lib/StatusIcon.svelte';
 	import type { VersionSnapshot } from '$lib/api/types';
 	import type { ActionData, PageProps } from './$types';
 
@@ -35,7 +37,9 @@
 	let canEdit = $derived(data.isOwner && data.workflow.status !== 'Archived');
 
 	let viewingVersion = $state<VersionSnapshot | null>(null);
-	let versionsTotalPages = $derived(Math.max(1, Math.ceil(data.versionsTotal / data.versionsPageSize)));
+	let versionsTotalPages = $derived(
+		Math.max(1, Math.ceil(data.versionsTotal / data.versionsPageSize))
+	);
 </script>
 
 <h1 class="text-2xl">{data.workflow.name}</h1>
@@ -72,11 +76,16 @@
 	{#if data.cloneCount !== null}
 		<p class="mt-4 text-sm text-ink/70">Cloned {data.cloneCount} times</p>
 	{/if}
-	<button type="button" onclick={handleExport} class="mt-2 rounded-md border border-ink/15 px-3 py-1.5 text-sm"
-		>Export to .claude</button
+	<button
+		type="button"
+		onclick={handleExport}
+		class="mt-2 rounded-md border border-ink/15 px-3 py-1.5 text-sm">Export to .claude</button
 	>
 	{#if exportError}
-		<p role="alert" class="mt-2 rounded-md border-l-4 border-attention bg-surface px-4 py-3 text-ink">
+		<p
+			role="alert"
+			class="mt-2 rounded-md border-l-4 border-attention bg-surface px-4 py-3 text-ink"
+		>
 			{exportError}
 		</p>
 	{/if}
@@ -111,11 +120,15 @@
 			/>
 		</label>
 		<p class="text-sm text-ink/70">
-			Status: <span class="rounded-full px-2 py-0.5 text-xs {STATUS_STYLE[data.workflow.status]}"
-				>{data.workflow.status}</span
+			Status: <span
+				class="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs {STATUS_STYLE[
+					data.workflow.status
+				].classes}"><StatusIcon status={data.workflow.status} />{data.workflow.status}</span
 			>
 		</p>
-		<button type="submit" class="self-start rounded-md bg-primary px-4 py-1.5 text-white">Save</button>
+		<button type="submit" class="self-start rounded-md bg-primary px-4 py-1.5 text-white"
+			>Save</button
+		>
 	</form>
 	{#if data.workflow.published_version == null}
 		<p class="mt-2 text-sm text-ink/70">No published version yet.</p>
@@ -139,8 +152,10 @@
 {:else}
 	<p class="mt-4 text-ink/80">{data.workflow.description}</p>
 	<p class="mt-2 text-sm text-ink/70">
-		Status: <span class="rounded-full px-2 py-0.5 text-xs {STATUS_STYLE[data.workflow.status]}"
-			>{data.workflow.status}</span
+		Status: <span
+			class="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs {STATUS_STYLE[
+				data.workflow.status
+			].classes}"><StatusIcon status={data.workflow.status} />{data.workflow.status}</span
 		>
 	</p>
 	{#if data.workflow.status === 'Archived'}
@@ -186,12 +201,17 @@
 							<option value="AGENT">Agent</option>
 							<option value="SKILL">Skill</option>
 						</select>
-						<select name="reference_id" class="rounded-md border border-ink/15 bg-bg px-2 py-1 text-sm">
+						<select
+							name="reference_id"
+							class="rounded-md border border-ink/15 bg-bg px-2 py-1 text-sm"
+						>
 							{#each data.referenceOptions[editStepType] as option (option.id)}
 								<option value={option.id}>{option.label}</option>
 							{/each}
 						</select>
-						<button type="submit" class="rounded-md bg-primary px-3 py-1 text-sm text-white">Save</button>
+						<button type="submit" class="rounded-md bg-primary px-3 py-1 text-sm text-white"
+							>Save</button
+						>
 						<button
 							type="button"
 							onclick={() => (editingStepId = null)}
@@ -229,7 +249,9 @@
 							>
 							<form method="POST" action="?/removeStep" use:enhance style="display:inline">
 								<input type="hidden" name="step_id" value={step.id} />
-								<button type="submit" class="rounded-md border border-attention px-2 py-1 text-sm text-ink"
+								<button
+									type="submit"
+									class="rounded-md border border-attention px-2 py-1 text-sm text-ink"
 									>Remove</button
 								>
 							</form>
@@ -244,13 +266,19 @@
 {#if canEdit}
 	<h3 class="mt-6 text-base font-semibold">Add Step</h3>
 	<form method="POST" action="?/addStep" use:enhance class="mt-2 flex flex-wrap items-center gap-2">
-		<select name="step_type" bind:value={addStepType} class="rounded-md border border-ink/15 bg-bg px-3 py-1.5">
+		<select
+			name="step_type"
+			bind:value={addStepType}
+			class="rounded-md border border-ink/15 bg-bg px-3 py-1.5"
+		>
 			<option value="TASK">Task</option>
 			<option value="AGENT">Agent</option>
 			<option value="SKILL">Skill</option>
 		</select>
 		{#if data.referenceOptions[addStepType].length === 0}
-			<p class="text-sm text-ink/70">No referenceable {addStepType.toLowerCase()}s available yet.</p>
+			<p class="text-sm text-ink/70">
+				No referenceable {addStepType.toLowerCase()}s available yet.
+			</p>
 		{:else}
 			<select name="reference_id" class="rounded-md border border-ink/15 bg-bg px-3 py-1.5">
 				{#each data.referenceOptions[addStepType] as option (option.id)}
@@ -295,10 +323,14 @@
 		<p class="mt-4 flex items-center gap-3 text-sm text-ink/70">
 			Version page {data.versionsPage} of {versionsTotalPages}
 			{#if data.versionsPage > 1}
-				<a href="?vpage={data.versionsPage - 1}">← Prev</a>
+				<a class="inline-flex items-center gap-1" href="?vpage={data.versionsPage - 1}"
+					><Icon name="previous" />Prev</a
+				>
 			{/if}
 			{#if data.versionsPage < versionsTotalPages}
-				<a href="?vpage={data.versionsPage + 1}">Next →</a>
+				<a class="inline-flex items-center gap-1" href="?vpage={data.versionsPage + 1}"
+					>Next<Icon name="next" /></a
+				>
 			{/if}
 		</p>
 	{/if}

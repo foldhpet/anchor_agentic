@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Icon from '$lib/Icon.svelte';
 	import type { MarketplaceItemType } from '$lib/api/types';
 	import type { PageProps } from './$types';
 
@@ -57,7 +58,9 @@
 					<a class="font-semibold" href="/marketplace/{item.item_type}/{item.id}"
 						>{displayName(item)}</a
 					>
-					<span class="rounded-full bg-surface px-2 py-0.5 text-xs text-ink/70">{item.item_type}</span>
+					<span class="rounded-full bg-surface px-2 py-0.5 text-xs text-ink/70"
+						>{item.item_type}</span
+					>
 				</div>
 				{#if item.description}<p class="mt-1 text-ink/80">{item.description}</p>{/if}
 				<p class="mt-2 text-sm text-ink/60">
@@ -79,10 +82,18 @@
 	<p class="mt-6 flex items-center gap-3 text-sm text-ink/70">
 		Page {data.page} of {totalPages}
 		{#if data.page > 1}
-			<a href="?q={data.q}&type={data.type}&role={data.role}&page={data.page - 1}">← Prev</a>
+			<a
+				class="inline-flex items-center gap-1"
+				href="?q={data.q}&type={data.type}&role={data.role}&page={data.page - 1}"
+				><Icon name="previous" />Prev</a
+			>
 		{/if}
 		{#if data.page < totalPages}
-			<a href="?q={data.q}&type={data.type}&role={data.role}&page={data.page + 1}">Next →</a>
+			<a
+				class="inline-flex items-center gap-1"
+				href="?q={data.q}&type={data.type}&role={data.role}&page={data.page + 1}"
+				>Next<Icon name="next" /></a
+			>
 		{/if}
 	</p>
 {/if}

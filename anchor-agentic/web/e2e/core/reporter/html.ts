@@ -1,4 +1,5 @@
 import { formatDuration } from './format.ts';
+import { iconSvg } from './icons.ts';
 import type { TestStats } from './history.ts';
 import type { Candidate, Decision } from './quarantine.ts';
 import type { RunSummary } from './summary.ts';
@@ -16,6 +17,8 @@ interface Context {
  * Mirrors the design tokens in src/routes/layout.css (same names and values) so the report matches the
  * web app. core/ must not import from src/, so the values are copied (docs/STYLE-GUIDE.md section 7).
  * Light only. Secondary text stays full ink: ink at 70% is only 4.46:1 on white, below AA for small text.
+ * Icons (docs/STYLE-GUIDE.md section 5) are inline SVG in currentColor. Only passed (primary) and failed
+ * (attention) are coloured, and only on bg: attention is 2.71:1 on surface, so the banner uses ink.
  */
 const STYLE = `
 :root { color-scheme: light; --color-bg:#ffffff; --color-surface:#f2f2f2; --color-ink:#413c3e; --color-primary:#367051; --color-caution:#ffbf00; --color-attention:#ff6000; --font-sans:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; --line:color-mix(in srgb, var(--color-ink) 10%, transparent); }
@@ -40,10 +43,22 @@ th { font-weight:600; } td.n, th.n { text-align:right; font-variant-numeric:tabu
 .scroll { overflow-x:auto; }
 svg { display:block; width:100%; height:120px; background:var(--color-bg); border:1px solid var(--line); border-radius:.375rem; }
 .banner { border-left:4px solid var(--color-attention); background:var(--color-surface); border-radius:.375rem; padding:.75rem 1rem; margin:1rem 0; }
+svg.icon { display:inline-block; width:1em; height:1em; margin:0 .25em 0 0; vertical-align:-.125em; flex:none; border:0; border-radius:0; background:none; }
+.i-passed { color:var(--color-primary); } .i-failed { color:var(--color-attention); }
+.legend { display:flex; flex-wrap:wrap; gap:.25rem 1rem; margin:.5rem 0 0; }
 @media print { svg, tr, .card, .banner { break-inside:avoid; } h2 { break-after:avoid; } }
 `;
 
 type Outcome = 'passed' | 'flaky' | 'failed';
+
+/** Icon beside an outcome word, drawn straight on bg (badges and the banner use plain iconSvg: currentColor). */
+type OutcomeIcon = Outcome | 'skipped' | 'quarantined';
+
+const outcomeIcon = (name: OutcomeIcon) =>
+	iconSvg(name, name === 'passed' || name === 'failed' ? `i-${name}` : '');
+
+const requirementOutcome = (status: string): Outcome =>
+	status === 'passing' ? 'passed' : status === 'flaky' ? 'flaky' : 'failed';
 
 function statusClass(run: RunSummary): Outcome {
 	return run.blockingFailed > 0 ? 'failed' : run.flaky > 0 ? 'flaky' : 'passed';
@@ -58,6 +73,10 @@ const STEP = 10;
 const slots = (runs: RunSummary[]) => Math.max(runs.length, MIN_SLOTS);
 
 /** Bars: one per run, height = pass ratio, colour = outcome. Newest on the right. */
+function legend(): string {
+	return `<p class="legend muted">${(['passed', 'flaky', 'failed'] as const).map((o) => `<span>${outcomeIcon(o)}${o}</span>`).join('')}</p>`;
+}
+
 function passRateChart(runs: RunSummary[]): string {
 	const step = STEP;
 	const bars = runs
@@ -98,9 +117,17 @@ function durationChart(runs: RunSummary[]): string {
 	return `<svg viewBox="0 0 ${slots(runs) * STEP} 84" preserveAspectRatio="none" role="img" aria-label="Run time of the last ${runs.length} runs${runs.length ? `; latest ${formatDuration(runs[runs.length - 1].durationMs)}` : ''}"><polyline points="${points}" fill="none" stroke="var(--color-primary)" stroke-width="1.5" vector-effect="non-scaling-stroke"/>${dots}</svg>`;
 }
 
-function table(headers: { text: string; num?: boolean }[], rows: string[][]): string {
+function table(
+	headers: { text: string; num?: boolean; icon?: OutcomeIcon }[],
+	rows: string[][]
+): string {
 	if (rows.length === 0) return '<p class="muted">Nothing to show.</p>';
-	const head = headers.map((h) => `<th${h.num ? ' class="n"' : ''}>${esc(h.text)}</th>`).join('');
+	const head = headers
+		.map(
+			(h) =>
+				`<th${h.num ? ' class="n"' : ''}>${h.icon ? outcomeIcon(h.icon) : ''}${esc(h.text)}</th>`
+		)
+		.join('');
 	const body = rows
 		.map(
 			(cells) =>
@@ -114,8 +141,8 @@ export function renderHtml(runs: RunSummary[], ctx: Context): string {
 	const run = runs[runs.length - 1];
 	if (!run) return '<!doctype html><title>No runs yet</title><p>No test runs recorded yet.</p>';
 	const c = run.failuresByCategory;
-	const card = (value: string, label: string, cls: Outcome | '' = '') =>
-		`<div class="card${cls ? ` ${cls}` : ''}"><b>${esc(value)}</b><span>${esc(label)}</span></div>`;
+	const card = (value: string, label: string, cls: Outcome | '' = '', icon?: OutcomeIcon) =>
+		`<div class="card${cls ? ` ${cls}` : ''}"><b>${esc(value)}</b><span>${icon ? outcomeIcon(icon) : ''}${esc(label)}</span></div>`;
 
 	const flakyRows = [...ctx.tests]
 		.filter((t) => t.flaky > 0)
@@ -139,14 +166,15 @@ export function renderHtml(runs: RunSummary[], ctx: Context): string {
 		.map((t) => [esc(t.title), esc(t.suite), formatDuration(t.durationMs)]);
 	const failedRows = run.failedTests.map((f) => [
 		esc(f.title),
-		esc(f.category) + (f.quarantined ? ' <span class="muted">(quarantined)</span>' : ''),
+		esc(f.category) +
+			(f.quarantined ? ` <span class="muted">${iconSvg('quarantined')}(quarantined)</span>` : ''),
 		f.artifacts
 			.map((a) => `<a href="${esc(a)}">${esc(a.split('/').pop() ?? a)}</a>`)
 			.join('<br>') || '—'
 	]);
 	const requirementRows = run.requirements.map((r) => [
 		esc(r.id),
-		`<span class="badge ${r.status === 'passing' ? 'passed' : r.status === 'flaky' ? 'flaky' : 'failed'}">${r.status}</span>`,
+		`<span class="badge ${requirementOutcome(r.status)}">${iconSvg(requirementOutcome(r.status))}${r.status}</span>`,
 		String(r.tests)
 	]);
 	const suiteRows = run.suites.map((s) => [
@@ -158,7 +186,7 @@ export function renderHtml(runs: RunSummary[], ctx: Context): string {
 	]);
 	const pendingBanner =
 		ctx.pending.length > 0
-			? `<div class="banner" role="status"><b>${ctx.pending.length} test(s) waiting for a quarantine decision</b><br>${ctx.pending
+			? `<div class="banner" role="status"><b>${iconSvg('quarantined')}${ctx.pending.length} test(s) waiting for a quarantine decision</b><br>${ctx.pending
 					.map((p) => `${esc(p.title)} — flaky in ${p.flakyRuns} of its last ${p.window} runs`)
 					.join(
 						'<br>'
@@ -172,19 +200,20 @@ export function renderHtml(runs: RunSummary[], ctx: Context): string {
 <p class="muted">Latest run ${esc(run.startedAt)} · ${runs.length} run(s) in history</p>
 ${pendingBanner}
 <div class="cards">
-${card(pct(run.passRate), 'pass ratio', statusClass(run))}
-${card(`${run.passed}/${run.total}`, 'passed')}
-${card(String(run.failed), 'failed', run.failed ? 'failed' : '')}
-${card(String(run.flaky), 'flaky', run.flaky ? 'flaky' : '')}
+${card(pct(run.passRate), `pass ratio (${statusClass(run)})`, statusClass(run), statusClass(run))}
+${card(`${run.passed}/${run.total}`, 'passed', '', 'passed')}
+${card(String(run.failed), 'failed', run.failed ? 'failed' : '', 'failed')}
+${card(String(run.flaky), 'flaky', run.flaky ? 'flaky' : '', 'flaky')}
+${card(String(run.skipped), 'skipped', '', 'skipped')}
 ${card(String(run.serverErrors.count), 'server-side errors', run.serverErrors.count ? 'failed' : '')}
 ${card(formatDuration(run.timing.avgMs), `avg test (min ${formatDuration(run.timing.minMs)}, max ${formatDuration(run.timing.maxMs)})`)}
 </div>
-<h2>Pass ratio, last ${runs.length} runs</h2>${passRateChart(runs)}
+<h2>Pass ratio, last ${runs.length} runs</h2>${passRateChart(runs)}${legend()}
 <h2>Run time, last ${runs.length} runs</h2>${durationChart(runs)}
-<h2>Failures: ${c['product-bug']} product bug · ${c['test-automation-bug']} test automation bug · ${c['server-error']} server-side error</h2>
+<h2>${outcomeIcon('failed')}Failures: ${c['product-bug']} product bug · ${c['test-automation-bug']} test automation bug · ${c['server-error']} server-side error</h2>
 ${table([{ text: 'Test' }, { text: 'Category' }, { text: 'Failure artifacts' }], failedRows)}
 <h2>Suites</h2>
-${table([{ text: 'Suite' }, { text: 'Passed', num: true }, { text: 'Failed', num: true }, { text: 'Flaky', num: true }, { text: 'Time', num: true }], suiteRows)}
+${table([{ text: 'Suite' }, { text: 'Passed', num: true, icon: 'passed' }, { text: 'Failed', num: true, icon: 'failed' }, { text: 'Flaky', num: true, icon: 'flaky' }, { text: 'Time', num: true }], suiteRows)}
 <h2>Requirements</h2>
 ${table([{ text: 'Requirement' }, { text: 'Status' }, { text: 'Tests', num: true }], requirementRows)}
 <h2>Flakiest tests (all history)</h2>

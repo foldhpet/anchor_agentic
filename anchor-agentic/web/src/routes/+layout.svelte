@@ -1,6 +1,7 @@
 <script lang="ts">
 	import './layout.css';
 	import favicon from '$lib/assets/favicon.svg';
+	import Icon from '$lib/Icon.svelte';
 	import type { LayoutProps } from './$types';
 
 	let { data, children }: LayoutProps = $props();
@@ -18,8 +19,10 @@
 			<span class="flex-1"></span>
 			{#if data.session}
 				<details class="relative">
-					<summary class="cursor-pointer rounded-md bg-primary px-3 py-1.5 text-white marker:text-white">
-						+ New
+					<summary
+						class="flex cursor-pointer items-center gap-1 rounded-md bg-primary px-3 py-1.5 text-white marker:content-none"
+					>
+						<Icon name="new" />+ New
 					</summary>
 					<div
 						class="absolute right-0 z-10 mt-1 flex flex-col gap-1 rounded-md border border-ink/10 bg-bg p-2 shadow-sm"
@@ -36,7 +39,9 @@
 				</form>
 			{:else}
 				<a href="/login">Log in</a>
-				<a href="/register" class="rounded-md bg-primary px-3 py-1.5 text-white no-underline">Register</a>
+				<a href="/register" class="rounded-md bg-primary px-3 py-1.5 text-white no-underline"
+					>Register</a
+				>
 			{/if}
 		</nav>
 	</header>
@@ -46,8 +51,13 @@
 	</main>
 
 	<footer class="mx-auto w-full max-w-4xl px-4 py-6 text-sm text-ink/70">
-		<a href="https://github.com/sponsors/foldhpet" target="_blank" rel="noopener noreferrer">
-			♥ Support this project
+		<a
+			class="inline-flex items-center gap-1"
+			href="https://github.com/sponsors/foldhpet"
+			target="_blank"
+			rel="noopener noreferrer"
+		>
+			<Icon name="support" />Support this project<Icon name="external-link" />
 		</a>
 	</footer>
 </div>

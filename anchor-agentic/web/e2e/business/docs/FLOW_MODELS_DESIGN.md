@@ -30,7 +30,7 @@ Dependency direction is strictly downward: `tests` -> `business` -> `core`. `cor
 | **Page Model** | locators, one-page actions (`rate()`, `addStep()`), page-level assertions (`expectStatus()`) | navigate through multiple pages in one method (except redirects that the app itself performs, e.g. `create()` → detail page); call `click`/`fill`/`selectOption` directly for interactions the User Action library covers |
 | **User Action** (`core/user-actions.ts`) | application-independent interactions used in several places (`goTo`, `fill`, `fillSecret`, `select`, `click`, `clickAndWaitForAction`, `clickAndWaitForUrl`, `waitForUrl`); one log line per action saying what it did | know any route, label or locator of AnchorAgentic.io; contain assertions |
 
-Conventions: every flow logs with `log.step / ok / warn / fail` (▶️ ✅ ⚠️ ❌); action methods that POST a SvelteKit form
+Conventions: every flow logs with `log.step / ok / warn / fail` (glyph-tagged, no emoji: › ✓ ≈ ✗; see docs/STYLE-GUIDE.md section 7); action methods that POST a SvelteKit form
 action wait on that response (`actions.clickAndWaitForAction(button, 'publish', 'Publish')`); forms are only filled after
 `waitForHydration()` on freshly-loaded pages, because `use:enhance` resets a form that was filled before hydration.
 Page Models reach the User Actions through `this.actions` (created by the core `BasePage`). An interaction moves into

@@ -1,9 +1,11 @@
 <script lang="ts">
+	import Icon from '$lib/Icon.svelte';
 	import DegradedNotice from '$lib/DegradedNotice.svelte';
 	import { enhance } from '$app/forms';
 	import { page } from '$app/state';
 	import { backLink } from '$lib/backLink';
 	import { STATUS_STYLE } from '$lib/statusStyle';
+	import StatusIcon from '$lib/StatusIcon.svelte';
 	import type { VersionSnapshot } from '$lib/api/types';
 	import type { PageProps } from './$types';
 
@@ -12,7 +14,9 @@
 	let back = $derived(backLink(page.url.searchParams.get('from'), data.isOwner));
 
 	let viewingVersion = $state<VersionSnapshot | null>(null);
-	let versionsTotalPages = $derived(Math.max(1, Math.ceil(data.versionsTotal / data.versionsPageSize)));
+	let versionsTotalPages = $derived(
+		Math.max(1, Math.ceil(data.versionsTotal / data.versionsPageSize))
+	);
 </script>
 
 <h1 class="text-2xl">{data.role.name}</h1>
@@ -55,11 +59,15 @@
 			/>
 		</label>
 		<p class="text-sm text-ink/70">
-			Status: <span class="rounded-full px-2 py-0.5 text-xs {STATUS_STYLE[data.role.status]}"
-				>{data.role.status}</span
+			Status: <span
+				class="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs {STATUS_STYLE[
+					data.role.status
+				].classes}"><StatusIcon status={data.role.status} />{data.role.status}</span
 			>
 		</p>
-		<button type="submit" class="self-start rounded-md bg-primary px-4 py-1.5 text-white">Save</button>
+		<button type="submit" class="self-start rounded-md bg-primary px-4 py-1.5 text-white"
+			>Save</button
+		>
 	</form>
 	{#if data.role.status === 'Draft'}
 		<form method="POST" action="?/archive" use:enhance class="mt-2">
@@ -71,8 +79,10 @@
 {:else}
 	<p class="mt-4 text-ink/80">{data.role.description ?? ''}</p>
 	<p class="mt-2 text-sm text-ink/70">
-		Status: <span class="rounded-full px-2 py-0.5 text-xs {STATUS_STYLE[data.role.status]}"
-			>{data.role.status}</span
+		Status: <span
+			class="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs {STATUS_STYLE[
+				data.role.status
+			].classes}"><StatusIcon status={data.role.status} />{data.role.status}</span
 		>
 	</p>
 	{#if data.role.status === 'Archived'}
@@ -94,7 +104,11 @@
 		{#each data.tasks as task (task.id)}
 			<li class="flex items-center gap-2 rounded-md border border-ink/10 p-3">
 				<a class="font-semibold" href="/tasks/{task.id}">{task.name}</a>
-				<span class="rounded-full px-2 py-0.5 text-xs {STATUS_STYLE[task.status]}">{task.status}</span>
+				<span
+					class="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs {STATUS_STYLE[
+						task.status
+					].classes}"><StatusIcon status={task.status} />{task.status}</span
+				>
 			</li>
 		{/each}
 	</ul>
@@ -151,10 +165,14 @@
 		<p class="mt-4 flex items-center gap-3 text-sm text-ink/70">
 			Version page {data.versionsPage} of {versionsTotalPages}
 			{#if data.versionsPage > 1}
-				<a href="?vpage={data.versionsPage - 1}">&larr; Prev</a>
+				<a class="inline-flex items-center gap-1" href="?vpage={data.versionsPage - 1}"
+					><Icon name="previous" />Prev</a
+				>
 			{/if}
 			{#if data.versionsPage < versionsTotalPages}
-				<a href="?vpage={data.versionsPage + 1}">Next &rarr;</a>
+				<a class="inline-flex items-center gap-1" href="?vpage={data.versionsPage + 1}"
+					>Next<Icon name="next" /></a
+				>
 			{/if}
 		</p>
 	{/if}

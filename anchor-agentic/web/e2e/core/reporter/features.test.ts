@@ -325,18 +325,18 @@ describe('Markdown and HTML reports', () => {
 
 	it('Markdown gives the verdict, failures, flaky tests, server errors, requirements and pending decisions', () => {
 		const text = renderMarkdown(failing, historyStats([failing]), pending);
-		expect(text).toContain('E2E test run: ❌ Failed');
+		expect(text).toContain('E2E test run: ✗ Failed');
 		expect(text).toContain('`server-error` broken <script>');
 		expect(text).toContain('### Flaky tests');
 		expect(text).toContain('`GET /api/x`: boom');
-		expect(text).toContain('| US-003 | failing | 1 |');
+		expect(text).toContain('| US-003 | ✗ failing | 1 |');
 		expect(text).toContain('waiting for a quarantine decision');
 		expect(text).not.toContain('wobbly | `tick`'); // table/list characters are neutralised
 	});
 
 	it('Markdown says Passed only when nothing blocks, and writes the GitHub job summary when asked', () => {
 		const ok = summarizeRun([rec('good')], { id: 'r', startedAt: 'x', durationMs: 1 });
-		expect(renderMarkdown(ok, historyStats([ok]))).toContain('✅ Passed');
+		expect(renderMarkdown(ok, historyStats([ok]))).toContain('✓ Passed');
 
 		const dir = tempDir();
 		const file = join(dir, 'step-summary.md');

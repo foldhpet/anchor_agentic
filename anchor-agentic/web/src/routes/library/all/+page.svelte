@@ -1,7 +1,9 @@
 <script lang="ts">
+	import Icon from '$lib/Icon.svelte';
 	import type { LibraryItemType } from '$lib/api/types';
 	import { withOrigin } from '$lib/backLink';
 	import { STATUS_STYLE } from '$lib/statusStyle';
+	import StatusIcon from '$lib/StatusIcon.svelte';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
@@ -56,12 +58,18 @@
 	<ul class="mt-6 flex flex-col gap-2">
 		{#each data.items as item (item.id)}
 			<li class="flex items-center gap-2 rounded-md border border-ink/10 p-3">
-				<a class="font-semibold" href={withOrigin(`${DETAIL_ROUTE[item.item_type]}/${item.id}`, 'all')}
+				<a
+					class="font-semibold"
+					href={withOrigin(`${DETAIL_ROUTE[item.item_type]}/${item.id}`, 'all')}
 					>{displayName(item)}</a
 				>
-				<span class="rounded-full bg-surface px-2 py-0.5 text-xs text-ink/70">[{item.item_type}]</span>
-				<span class="rounded-full px-2 py-0.5 text-xs {STATUS_STYLE[item.status]}"
-					>[{item.status}]</span
+				<span class="rounded-full bg-surface px-2 py-0.5 text-xs text-ink/70"
+					>[{item.item_type}]</span
+				>
+				<span
+					class="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs {STATUS_STYLE[
+						item.status
+					].classes}"><StatusIcon status={item.status} />[{item.status}]</span
 				>
 			</li>
 		{/each}
@@ -72,10 +80,16 @@
 	<p class="mt-6 flex items-center gap-3 text-sm text-ink/70">
 		Page {data.page} of {totalPages}
 		{#if data.page > 1}
-			<a href="?q={data.q}&type={data.type}&page={data.page - 1}">← Prev</a>
+			<a
+				class="inline-flex items-center gap-1"
+				href="?q={data.q}&type={data.type}&page={data.page - 1}"><Icon name="previous" />Prev</a
+			>
 		{/if}
 		{#if data.page < totalPages}
-			<a href="?q={data.q}&type={data.type}&page={data.page + 1}">Next →</a>
+			<a
+				class="inline-flex items-center gap-1"
+				href="?q={data.q}&type={data.type}&page={data.page + 1}">Next<Icon name="next" /></a
+			>
 		{/if}
 	</p>
 {/if}

@@ -1,10 +1,12 @@
 <script lang="ts">
+	import Icon from '$lib/Icon.svelte';
 	import DegradedNotice from '$lib/DegradedNotice.svelte';
 	import { enhance } from '$app/forms';
 	import { page } from '$app/state';
 	import { backLink } from '$lib/backLink';
 	import { downloadExport } from '$lib/export';
 	import { STATUS_STYLE } from '$lib/statusStyle';
+	import StatusIcon from '$lib/StatusIcon.svelte';
 	import type { VersionSnapshot } from '$lib/api/types';
 	import type { PageProps } from './$types';
 
@@ -13,7 +15,9 @@
 	let back = $derived(backLink(page.url.searchParams.get('from'), data.isOwner));
 
 	let viewingVersion = $state<VersionSnapshot | null>(null);
-	let versionsTotalPages = $derived(Math.max(1, Math.ceil(data.versionsTotal / data.versionsPageSize)));
+	let versionsTotalPages = $derived(
+		Math.max(1, Math.ceil(data.versionsTotal / data.versionsPageSize))
+	);
 
 	let exportError = $state<string | null>(null);
 
@@ -63,11 +67,16 @@
 	{#if data.cloneCount !== null}
 		<p class="mt-4 text-sm text-ink/70">Cloned {data.cloneCount} times</p>
 	{/if}
-	<button type="button" onclick={handleExport} class="mt-2 rounded-md border border-ink/15 px-3 py-1.5 text-sm"
-		>Export to .claude</button
+	<button
+		type="button"
+		onclick={handleExport}
+		class="mt-2 rounded-md border border-ink/15 px-3 py-1.5 text-sm">Export to .claude</button
 	>
 	{#if exportError}
-		<p role="alert" class="mt-2 rounded-md border-l-4 border-attention bg-surface px-4 py-3 text-ink">
+		<p
+			role="alert"
+			class="mt-2 rounded-md border-l-4 border-attention bg-surface px-4 py-3 text-ink"
+		>
 			{exportError}
 		</p>
 	{/if}
@@ -91,11 +100,15 @@
 			>
 		</label>
 		<p class="text-sm text-ink/70">
-			Status: <span class="rounded-full px-2 py-0.5 text-xs {STATUS_STYLE[data.agent.status]}"
-				>{data.agent.status}</span
+			Status: <span
+				class="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs {STATUS_STYLE[
+					data.agent.status
+				].classes}"><StatusIcon status={data.agent.status} />{data.agent.status}</span
 			>
 		</p>
-		<button type="submit" class="self-start rounded-md bg-primary px-4 py-1.5 text-white">Save</button>
+		<button type="submit" class="self-start rounded-md bg-primary px-4 py-1.5 text-white"
+			>Save</button
+		>
 	</form>
 	{#if data.agent.published_version == null}
 		<p class="mt-2 text-sm text-ink/70">No published version yet.</p>
@@ -149,8 +162,10 @@
 {:else}
 	<p class="mt-4 text-ink/80">{data.agent.system_prompt ?? ''}</p>
 	<p class="mt-2 text-sm text-ink/70">
-		Status: <span class="rounded-full px-2 py-0.5 text-xs {STATUS_STYLE[data.agent.status]}"
-			>{data.agent.status}</span
+		Status: <span
+			class="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs {STATUS_STYLE[
+				data.agent.status
+			].classes}"><StatusIcon status={data.agent.status} />{data.agent.status}</span
 		>
 	</p>
 	{#if data.agent.status === 'Archived'}
@@ -213,10 +228,14 @@
 		<p class="mt-4 flex items-center gap-3 text-sm text-ink/70">
 			Version page {data.versionsPage} of {versionsTotalPages}
 			{#if data.versionsPage > 1}
-				<a href="?vpage={data.versionsPage - 1}">&larr; Prev</a>
+				<a class="inline-flex items-center gap-1" href="?vpage={data.versionsPage - 1}"
+					><Icon name="previous" />Prev</a
+				>
 			{/if}
 			{#if data.versionsPage < versionsTotalPages}
-				<a href="?vpage={data.versionsPage + 1}">Next &rarr;</a>
+				<a class="inline-flex items-center gap-1" href="?vpage={data.versionsPage + 1}"
+					>Next<Icon name="next" /></a
+				>
 			{/if}
 		</p>
 	{/if}

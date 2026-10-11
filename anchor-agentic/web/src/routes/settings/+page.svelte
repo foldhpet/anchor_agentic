@@ -1,24 +1,26 @@
 <script lang="ts">
-	import type { PageData } from './$types'
+	import Icon from '$lib/Icon.svelte';
+	import type { PageData } from './$types';
 
-	let { data, form }: { data: PageData; form: { success?: boolean; error?: string } | null } = $props()
+	let { data, form }: { data: PageData; form: { success?: boolean; error?: string } | null } =
+		$props();
 
-	let showGithubConnected = $state(false)
-	let showGithubError = $state(false)
-	let githubErrorReason = $state<string | null>(null)
+	let showGithubConnected = $state(false);
+	let showGithubError = $state(false);
+	let githubErrorReason = $state<string | null>(null);
 
 	$effect(() => {
-		const params = new URLSearchParams(window.location.search)
+		const params = new URLSearchParams(window.location.search);
 		if (params.get('github') === 'connected') {
-			showGithubConnected = true
-			window.history.replaceState({}, '', window.location.pathname)
+			showGithubConnected = true;
+			window.history.replaceState({}, '', window.location.pathname);
 		}
 		if (params.get('github') === 'error') {
-			showGithubError = true
-			githubErrorReason = params.get('reason')
-			window.history.replaceState({}, '', window.location.pathname)
+			showGithubError = true;
+			githubErrorReason = params.get('reason');
+			window.history.replaceState({}, '', window.location.pathname);
 		}
-	})
+	});
 </script>
 
 <h1 class="text-2xl">Account Settings</h1>
@@ -45,7 +47,10 @@
 <section class="mt-6 rounded-md border border-ink/10 p-4">
 	<h2 class="text-lg">GitHub Export</h2>
 	{#if data.github.connected}
-		<p class="mt-2 text-ink/80">✓ Connected as <strong>{data.github.username}</strong></p>
+		<p class="mt-2 flex items-center gap-1 text-ink/80">
+			<Icon name="connected" class="text-primary" />Connected as
+			<strong>{data.github.username}</strong>
+		</p>
 		<p class="mt-1 text-sm text-ink/70">
 			Your GitHub account is authorized to receive exports of your Agents, Skills, and Workflows.
 		</p>
@@ -65,7 +70,9 @@
 			Not connected. Connect your GitHub account to export your work directly to a repository.
 		</p>
 		<form method="POST" action="?/connect" class="mt-3">
-			<button type="submit" class="rounded-md bg-primary px-4 py-1.5 text-white"> Connect GitHub </button>
+			<button type="submit" class="rounded-md bg-primary px-4 py-1.5 text-white">
+				Connect GitHub
+			</button>
 		</form>
 	{/if}
 </section>

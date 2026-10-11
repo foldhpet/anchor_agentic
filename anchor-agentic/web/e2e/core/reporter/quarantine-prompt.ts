@@ -1,5 +1,6 @@
 import { createInterface } from 'node:readline/promises';
 import type { Readable, Writable } from 'node:stream';
+import { GLYPH } from './icons.ts';
 import type { Candidate, DecisionKind } from './quarantine.ts';
 
 export type Answer = DecisionKind | 'later';
@@ -21,7 +22,7 @@ export function canAsk(
 export function warningText(candidate: Candidate): string {
 	return [
 		'',
-		`⚠️  QUARANTINE DECISION NEEDED: "${candidate.title}"`,
+		`${GLYPH.quarantined} QUARANTINE DECISION NEEDED: "${candidate.title}"`,
 		`   It was flaky in ${candidate.flakyRuns} of its last ${candidate.window} runs.`,
 		'   Quarantine keeps running it and reporting it, but its failures stop failing the build,',
 		'   so a real regression in it could slip through. Only a person can make this call.'

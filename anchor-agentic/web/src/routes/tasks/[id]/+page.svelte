@@ -1,14 +1,18 @@
 <script lang="ts">
+	import Icon from '$lib/Icon.svelte';
 	import DegradedNotice from '$lib/DegradedNotice.svelte';
 	import { enhance } from '$app/forms';
 	import { STATUS_STYLE } from '$lib/statusStyle';
+	import StatusIcon from '$lib/StatusIcon.svelte';
 	import type { VersionSnapshot } from '$lib/api/types';
 	import type { PageProps } from './$types';
 
 	let { data, form }: PageProps = $props();
 
 	let viewingVersion = $state<VersionSnapshot | null>(null);
-	let versionsTotalPages = $derived(Math.max(1, Math.ceil(data.versionsTotal / data.versionsPageSize)));
+	let versionsTotalPages = $derived(
+		Math.max(1, Math.ceil(data.versionsTotal / data.versionsPageSize))
+	);
 </script>
 
 <h1 class="text-2xl">{data.task.name}</h1>
@@ -59,11 +63,15 @@
 			<span class="text-xs text-ink/60">(a Task cannot be moved to a different Role)</span>
 		</label>
 		<p class="text-sm text-ink/70">
-			Status: <span class="rounded-full px-2 py-0.5 text-xs {STATUS_STYLE[data.task.status]}"
-				>{data.task.status}</span
+			Status: <span
+				class="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs {STATUS_STYLE[
+					data.task.status
+				].classes}"><StatusIcon status={data.task.status} />{data.task.status}</span
 			>
 		</p>
-		<button type="submit" class="self-start rounded-md bg-primary px-4 py-1.5 text-white">Save</button>
+		<button type="submit" class="self-start rounded-md bg-primary px-4 py-1.5 text-white"
+			>Save</button
+		>
 	</form>
 	{#if data.task.status === 'Draft'}
 		<form method="POST" action="?/archive" use:enhance class="mt-2">
@@ -76,8 +84,10 @@
 	<p class="mt-4 text-ink/80">{data.task.instructions ?? ''}</p>
 	<p class="mt-2 text-sm text-ink/70">Role: {data.role.name}</p>
 	<p class="mt-2 text-sm text-ink/70">
-		Status: <span class="rounded-full px-2 py-0.5 text-xs {STATUS_STYLE[data.task.status]}"
-			>{data.task.status}</span
+		Status: <span
+			class="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs {STATUS_STYLE[
+				data.task.status
+			].classes}"><StatusIcon status={data.task.status} />{data.task.status}</span
 		>
 	</p>
 	{#if data.task.status === 'Archived'}
@@ -124,10 +134,14 @@
 		<p class="mt-4 flex items-center gap-3 text-sm text-ink/70">
 			Version page {data.versionsPage} of {versionsTotalPages}
 			{#if data.versionsPage > 1}
-				<a href="?vpage={data.versionsPage - 1}">&larr; Prev</a>
+				<a class="inline-flex items-center gap-1" href="?vpage={data.versionsPage - 1}"
+					><Icon name="previous" />Prev</a
+				>
 			{/if}
 			{#if data.versionsPage < versionsTotalPages}
-				<a href="?vpage={data.versionsPage + 1}">Next &rarr;</a>
+				<a class="inline-flex items-center gap-1" href="?vpage={data.versionsPage + 1}"
+					>Next<Icon name="next" /></a
+				>
 			{/if}
 		</p>
 	{/if}

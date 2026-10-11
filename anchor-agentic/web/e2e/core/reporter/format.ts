@@ -1,4 +1,5 @@
 import type { HistoryStats } from './history.ts';
+import { GLYPH } from './icons.ts';
 import type { RunSummary } from './summary.ts';
 
 const pct = (ratio: number) => `${(ratio * 100).toFixed(1)}%`;
@@ -20,7 +21,7 @@ export function formatReport(run: RunSummary, history: HistoryStats): string {
 	lines.push('', '═══════════ Test Run Report ═══════════');
 	lines.push(`Run ${run.id} · wall time ${time(run.durationMs)}`);
 	lines.push(
-		`Tests: ${run.total} · ✅ ${run.passed} passed · ❌ ${run.failed} failed · ⚠️  ${run.flaky} flaky · ⏭️  ${run.skipped} skipped`
+		`Tests: ${run.total} · ${GLYPH.passed} ${run.passed} passed · ${GLYPH.failed} ${run.failed} failed · ${GLYPH.flaky} ${run.flaky} flaky · ${GLYPH.skipped} ${run.skipped} skipped`
 	);
 	const vsHistory =
 		history.runs > 1 ? ` (average of last ${history.runs} runs: ${pct(history.avgPassRate)})` : '';
@@ -31,16 +32,16 @@ export function formatReport(run: RunSummary, history: HistoryStats): string {
 	if (timing.slowest) lines.push(`  slowest: ${timing.slowest}`);
 
 	lines.push(
-		`Failures: 🐞 ${byCategory['product-bug']} product bug · 🔧 ${byCategory['test-automation-bug']} test automation bug · 🖥️  ${byCategory['server-error']} server-side error`
+		`Failures: ${byCategory['product-bug']} product bug · ${byCategory['test-automation-bug']} test automation bug · ${byCategory['server-error']} server-side error`
 	);
 	for (const f of run.failedTests) {
-		const note = f.quarantined ? ' (quarantined: does not fail the run)' : '';
-		lines.push(`  ❌ [${f.category}] ${f.title}${note}`);
+		const note = f.quarantined ? ` (${GLYPH.quarantined} quarantined: does not fail the run)` : '';
+		lines.push(`  ${GLYPH.failed} [${f.category}] ${f.title}${note}`);
 		for (const artifact of f.artifacts) lines.push(`       ↳ ${artifact}`);
 	}
 
 	lines.push(`Flaky tests: ${run.flaky}`);
-	for (const title of run.flakyTests) lines.push(`  ⚠️  ${title}`);
+	for (const title of run.flakyTests) lines.push(`  ${GLYPH.flaky} ${title}`);
 	if (history.mostFlaky.length > 0) {
 		const top = history.mostFlaky.map((t) => `${t.title} (${t.runs}x)`).join('; ');
 		lines.push(`Most often flaky in the last ${history.runs} runs: ${top}`);
@@ -48,7 +49,8 @@ export function formatReport(run: RunSummary, history: HistoryStats): string {
 
 	if (run.serverErrors.count > 0) {
 		lines.push(`Server-side errors logged during the run: ${run.serverErrors.count}`);
-		for (const e of run.serverErrors.samples) lines.push(`  🖥️  ${e.method} ${e.path}: ${e.error}`);
+		for (const e of run.serverErrors.samples)
+			lines.push(`  ${GLYPH.failed} ${e.method} ${e.path}: ${e.error}`);
 	}
 
 	const attention = run.requirements.filter((r) => r.status !== 'passing');
@@ -56,7 +58,7 @@ export function formatReport(run: RunSummary, history: HistoryStats): string {
 		const passing = run.requirements.length - attention.length;
 		lines.push(`Requirements covered: ${run.requirements.length} (${passing} passing)`);
 		for (const r of attention)
-			lines.push(`  ${r.status === 'failing' ? '❌' : '⚠️ '} ${r.id} ${r.status}`);
+			lines.push(`  ${r.status === 'failing' ? GLYPH.failed : GLYPH.flaky} ${r.id} ${r.status}`);
 	}
 
 	lines.push('Suites:');
