@@ -107,7 +107,7 @@ Functional icons only: an icon names a state or an action, sits beside the text 
 | skipped | Not run | Archived badge | skipped outcome |
 | quarantined | Set aside, non-blocking | Draft badge | quarantined failures and the pending-decision banner |
 | connected | Linked account | Settings "Connected as" line | none |
-| new | Create | "+ New" menu button | none |
+| new | Create | "New" menu button (the icon is the plus) | none |
 | next | Forward | pagination "Next" | none |
 | previous | Back | pagination "Prev" | none |
 | external link | Leaves the site | footer support link, only on links that leave the site | none |
@@ -135,7 +135,7 @@ Drawing rules (every icon, no exceptions):
 | `ink` | `caution` fill | 6.55:1 | flaky badge, UnderReview badge | yes |
 | `primary` | `bg` | 5.84:1 | passed icon, Settings "connected", pagination links | yes |
 | `primary` | `surface` | 5.22:1 | primary-coloured icon inside a notice or header | yes |
-| `bg` (white) | `primary` fill | 5.84:1 | Published badge, "+ New" button, passed badge | yes |
+| `bg` (white) | `primary` fill | 5.84:1 | Published badge, "New" button, passed badge | yes |
 | `attention` | `bg` | 3.03:1 | Reporter failed icon on cards, tables, headings | yes, only on `bg` |
 | `attention` | `surface` | 2.71:1 | would be the failed icon in a banner | **no**, use an `ink` icon and an `attention` left-rule |
 | `ink/75` | `bg` | 5.12:1 | Archived badge icon (the text beside it stays `ink/50`) | yes |

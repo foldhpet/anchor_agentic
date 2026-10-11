@@ -22,7 +22,7 @@
 					<summary
 						class="flex cursor-pointer items-center gap-1 rounded-md bg-primary px-3 py-1.5 text-white marker:content-none"
 					>
-						<Icon name="new" />+ New
+						<Icon name="new" />New
 					</summary>
 					<div
 						class="absolute right-0 z-10 mt-1 flex flex-col gap-1 rounded-md border border-ink/10 bg-bg p-2 shadow-sm"
