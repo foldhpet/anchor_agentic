@@ -190,7 +190,6 @@ Do not use ✔ ✖ ⚠ ♥ ↗ or similar: they have emoji forms that browsers a
 |---|---|---|
 | `src/routes/+layout.svelte` nav | No `aria-current="page"` on the active link | Section 6 |
 | 78 uses of `text-ink/70` in 17 files under `src/` (including `Draft` and `Removed`/`Deprecated` in `src/lib/statusStyle.ts`) | Secondary text at 4.46:1 on `bg` and 4.21:1 on `surface`, below AA for small text | `text-ink/75` (section 2); find them with `grep -rn "ink/70" src` |
-| `e2e/core/log.ts` `log.action` and `e2e/tests/user-actions.spec.ts` | `log.action` still prefixes lines with an emoji because the spec asserts that exact string | Glyph tier (section 7); change `log.action` and the spec's expected lines together |
 
 ## 9. Changing this guide
 

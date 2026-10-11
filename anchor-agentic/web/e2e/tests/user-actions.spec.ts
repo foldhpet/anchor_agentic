@@ -61,7 +61,7 @@ test.describe('Core User Actions', () => {
 		});
 
 		expect(status).toBe(200);
-		expect(lines).toEqual([`🔹 [UserAction] Opened ${ORIGIN}/`]);
+		expect(lines).toEqual([`› [UserAction] Opened ${ORIGIN}/`]);
 	});
 
 	test('fill types the value and logs label and value', async ({ page }) => {
@@ -72,7 +72,7 @@ test.describe('Core User Actions', () => {
 		);
 
 		await expect(page.getByLabel('Name')).toHaveValue('Test Analyst');
-		expect(lines).toEqual(['🔹 [UserAction] Filled "Name" with "Test Analyst"']);
+		expect(lines).toEqual(['› [UserAction] Filled "Name" with "Test Analyst"']);
 	});
 
 	test('fill shortens a long value in the log but types all of it', async ({ page }) => {
@@ -82,7 +82,7 @@ test.describe('Core User Actions', () => {
 		const lines = await captureLog(() => actions.fill(page.getByLabel('Name'), long, 'Name'));
 
 		await expect(page.getByLabel('Name')).toHaveValue(long);
-		expect(lines).toEqual([`🔹 [UserAction] Filled "Name" with "${'x'.repeat(40)}…"`]);
+		expect(lines).toEqual([`› [UserAction] Filled "Name" with "${'x'.repeat(40)}…"`]);
 	});
 
 	test('fillSecret types the value but never logs it', async ({ page }) => {
@@ -93,7 +93,7 @@ test.describe('Core User Actions', () => {
 		);
 
 		await expect(page.getByLabel('Password')).toHaveValue('hunter2-secret');
-		expect(lines).toEqual(['🔹 [UserAction] Filled "Password" with ******']);
+		expect(lines).toEqual(['› [UserAction] Filled "Password" with ******']);
 		expect(lines.join('\n')).not.toContain('hunter2');
 	});
 
@@ -107,8 +107,8 @@ test.describe('Core User Actions', () => {
 
 		await expect(page.getByLabel('Role')).toHaveValue('r1');
 		expect(lines).toEqual([
-			'🔹 [UserAction] Selected "Tester" in "Role"',
-			'🔹 [UserAction] Selected "r1" in "Role"'
+			'› [UserAction] Selected "Tester" in "Role"',
+			'› [UserAction] Selected "r1" in "Role"'
 		]);
 	});
 
@@ -118,7 +118,7 @@ test.describe('Core User Actions', () => {
 		const lines = await captureLog(() => actions.click(page.locator('#count'), 'Count'));
 
 		await expect(page.locator('#count')).toHaveText('clicked');
-		expect(lines).toEqual(['🔹 [UserAction] Clicked "Count"']);
+		expect(lines).toEqual(['› [UserAction] Clicked "Count"']);
 	});
 
 	test('clickAndWaitForAction waits for the form action POST and logs it', async ({ page }) => {
@@ -136,7 +136,7 @@ test.describe('Core User Actions', () => {
 		);
 
 		await posted;
-		expect(lines).toEqual(['🔹 [UserAction] Clicked "Publish" and the "publish" action completed']);
+		expect(lines).toEqual(['› [UserAction] Clicked "Publish" and the "publish" action completed']);
 	});
 
 	test('clickAndWaitForUrl follows the navigation and logs where it ended up', async ({ page }) => {
@@ -151,7 +151,7 @@ test.describe('Core User Actions', () => {
 		);
 
 		await expect(page.getByRole('heading', { name: 'Next' })).toBeVisible();
-		expect(lines).toEqual([`🔹 [UserAction] Clicked "Go next" and navigated to ${ORIGIN}/next/42`]);
+		expect(lines).toEqual([`› [UserAction] Clicked "Go next" and navigated to ${ORIGIN}/next/42`]);
 	});
 
 	test('waitForUrl resolves once the browser is at the URL and logs it', async ({ page }) => {
@@ -160,6 +160,6 @@ test.describe('Core User Actions', () => {
 		void page.evaluate(() => setTimeout(() => (location.href = '/next/7'), 50));
 		const lines = await captureLog(() => actions.waitForUrl(/\/next\/7$/, 'the next page'));
 
-		expect(lines).toEqual([`🔹 [UserAction] Reached "the next page" at ${ORIGIN}/next/7`]);
+		expect(lines).toEqual([`› [UserAction] Reached "the next page" at ${ORIGIN}/next/7`]);
 	});
 });
