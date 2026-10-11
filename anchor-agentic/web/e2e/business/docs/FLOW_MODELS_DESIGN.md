@@ -27,17 +27,20 @@ Dependency direction is strictly downward: `tests` -> `business` -> `core`. `cor
 |---|---|---|
 | **Spec** | scenario narrative, unique test data (`stamp`), the *final* business assertion | contain selectors or multi-step UI sequences |
 | **Flow Model** | multi-page journeys (`registerNewUser`, `createPublishableAgent`, `publishItem`), emoji logging, cross-user orchestration | contain raw selectors (delegates to pages) |
-| **Page Model** | locators, one-page actions (`rate()`, `addStep()`), page-level assertions (`expectStatus()`) | navigate through multiple pages in one method (except redirects that the app itself performs, e.g. `create()` → detail page) |
+| **Page Model** | locators, one-page actions (`rate()`, `addStep()`), page-level assertions (`expectStatus()`) | navigate through multiple pages in one method (except redirects that the app itself performs, e.g. `create()` → detail page); call `click`/`fill`/`selectOption` directly for interactions the User Action library covers |
+| **User Action** (`core/user-actions.ts`) | application-independent interactions used in several places (`goTo`, `fill`, `fillSecret`, `select`, `click`, `clickAndWaitForAction`, `clickAndWaitForUrl`, `waitForUrl`); one log line per action saying what it did | know any route, label or locator of AnchorAgentic.io; contain assertions |
 
 Conventions: every flow logs with `log.step / ok / warn / fail` (▶️ ✅ ⚠️ ❌); action methods that POST a SvelteKit form
-action wait on that response (`waitForAction('publish')`); forms are only filled after `waitForHydration()` on
-freshly-loaded pages, because `use:enhance` resets a form that was filled before hydration.
+action wait on that response (`actions.clickAndWaitForAction(button, 'publish', 'Publish')`); forms are only filled after
+`waitForHydration()` on freshly-loaded pages, because `use:enhance` resets a form that was filled before hydration.
+Page Models reach the User Actions through `this.actions` (created by the core `BasePage`). An interaction moves into
+`core/user-actions.ts` once it is used in more than one place; a one-off interaction stays in its Page Model.
 
 ## Page Model inventory
 
 | Page Model | Route | Used by |
 |---|---|---|
-| `AnchorBasePage` (`business/pages/anchor-base.page.ts`) | application-specific base page; extends the core `BasePage`; adds header/footer (Log out, Log in, donation link, alert), `waitForHydration`, `waitForAction` | all pages |
+| `AnchorBasePage` (`business/pages/anchor-base.page.ts`) | application-specific base page; extends the core `BasePage`; adds header/footer (Log out, Log in, donation link, alert), `waitForHydration` | all pages |
 | `RegisterPage` | `/register` | AuthFlow |
 | `LoginPage` | `/login` | AuthFlow, permission-boundary spec |
 | `MarketplacePage` | `/` (search `q`, filter `type`, `role`) | MarketplaceFlow, sustainability spec |

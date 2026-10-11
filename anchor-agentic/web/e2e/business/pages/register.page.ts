@@ -21,10 +21,10 @@ export class RegisterPage extends AnchorBasePage {
 	}
 
 	async fillAndSubmit(username: string, email: string, password: string) {
-		await this.usernameInput.fill(username);
-		await this.emailInput.fill(email);
-		await this.passwordInput.fill(password);
-		await this.submitButton.click();
+		await this.actions.fill(this.usernameInput, username, 'Username');
+		await this.actions.fill(this.emailInput, email, 'Email');
+		await this.actions.fillSecret(this.passwordInput, password, 'Password');
+		await this.actions.click(this.submitButton, 'Create account');
 	}
 
 	async expectDuplicateEmailError() {

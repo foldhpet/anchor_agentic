@@ -44,11 +44,11 @@ export abstract class ItemDetailPage extends AnchorBasePage {
 	async publish() {
 		// Let any in-flight invalidation (e.g. after adding a step) settle before submitting.
 		await this.waitForHydration();
-		await Promise.all([this.waitForAction('publish'), this.publishButton.click()]);
+		await this.actions.clickAndWaitForAction(this.publishButton, 'publish', 'Publish');
 	}
 
 	async archive() {
-		await this.archiveButton.click();
+		await this.actions.click(this.archiveButton, 'Archive');
 		await this.expectStatus('Archived');
 	}
 
@@ -56,8 +56,11 @@ export abstract class ItemDetailPage extends AnchorBasePage {
 	async clone() {
 		const sourceUrl = this.page.url();
 		const detailUrl = new RegExp(`/${this.routeSegment}/[0-9a-f-]+$`);
-		await Promise.all([this.waitForAction('clone'), this.cloneButton.click()]);
-		await this.page.waitForURL((url) => url.href !== sourceUrl && detailUrl.test(url.pathname));
+		await this.actions.clickAndWaitForAction(this.cloneButton, 'clone', 'Clone into My Sandbox');
+		await this.actions.waitForUrl(
+			(url) => url.href !== sourceUrl && detailUrl.test(url.pathname),
+			'the cloned Draft'
+		);
 	}
 
 	// --- Read-only / provenance ---
@@ -94,12 +97,12 @@ export abstract class ItemDetailPage extends AnchorBasePage {
 	}
 
 	async openOldestVersion() {
-		await this.versionButtons.last().click();
+		await this.actions.click(this.versionButtons.last(), 'Oldest version');
 		await expect(this.versionSnapshot).toBeVisible();
 	}
 
 	async closeVersionSnapshot() {
-		await this.page.getByRole('button', { name: 'Close' }).click();
+		await this.actions.click(this.page.getByRole('button', { name: 'Close' }), 'Close');
 		await expect(this.versionSnapshot).toHaveCount(0);
 	}
 }

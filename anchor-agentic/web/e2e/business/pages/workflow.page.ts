@@ -13,10 +13,15 @@ export class NewWorkflowPage extends AnchorBasePage {
 
 	/** Creates a Workflow; redirects to its detail page. A description is needed to publish later. */
 	async create(name: string, description?: string): Promise<WorkflowDetailPage> {
-		await this.page.getByLabel('Name').fill(name);
-		if (description) await this.page.getByLabel('Description').fill(description);
-		await this.page.getByRole('button', { name: 'Create Workflow' }).click();
-		await this.page.waitForURL(/\/workflows\/[0-9a-f-]+$/);
+		await this.actions.fill(this.page.getByLabel('Name'), name, 'Name');
+		if (description) {
+			await this.actions.fill(this.page.getByLabel('Description'), description, 'Description');
+		}
+		await this.actions.clickAndWaitForUrl(
+			this.page.getByRole('button', { name: 'Create Workflow' }),
+			/\/workflows\/[0-9a-f-]+$/,
+			'Create Workflow'
+		);
 		return new WorkflowDetailPage(this.page);
 	}
 }
@@ -45,22 +50,34 @@ export class WorkflowDetailPage extends ItemDetailPage {
 	 */
 	async addStep(type: StepType, referenceLabel?: string) {
 		const before = await this.steps.count();
-		await this.addStepForm.locator('select[name="step_type"]').selectOption(type);
+		await this.actions.select(
+			this.addStepForm.locator('select[name="step_type"]'),
+			type,
+			'Step type'
+		);
 		if (referenceLabel) {
-			await this.addStepForm
-				.locator('select[name="reference_id"]')
-				.selectOption({ label: referenceLabel });
+			await this.actions.select(
+				this.addStepForm.locator('select[name="reference_id"]'),
+				{ label: referenceLabel },
+				'Step reference'
+			);
 		}
-		await this.page.getByRole('button', { name: 'Add Step' }).click();
+		await this.actions.click(this.page.getByRole('button', { name: 'Add Step' }), 'Add Step');
 		await expect(this.steps).toHaveCount(before + 1);
 	}
 
 	async moveStepUp(index: number) {
-		await this.steps.nth(index).getByRole('button', { name: '↑' }).click();
+		await this.actions.click(
+			this.steps.nth(index).getByRole('button', { name: '↑' }),
+			`Move step ${index + 1} up`
+		);
 	}
 
 	async removeStep(index: number) {
-		await this.steps.nth(index).getByRole('button', { name: 'Remove', exact: true }).click();
+		await this.actions.click(
+			this.steps.nth(index).getByRole('button', { name: 'Remove', exact: true }),
+			`Remove step ${index + 1}`
+		);
 	}
 
 	/**
@@ -69,14 +86,22 @@ export class WorkflowDetailPage extends ItemDetailPage {
 	 */
 	async editStep(index: number, type: StepType, referenceLabel: string) {
 		const step = this.steps.nth(index);
-		await step.getByRole('button', { name: 'Edit', exact: true }).click();
+		await this.actions.click(
+			step.getByRole('button', { name: 'Edit', exact: true }),
+			`Edit step ${index + 1}`
+		);
 		const form = this.editStepForms.and(step.locator('form'));
-		await form.locator('select[name="step_type"]').selectOption(type);
-		await form.locator('select[name="reference_id"]').selectOption({ label: referenceLabel });
-		await Promise.all([
-			this.waitForAction('editStep'),
-			form.getByRole('button', { name: 'Save' }).click()
-		]);
+		await this.actions.select(form.locator('select[name="step_type"]'), type, 'Step type');
+		await this.actions.select(
+			form.locator('select[name="reference_id"]'),
+			{ label: referenceLabel },
+			'Step reference'
+		);
+		await this.actions.clickAndWaitForAction(
+			form.getByRole('button', { name: 'Save' }),
+			'editStep',
+			'Save step'
+		);
 		await expect(step).toContainText(`${type}: ${referenceLabel}`);
 	}
 

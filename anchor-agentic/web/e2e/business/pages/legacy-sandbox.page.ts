@@ -8,8 +8,8 @@ export class LegacySandboxPage extends AnchorBasePage {
 	}
 
 	async createItem(title: string) {
-		await this.page.getByLabel('New item title').fill(title);
-		await this.page.getByRole('button', { name: 'Create' }).click();
+		await this.actions.fill(this.page.getByLabel('New item title'), title, 'New item title');
+		await this.actions.click(this.page.getByRole('button', { name: 'Create' }), 'Create');
 		await expect(this.page.locator('li input[name="title"]').first()).toHaveValue(title);
 	}
 }
@@ -30,9 +30,10 @@ export class LegacyAllSandboxPage extends AnchorBasePage {
 	}
 
 	async attemptForbiddenEdit(title: string) {
-		await this.rowFor(title)
-			.getByRole('button', { name: 'Try editing (expect forbidden)' })
-			.click();
+		await this.actions.click(
+			this.rowFor(title).getByRole('button', { name: 'Try editing (expect forbidden)' }),
+			'Try editing (expect forbidden)'
+		);
 		await expect(this.page.getByRole('alert')).toContainText('Forbidden');
 	}
 }

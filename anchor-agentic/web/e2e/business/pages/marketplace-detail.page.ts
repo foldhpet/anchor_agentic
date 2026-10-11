@@ -26,8 +26,8 @@ export class MarketplaceDetailPage extends AnchorBasePage {
 	}
 
 	async rate(score: number) {
-		await this.scoreSelect.selectOption(String(score));
-		await Promise.all([this.waitForAction('rate'), this.rateButton.click()]);
+		await this.actions.select(this.scoreSelect, String(score), 'Score');
+		await this.actions.clickAndWaitForAction(this.rateButton, 'rate', 'Rate');
 	}
 
 	async expectRating(summary: string) {
@@ -53,7 +53,7 @@ export class MarketplaceDetailPage extends AnchorBasePage {
 
 	/** Clones into the viewer's Sandbox; resolves once redirected to the new Draft's own page. */
 	async cloneIntoSandbox(routeSegment: 'agents' | 'skills' | 'workflows') {
-		await Promise.all([this.waitForAction('clone'), this.cloneButton.click()]);
-		await this.page.waitForURL(new RegExp(`/${routeSegment}/[0-9a-f-]+$`));
+		await this.actions.clickAndWaitForAction(this.cloneButton, 'clone', 'Clone into My Sandbox');
+		await this.actions.waitForUrl(new RegExp(`/${routeSegment}/[0-9a-f-]+$`), 'the cloned Draft');
 	}
 }

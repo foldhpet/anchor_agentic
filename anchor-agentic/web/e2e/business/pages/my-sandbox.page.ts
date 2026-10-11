@@ -52,6 +52,6 @@ export class MySandboxPage extends AnchorBasePage {
 	}
 
 	async openItem(name: string) {
-		await this.itemLink(name).click();
+		await this.actions.click(this.itemLink(name), name);
 	}
 }

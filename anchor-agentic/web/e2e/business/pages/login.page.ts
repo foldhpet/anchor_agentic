@@ -17,9 +17,9 @@ export class LoginPage extends AnchorBasePage {
 	}
 
 	async fillAndSubmit(email: string, password: string) {
-		await this.emailInput.fill(email);
-		await this.passwordInput.fill(password);
-		await this.submitButton.click();
+		await this.actions.fill(this.emailInput, email, 'Email');
+		await this.actions.fillSecret(this.passwordInput, password, 'Password');
+		await this.actions.click(this.submitButton, 'Log in');
 	}
 
 	async expectInvalidCredentialsError() {
@@ -27,6 +27,8 @@ export class LoginPage extends AnchorBasePage {
 	}
 
 	async expectSandboxReasonBanner() {
-		await expect(this.page.getByText('Register or log in to continue to the Sandbox.')).toBeVisible();
+		await expect(
+			this.page.getByText('Register or log in to continue to the Sandbox.')
+		).toBeVisible();
 	}
 }

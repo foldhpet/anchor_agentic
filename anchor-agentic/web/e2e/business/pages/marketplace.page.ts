@@ -35,8 +35,11 @@ export class MarketplacePage extends AnchorBasePage {
 
 	/** Clicks through to the item's Marketplace detail page. */
 	async openItem(name: string, itemType: ItemType, id: string) {
-		await this.itemLink(name).click();
-		await this.page.waitForURL(`/marketplace/${itemType}/${id}`);
+		await this.actions.clickAndWaitForUrl(
+			this.itemLink(name),
+			`/marketplace/${itemType}/${id}`,
+			name
+		);
 	}
 
 	async expectDonationLinkOpensExternally(href: string) {

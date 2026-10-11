@@ -23,7 +23,7 @@ export abstract class AnchorBasePage extends CoreBasePage {
 	}
 
 	async logOut() {
-		await this.logOutButton.click();
+		await this.actions.click(this.logOutButton, 'Log out');
 	}
 
 	async expectLoggedIn() {
@@ -32,12 +32,5 @@ export abstract class AnchorBasePage extends CoreBasePage {
 
 	async expectLoggedOut() {
 		await expect(this.logInLink).toBeVisible();
-	}
-
-	/** Waits for a POSTed SvelteKit form action (e.g. '?/publish') to complete. */
-	protected waitForAction(action: string) {
-		return this.page.waitForResponse(
-			(resp) => resp.url().includes(`?/${action}`) && resp.request().method() === 'POST'
-		);
 	}
 }

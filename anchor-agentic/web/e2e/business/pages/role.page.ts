@@ -15,10 +15,15 @@ export class NewRolePage extends AnchorBasePage {
 
 	/** Creates the Role; the app redirects straight to its detail page. */
 	async create(name: string, description?: string): Promise<RoleDetailPage> {
-		await this.form.getByLabel('Name').fill(name);
-		if (description) await this.form.getByLabel('Description').fill(description);
-		await this.page.getByRole('button', { name: 'Create Role' }).click();
-		await this.page.waitForURL(/\/roles\/[0-9a-f-]+$/);
+		await this.actions.fill(this.form.getByLabel('Name'), name, 'Name');
+		if (description) {
+			await this.actions.fill(this.form.getByLabel('Description'), description, 'Description');
+		}
+		await this.actions.clickAndWaitForUrl(
+			this.page.getByRole('button', { name: 'Create Role' }),
+			/\/roles\/[0-9a-f-]+$/,
+			'Create Role'
+		);
 		return new RoleDetailPage(this.page);
 	}
 }
@@ -43,24 +48,30 @@ export class RoleDetailPage extends ItemDetailPage {
 
 	async createTask(name: string, instructions?: string) {
 		await this.waitForHydration();
-		await this.taskForm.getByLabel('Name').fill(name);
-		if (instructions) await this.taskForm.getByLabel('Instructions').fill(instructions);
-		await this.page.getByRole('button', { name: 'Create Task' }).click();
+		await this.actions.fill(this.taskForm.getByLabel('Name'), name, 'Task name');
+		if (instructions) {
+			await this.actions.fill(
+				this.taskForm.getByLabel('Instructions'),
+				instructions,
+				'Instructions'
+			);
+		}
+		await this.actions.click(this.page.getByRole('button', { name: 'Create Task' }), 'Create Task');
 		await expect(this.taskLink(name)).toBeVisible();
 	}
 
 	async openTask(name: string) {
-		await this.taskLink(name).click();
-		await this.page.waitForURL(/\/tasks\/[0-9a-f-]+$/);
+		await this.actions.clickAndWaitForUrl(this.taskLink(name), /\/tasks\/[0-9a-f-]+$/, name);
 	}
 
 	/** Saves a new description and waits for the saved value to be reflected. */
 	async saveDescription(text: string) {
-		await this.descriptionInput.fill(text);
-		await Promise.all([
-			this.waitForAction('update'),
-			this.updateForm.getByRole('button', { name: 'Save' }).click()
-		]);
+		await this.actions.fill(this.descriptionInput, text, 'Description');
+		await this.actions.clickAndWaitForAction(
+			this.updateForm.getByRole('button', { name: 'Save' }),
+			'update',
+			'Save'
+		);
 		await expect(this.descriptionInput).toHaveValue(text);
 	}
 

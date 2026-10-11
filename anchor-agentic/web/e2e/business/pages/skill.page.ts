@@ -11,11 +11,14 @@ export class NewSkillPage extends AnchorBasePage {
 
 	/** Creates a Skill with one file; redirects to its detail page. */
 	async create(name: string, content: string, path = 'SKILL.md'): Promise<SkillDetailPage> {
-		await this.page.getByLabel('Name').fill(name);
-		await this.page.getByLabel('Path').fill(path);
-		await this.page.getByLabel('Content').fill(content);
-		await this.page.getByRole('button', { name: 'Create Skill' }).click();
-		await this.page.waitForURL(/\/skills\/[0-9a-f-]+$/);
+		await this.actions.fill(this.page.getByLabel('Name'), name, 'Name');
+		await this.actions.fill(this.page.getByLabel('Path'), path, 'Path');
+		await this.actions.fill(this.page.getByLabel('Content'), content, 'Content');
+		await this.actions.clickAndWaitForUrl(
+			this.page.getByRole('button', { name: 'Create Skill' }),
+			/\/skills\/[0-9a-f-]+$/,
+			'Create Skill'
+		);
 		return new SkillDetailPage(this.page);
 	}
 }

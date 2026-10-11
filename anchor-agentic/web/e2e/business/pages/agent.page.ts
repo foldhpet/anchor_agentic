@@ -18,10 +18,14 @@ export class NewAgentPage extends AnchorBasePage {
 
 	/** Creates the Agent for a Role (one Agent per Role); redirects to its detail page. */
 	async create(roleName: string, systemPrompt?: string): Promise<AgentDetailPage> {
-		await this.roleSelect.selectOption({ label: roleName });
-		if (systemPrompt) await this.systemPromptInput.fill(systemPrompt);
-		await this.page.getByRole('button', { name: 'Create Agent' }).click();
-		await this.page.waitForURL(/\/agents\/[0-9a-f-]+$/);
+		await this.actions.select(this.roleSelect, { label: roleName }, 'Role');
+		if (systemPrompt)
+			await this.actions.fill(this.systemPromptInput, systemPrompt, 'System prompt');
+		await this.actions.clickAndWaitForUrl(
+			this.page.getByRole('button', { name: 'Create Agent' }),
+			/\/agents\/[0-9a-f-]+$/,
+			'Create Agent'
+		);
 		return new AgentDetailPage(this.page);
 	}
 
@@ -48,7 +52,10 @@ export class AgentDetailPage extends ItemDetailPage {
 	}
 
 	async assignTask(taskName?: string) {
-		await this.taskRow(taskName).getByRole('button', { name: 'Assign' }).click();
+		await this.actions.click(
+			this.taskRow(taskName).getByRole('button', { name: 'Assign' }),
+			taskName ? `Assign (${taskName})` : 'Assign'
+		);
 		await this.expectTaskAssigned(taskName);
 	}
 
