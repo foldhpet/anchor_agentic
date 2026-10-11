@@ -1,6 +1,7 @@
 import { error, fail, redirect } from '@sveltejs/kit';
 import { ApiError, apiRequest } from '$lib/api/client';
-import type { CloneResult, Provenance, Skill, VersionSnapshot } from '$lib/api/types';
+import { degradedParts, loadProvenance, loadVersions } from '$lib/api/optional';
+import type { CloneResult, Skill } from '$lib/api/types';
 import type { Actions, PageServerLoad } from './$types';
 
 const VERSIONS_PAGE_SIZE = 10;
@@ -9,17 +10,13 @@ export const load: PageServerLoad = async ({ params, locals, fetch, url }) => {
 	const accessToken = locals.session?.access_token;
 	const versionsPage = Math.max(1, Number.parseInt(url.searchParams.get('vpage') ?? '1', 10) || 1);
 	try {
-		const [{ skill }, { versions, total: versionsTotal }, { provenance, cloneCount }] = await Promise.all([
+		const [{ skill }, versionsResult, provenanceResult] = await Promise.all([
 			apiRequest<{ skill: Skill }>(`/api/v1/skills/${params.id}`, { accessToken, fetchFn: fetch }),
-			apiRequest<{ versions: VersionSnapshot[]; total: number }>(
-				`/api/v1/library/SKILL/${params.id}/versions?page=${versionsPage}&pageSize=${VERSIONS_PAGE_SIZE}`,
-				{ accessToken, fetchFn: fetch }
-			),
-			apiRequest<{ provenance: Provenance | null; cloneCount: number }>(`/api/v1/clone/SKILL/${params.id}`, {
-				accessToken,
-				fetchFn: fetch
-			})
+			loadVersions('SKILL', params.id, versionsPage, VERSIONS_PAGE_SIZE, { accessToken, fetchFn: fetch }),
+			loadProvenance('SKILL', params.id, { accessToken, fetchFn: fetch })
 		]);
+		const { versions, total: versionsTotal } = versionsResult.data;
+		const { provenance, cloneCount } = provenanceResult.data;
 		return {
 			skill,
 			isOwner: skill.owner_id === locals.user?.id,
@@ -28,7 +25,9 @@ export const load: PageServerLoad = async ({ params, locals, fetch, url }) => {
 			versionsPage,
 			versionsPageSize: VERSIONS_PAGE_SIZE,
 			provenance,
-			cloneCount
+			// null = could not be loaded; the page hides the line instead of showing a wrong 0.
+			cloneCount: provenanceResult.failed ? null : cloneCount,
+			degraded: degradedParts({ versions: versionsResult, provenance: provenanceResult })
 		};
 	} catch (err) {
 		if (err instanceof ApiError && err.status === 404) throw error(404, 'Skill not found');

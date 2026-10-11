@@ -1,6 +1,7 @@
 import { error, fail } from '@sveltejs/kit';
 import { ApiError, apiRequest } from '$lib/api/client';
-import type { Role, Task, VersionSnapshot } from '$lib/api/types';
+import { degradedParts, loadVersions } from '$lib/api/optional';
+import type { Role, Task } from '$lib/api/types';
 import type { Actions, PageServerLoad } from './$types';
 
 const VERSIONS_PAGE_SIZE = 10;
@@ -13,13 +14,11 @@ export const load: PageServerLoad = async ({ params, locals, fetch, url }) => {
 			accessToken,
 			fetchFn: fetch
 		});
-		const [{ role }, { versions, total: versionsTotal }] = await Promise.all([
+		const [{ role }, versionsResult] = await Promise.all([
 			apiRequest<{ role: Role }>(`/api/v1/roles/${task.role_id}`, { accessToken, fetchFn: fetch }),
-			apiRequest<{ versions: VersionSnapshot[]; total: number }>(
-				`/api/v1/library/TASK/${params.id}/versions?page=${versionsPage}&pageSize=${VERSIONS_PAGE_SIZE}`,
-				{ accessToken, fetchFn: fetch }
-			)
+			loadVersions('TASK', params.id, versionsPage, VERSIONS_PAGE_SIZE, { accessToken, fetchFn: fetch })
 		]);
+		const { versions, total: versionsTotal } = versionsResult.data;
 		return {
 			task,
 			role,
@@ -27,7 +26,8 @@ export const load: PageServerLoad = async ({ params, locals, fetch, url }) => {
 			versions,
 			versionsTotal,
 			versionsPage,
-			versionsPageSize: VERSIONS_PAGE_SIZE
+			versionsPageSize: VERSIONS_PAGE_SIZE,
+			degraded: degradedParts({ versions: versionsResult })
 		};
 	} catch (err) {
 		if (err instanceof ApiError && err.status === 404) throw error(404, 'Task not found');

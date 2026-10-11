@@ -1,4 +1,5 @@
 <script lang="ts">
+	import DegradedNotice from '$lib/DegradedNotice.svelte';
 	import { enhance } from '$app/forms';
 	import { STATUS_STYLE } from '$lib/statusStyle';
 	import type { VersionSnapshot } from '$lib/api/types';
@@ -12,6 +13,8 @@
 
 <h1 class="text-2xl">{data.task.name}</h1>
 <p class="mt-1 text-sm"><a href="/roles/{data.role.id}">&larr; {data.role.name}</a></p>
+
+<DegradedNotice missing={data.degraded} />
 
 {#if form?.error}
 	<p role="alert" class="mt-4 rounded-md border-l-4 border-attention bg-surface px-4 py-3 text-ink">

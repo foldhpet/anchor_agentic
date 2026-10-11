@@ -1,13 +1,12 @@
 import { error, fail, redirect } from '@sveltejs/kit';
 import { ApiError, apiRequest } from '$lib/api/client';
+import { degradedParts, loadProvenance, loadVersions } from '$lib/api/optional';
 import type {
 	Agent,
 	CloneResult,
-	Provenance,
 	Role,
 	Skill,
 	Task,
-	VersionSnapshot,
 	Workflow,
 	WorkflowStep,
 	WorkflowStepType
@@ -34,8 +33,8 @@ export const load: PageServerLoad = async ({ params, locals, fetch, url }) => {
 			{ agents },
 			{ skills },
 			{ roles },
-			{ versions, total: versionsTotal },
-			{ provenance, cloneCount }
+			versionsResult,
+			provenanceResult
 		] = await Promise.all([
 			apiRequest<{ steps: WorkflowStep[] }>(`/api/v1/workflows/${params.id}/steps`, {
 				accessToken,
@@ -45,14 +44,8 @@ export const load: PageServerLoad = async ({ params, locals, fetch, url }) => {
 			apiRequest<{ agents: Agent[] }>('/api/v1/agents', { accessToken, fetchFn: fetch }),
 			apiRequest<{ skills: Skill[] }>('/api/v1/skills', { accessToken, fetchFn: fetch }),
 			apiRequest<{ roles: Role[] }>('/api/v1/roles', { accessToken, fetchFn: fetch }),
-			apiRequest<{ versions: VersionSnapshot[]; total: number }>(
-				`/api/v1/library/WORKFLOW/${params.id}/versions?page=${versionsPage}&pageSize=${VERSIONS_PAGE_SIZE}`,
-				{ accessToken, fetchFn: fetch }
-			),
-			apiRequest<{ provenance: Provenance | null; cloneCount: number }>(`/api/v1/clone/WORKFLOW/${params.id}`, {
-				accessToken,
-				fetchFn: fetch
-			})
+			loadVersions('WORKFLOW', params.id, versionsPage, VERSIONS_PAGE_SIZE, { accessToken, fetchFn: fetch }),
+			loadProvenance('WORKFLOW', params.id, { accessToken, fetchFn: fetch })
 		]);
 
 		const taskById = new Map(tasks.map((t) => [t.id, t]));
@@ -70,6 +63,8 @@ export const load: PageServerLoad = async ({ params, locals, fetch, url }) => {
 			return '';
 		};
 
+		const { versions, total: versionsTotal } = versionsResult.data;
+		const { provenance, cloneCount } = provenanceResult.data;
 		return {
 			workflow,
 			steps: steps.map((step) => ({ ...step, label: describeStep(step) })),
@@ -87,7 +82,9 @@ export const load: PageServerLoad = async ({ params, locals, fetch, url }) => {
 			versionsPage,
 			versionsPageSize: VERSIONS_PAGE_SIZE,
 			provenance,
-			cloneCount
+			// null = could not be loaded; the page hides the line instead of showing a wrong 0.
+			cloneCount: provenanceResult.failed ? null : cloneCount,
+			degraded: degradedParts({ versions: versionsResult, provenance: provenanceResult })
 		};
 	} catch (err) {
 		if (err instanceof ApiError && err.status === 404) throw error(404, 'Workflow not found');

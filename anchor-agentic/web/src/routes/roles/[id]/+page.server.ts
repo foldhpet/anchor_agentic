@@ -1,6 +1,7 @@
 import { error, fail } from '@sveltejs/kit';
 import { ApiError, apiRequest } from '$lib/api/client';
-import type { Role, Task, VersionSnapshot } from '$lib/api/types';
+import { degradedParts, loadVersions } from '$lib/api/optional';
+import type { Role, Task } from '$lib/api/types';
 import type { Actions, PageServerLoad } from './$types';
 
 const VERSIONS_PAGE_SIZE = 10;
@@ -9,14 +10,12 @@ export const load: PageServerLoad = async ({ params, locals, fetch, url }) => {
 	const accessToken = locals.session?.access_token;
 	const versionsPage = Math.max(1, Number.parseInt(url.searchParams.get('vpage') ?? '1', 10) || 1);
 	try {
-		const [{ role }, { tasks }, { versions, total: versionsTotal }] = await Promise.all([
+		const [{ role }, { tasks }, versionsResult] = await Promise.all([
 			apiRequest<{ role: Role }>(`/api/v1/roles/${params.id}`, { accessToken, fetchFn: fetch }),
 			apiRequest<{ tasks: Task[] }>(`/api/v1/tasks?role_id=${params.id}`, { accessToken, fetchFn: fetch }),
-			apiRequest<{ versions: VersionSnapshot[]; total: number }>(
-				`/api/v1/library/ROLE/${params.id}/versions?page=${versionsPage}&pageSize=${VERSIONS_PAGE_SIZE}`,
-				{ accessToken, fetchFn: fetch }
-			)
+			loadVersions('ROLE', params.id, versionsPage, VERSIONS_PAGE_SIZE, { accessToken, fetchFn: fetch })
 		]);
+		const { versions, total: versionsTotal } = versionsResult.data;
 		return {
 			role,
 			tasks,
@@ -24,7 +23,8 @@ export const load: PageServerLoad = async ({ params, locals, fetch, url }) => {
 			versions,
 			versionsTotal,
 			versionsPage,
-			versionsPageSize: VERSIONS_PAGE_SIZE
+			versionsPageSize: VERSIONS_PAGE_SIZE,
+			degraded: degradedParts({ versions: versionsResult })
 		};
 	} catch (err) {
 		if (err instanceof ApiError && err.status === 404) throw error(404, 'Role not found');

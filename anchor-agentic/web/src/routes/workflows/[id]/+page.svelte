@@ -1,4 +1,5 @@
 <script lang="ts">
+	import DegradedNotice from '$lib/DegradedNotice.svelte';
 	import { enhance } from '$app/forms';
 	import { page } from '$app/state';
 	import { backLink } from '$lib/backLink';
@@ -40,6 +41,8 @@
 <h1 class="text-2xl">{data.workflow.name}</h1>
 <p class="mt-1 text-sm"><a href={back.href}>&larr; {back.label}</a></p>
 
+<DegradedNotice missing={data.degraded} />
+
 {#if form?.error}
 	<p role="alert" class="mt-4 rounded-md border-l-4 border-attention bg-surface px-4 py-3 text-ink">
 		{form.error}
@@ -66,7 +69,9 @@
 {/if}
 
 {#if data.isOwner}
-	<p class="mt-4 text-sm text-ink/70">Cloned {data.cloneCount} times</p>
+	{#if data.cloneCount !== null}
+		<p class="mt-4 text-sm text-ink/70">Cloned {data.cloneCount} times</p>
+	{/if}
 	<button type="button" onclick={handleExport} class="mt-2 rounded-md border border-ink/15 px-3 py-1.5 text-sm"
 		>Export to .claude</button
 	>

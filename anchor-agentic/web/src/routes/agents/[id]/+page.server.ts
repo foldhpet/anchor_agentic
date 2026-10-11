@@ -1,13 +1,12 @@
 import { error, fail, redirect } from '@sveltejs/kit';
 import { ApiError, apiRequest } from '$lib/api/client';
+import { degradedParts, loadProvenance, loadVersions } from '$lib/api/optional';
 import type {
 	Agent,
 	AgentTaskAssignment,
 	CloneResult,
-	Provenance,
 	Role,
-	Task,
-	VersionSnapshot
+	Task
 } from '$lib/api/types';
 import type { Actions, PageServerLoad } from './$types';
 
@@ -21,7 +20,7 @@ export const load: PageServerLoad = async ({ params, locals, fetch, url }) => {
 			accessToken,
 			fetchFn: fetch
 		});
-		const [{ role }, { tasks }, { assignments }, { versions, total: versionsTotal }, { provenance, cloneCount }] =
+		const [{ role }, { tasks }, { assignments }, versionsResult, provenanceResult] =
 			await Promise.all([
 				apiRequest<{ role: Role }>(`/api/v1/roles/${agent.role_id}`, { accessToken, fetchFn: fetch }),
 				apiRequest<{ tasks: Task[] }>(`/api/v1/tasks?role_id=${agent.role_id}`, { accessToken, fetchFn: fetch }),
@@ -29,16 +28,12 @@ export const load: PageServerLoad = async ({ params, locals, fetch, url }) => {
 					accessToken,
 					fetchFn: fetch
 				}),
-				apiRequest<{ versions: VersionSnapshot[]; total: number }>(
-					`/api/v1/library/AGENT/${params.id}/versions?page=${versionsPage}&pageSize=${VERSIONS_PAGE_SIZE}`,
-					{ accessToken, fetchFn: fetch }
-				),
-				apiRequest<{ provenance: Provenance | null; cloneCount: number }>(`/api/v1/clone/AGENT/${params.id}`, {
-					accessToken,
-					fetchFn: fetch
-				})
+				loadVersions('AGENT', params.id, versionsPage, VERSIONS_PAGE_SIZE, { accessToken, fetchFn: fetch }),
+				loadProvenance('AGENT', params.id, { accessToken, fetchFn: fetch })
 			]);
 		const assignedTaskIds = new Set(assignments.map((a) => a.task_id));
+		const { versions, total: versionsTotal } = versionsResult.data;
+		const { provenance, cloneCount } = provenanceResult.data;
 		return {
 			agent,
 			role,
@@ -50,7 +45,9 @@ export const load: PageServerLoad = async ({ params, locals, fetch, url }) => {
 			versionsPage,
 			versionsPageSize: VERSIONS_PAGE_SIZE,
 			provenance,
-			cloneCount
+			// null = could not be loaded; the page hides the line instead of showing a wrong 0.
+			cloneCount: provenanceResult.failed ? null : cloneCount,
+			degraded: degradedParts({ versions: versionsResult, provenance: provenanceResult })
 		};
 	} catch (err) {
 		if (err instanceof ApiError && err.status === 404) throw error(404, 'Agent not found');

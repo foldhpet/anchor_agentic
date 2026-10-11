@@ -1,4 +1,5 @@
 <script lang="ts">
+	import DegradedNotice from '$lib/DegradedNotice.svelte';
 	import { enhance } from '$app/forms';
 	import { page } from '$app/state';
 	import { backLink } from '$lib/backLink';
@@ -16,6 +17,8 @@
 
 <h1 class="text-2xl">{data.role.name}</h1>
 <p class="mt-1 text-sm"><a href={back.href}>&larr; {back.label}</a></p>
+
+<DegradedNotice missing={data.degraded} />
 
 {#if form?.error}
 	<p role="alert" class="mt-4 rounded-md border-l-4 border-attention bg-surface px-4 py-3 text-ink">
