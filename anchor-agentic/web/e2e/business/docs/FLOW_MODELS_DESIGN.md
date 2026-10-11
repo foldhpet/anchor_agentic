@@ -36,6 +36,53 @@ action wait on that response (`actions.clickAndWaitForAction(button, 'publish', 
 Page Models reach the User Actions through `this.actions` (created by the core `BasePage`). An interaction moves into
 `core/user-actions.ts` once it is used in more than one place; a one-off interaction stays in its Page Model.
 
+## Reporter
+
+`core/reporter/` is an application-independent Playwright reporter, enabled in `playwright.config.ts` next to the `list`
+reporter. After every run it prints a summary and appends it to `e2e/reports/history.json` (newest 100 runs, git-ignored;
+the latest run is also in `latest.json`):
+
+- suite overview (per spec file), pass ratio (`(passed + flaky) / executed`), min / avg / max test duration (last attempt)
+- flaky tests (failed, then passed on retry) and the ones that are flaky most often across the history
+- failed tests sorted into **product bug**, **test automation bug** and **server-side error** from the error text
+  (`core/reporter/classify.ts`). It is a heuristic; a test can pin its category with
+  `test.info().annotations.push({ type: 'failure-category', description: 'product-bug' })`
+  (values: `product-bug`, `test-automation-bug`, `server-error`).
+
+Beyond the summary, every run also produces (all under `e2e/reports/`, git-ignored):
+
+- **Per-test history**: each run stores every test's status and duration, so flake rate and "getting slower" (latest vs
+  the average of earlier runs, needs 3 earlier runs) are available per test.
+- **Server-side errors**: the reporter reads the output of the web servers and counts the API's structured error line
+  (`{"requestId","path","method","error"}`, written by the API's error handler for every 5xx) once per request.
+- **Requirements**: IDs matching `US-\d{3}` found in a test's title path or tags are linked to the test, and each story is
+  reported as passing / flaky / failing. A range such as `(US-005–US-013)` in a describe title is ignored; tag the test
+  (`test('...', { tag: '@US-012' }, ...)`) for precise links.
+- **Failure artifacts**: screenshot, trace and page snapshot of every failed attempt are copied to
+  `artifacts/<run>/<test>/` (Playwright wipes `test-results` on the next run). The latest 20 runs are kept.
+- **`report.html`**: self-contained page (pass-ratio and run-time trends over the history, failures with artifact links,
+  suites, requirements, flakiest and slowing tests, quarantine decisions, server errors).
+- **`summary.md`**: Markdown for CI. It is also appended to the GitHub Actions job summary when `GITHUB_STEP_SUMMARY` is
+  set. To comment on a pull request: `gh pr comment <number> --body-file e2e/reports/summary.md`.
+
+### Quarantine needs a person
+
+A test that was flaky in 3 of its last 10 runs is *proposed* for quarantine; the reporter never quarantines on its own.
+After the run it prints a warning that says what quarantine risks and asks `[q]uarantine / [k]eep blocking / [l]ater`
+when a person is at a terminal. Without a terminal (CI, piped output) it only warns and points to the CLI:
+
+```
+npm run e2e:quarantine -- list              decisions and tests waiting for one
+npm run e2e:quarantine -- decide            warn about each candidate and ask
+npm run e2e:quarantine -- release "<key>"   drop a decision
+```
+
+Decisions are saved in `e2e/quarantine.json`, which is **committed** so the team shares them. A quarantined test still
+runs and is still reported, but if only quarantined tests fail the run exits successfully. `keep-blocking` records that a
+person looked and does not want it quarantined, so it is not proposed again; delete the entry to be asked again.
+
+The calculations are pure functions covered by `core/reporter/*.test.ts` (`npm run test:unit`).
+
 ## Page Model inventory
 
 | Page Model | Route | Used by |

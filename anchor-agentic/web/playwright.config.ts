@@ -25,7 +25,15 @@ export default defineConfig({
 	workers: 2,
 	retries: 1,
 	expect: { timeout: 15_000 },
-	use: { baseURL: 'http://localhost:5173' },
+	// Console list plus the core summary reporter (e2e/core/reporter): run summary, history of the
+	// last 100 runs, HTML/Markdown reports, and the screenshots/traces of failures copied to
+	// e2e/reports/artifacts (Playwright wipes test-results on the next run).
+	reporter: [['list'], ['./e2e/core/reporter/playwright-reporter.ts', { outputDir: 'e2e/reports' }]],
+	use: {
+		baseURL: 'http://localhost:5173',
+		screenshot: 'only-on-failure',
+		trace: 'retain-on-failure'
+	},
 	webServer: [
 		{
 			command: 'npm run dev',

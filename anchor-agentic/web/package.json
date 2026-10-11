@@ -16,6 +16,7 @@
 		"test:unit": "vitest",
 		"test": "npm run test:unit -- --run && npm run test:e2e",
 		"test:e2e": "playwright install && playwright test",
+		"e2e:quarantine": "node e2e/core/reporter/quarantine-cli.ts",
 		"gen": "wrangler types"
 	},
 	"devDependencies": {
