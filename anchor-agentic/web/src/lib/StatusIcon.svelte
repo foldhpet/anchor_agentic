@@ -7,4 +7,4 @@
 	let { status }: { status: DomainStatus } = $props();
 </script>
 
-<Icon name={STATUS_STYLE[status].icon} class={STATUS_STYLE[status].iconClass} />
+<Icon name={STATUS_STYLE[status].icon} />

@@ -50,7 +50,7 @@
 		{@render children()}
 	</main>
 
-	<footer class="mx-auto w-full max-w-4xl px-4 py-6 text-sm text-ink/70">
+	<footer class="mx-auto w-full max-w-4xl px-4 py-6 text-sm text-ink/75">
 		<a
 			class="inline-flex items-center gap-1"
 			href="https://github.com/sponsors/foldhpet"

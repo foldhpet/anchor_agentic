@@ -51,7 +51,7 @@
 			<Icon name="connected" class="text-primary" />Connected as
 			<strong>{data.github.username}</strong>
 		</p>
-		<p class="mt-1 text-sm text-ink/70">
+		<p class="mt-1 text-sm text-ink/75">
 			Your GitHub account is authorized to receive exports of your Agents, Skills, and Workflows.
 		</p>
 		<form method="POST" action="?/revoke" class="mt-3">
@@ -59,7 +59,7 @@
 				Revoke GitHub Access
 			</button>
 		</form>
-		<p class="mt-2 text-sm text-ink/60">
+		<p class="mt-2 text-sm text-ink/75">
 			You can also revoke app access directly on <a
 				href="https://github.com/settings/applications"
 				target="_blank">GitHub's settings page</a

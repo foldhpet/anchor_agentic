@@ -14,13 +14,13 @@
 {/if}
 
 {#if data.queue.length === 0}
-	<p class="mt-6 text-ink/70">Nothing is currently under review.</p>
+	<p class="mt-6 text-ink/75">Nothing is currently under review.</p>
 {:else}
 	<ul class="mt-6 flex flex-col gap-4">
 		{#each data.queue as item (item.item_type + item.id)}
 			<li class="rounded-md border border-ink/10 p-4">
 				<h2 class="text-lg">
-					<span class="rounded-full bg-surface px-2 py-0.5 text-xs text-ink/70">[{item.item_type}]</span>
+					<span class="rounded-full bg-surface px-2 py-0.5 text-xs text-ink/75">[{item.item_type}]</span>
 					{item.name ?? item.id}
 				</h2>
 				{#if item.description}<p class="mt-2 text-ink/80">{item.description}</p>{/if}
@@ -29,7 +29,7 @@
 					>{/if}
 
 				{#if item.reports.length === 0}
-					<p class="mt-2 text-sm text-ink/60"><em>Voluntary review request (US-044).</em></p>
+					<p class="mt-2 text-sm text-ink/75"><em>Voluntary review request (US-044).</em></p>
 					<form method="POST" action="?/approve" use:enhance class="mt-3 inline-block">
 						<input type="hidden" name="item_type" value={item.item_type} />
 						<input type="hidden" name="id" value={item.id} />

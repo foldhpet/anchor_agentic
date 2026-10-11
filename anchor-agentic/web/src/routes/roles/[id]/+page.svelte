@@ -58,7 +58,7 @@
 				class="rounded-md border border-ink/15 bg-bg px-3 py-1.5"
 			/>
 		</label>
-		<p class="text-sm text-ink/70">
+		<p class="text-sm text-ink/75">
 			Status: <span
 				class="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs {STATUS_STYLE[
 					data.role.status
@@ -78,7 +78,7 @@
 	{/if}
 {:else}
 	<p class="mt-4 text-ink/80">{data.role.description ?? ''}</p>
-	<p class="mt-2 text-sm text-ink/70">
+	<p class="mt-2 text-sm text-ink/75">
 		Status: <span
 			class="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs {STATUS_STYLE[
 				data.role.status
@@ -86,11 +86,11 @@
 		>
 	</p>
 	{#if data.role.status === 'Archived'}
-		<p class="mt-2 rounded-md bg-surface px-4 py-3 text-sm text-ink/70">
+		<p class="mt-2 rounded-md bg-surface px-4 py-3 text-sm text-ink/75">
 			This item is archived — clone it to resume work.
 		</p>
 	{:else if !data.isOwner}
-		<p class="mt-2 rounded-md bg-surface px-4 py-3 text-sm text-ink/70">
+		<p class="mt-2 rounded-md bg-surface px-4 py-3 text-sm text-ink/75">
 			Read-only — you're viewing another user's Sandbox item.
 		</p>
 	{/if}
@@ -98,7 +98,7 @@
 
 <h2 class="mt-8 text-lg">Tasks</h2>
 {#if data.tasks.length === 0}
-	<p class="mt-2 text-ink/70">No Tasks under this Role yet.</p>
+	<p class="mt-2 text-ink/75">No Tasks under this Role yet.</p>
 {:else}
 	<ul class="mt-2 flex flex-col gap-2">
 		{#each data.tasks as task (task.id)}
@@ -134,7 +134,7 @@
 
 <h2 class="mt-8 text-lg">Version History</h2>
 {#if data.versions.length === 0}
-	<p class="mt-2 text-ink/70">No version history yet.</p>
+	<p class="mt-2 text-ink/75">No version history yet.</p>
 {:else}
 	<ul class="mt-2 flex flex-col gap-1">
 		{#each data.versions as version (version.id)}
@@ -162,7 +162,7 @@
 		>
 	{/if}
 	{#if versionsTotalPages > 1}
-		<p class="mt-4 flex items-center gap-3 text-sm text-ink/70">
+		<p class="mt-4 flex items-center gap-3 text-sm text-ink/75">
 			Version page {data.versionsPage} of {versionsTotalPages}
 			{#if data.versionsPage > 1}
 				<a class="inline-flex items-center gap-1" href="?vpage={data.versionsPage - 1}"

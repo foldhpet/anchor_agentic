@@ -24,7 +24,7 @@
 </script>
 
 <h1 class="text-2xl">All Sandbox</h1>
-<p class="mt-1 text-ink/70">
+<p class="mt-1 text-ink/75">
 	Read-only — everyone's in-progress work, across all users. Clone a published item from the
 	Marketplace to edit your own copy.
 </p>
@@ -53,7 +53,7 @@
 </form>
 
 {#if data.items.length === 0}
-	<p class="mt-6 text-ink/70">No items match your search.</p>
+	<p class="mt-6 text-ink/75">No items match your search.</p>
 {:else}
 	<ul class="mt-6 flex flex-col gap-2">
 		{#each data.items as item (item.id)}
@@ -63,7 +63,7 @@
 					href={withOrigin(`${DETAIL_ROUTE[item.item_type]}/${item.id}`, 'all')}
 					>{displayName(item)}</a
 				>
-				<span class="rounded-full bg-surface px-2 py-0.5 text-xs text-ink/70"
+				<span class="rounded-full bg-surface px-2 py-0.5 text-xs text-ink/75"
 					>[{item.item_type}]</span
 				>
 				<span
@@ -77,7 +77,7 @@
 {/if}
 
 {#if totalPages > 1}
-	<p class="mt-6 flex items-center gap-3 text-sm text-ink/70">
+	<p class="mt-6 flex items-center gap-3 text-sm text-ink/75">
 		Page {data.page} of {totalPages}
 		{#if data.page > 1}
 			<a

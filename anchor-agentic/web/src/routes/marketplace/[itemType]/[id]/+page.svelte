@@ -12,7 +12,7 @@
 <h1 class="text-2xl">{displayName}</h1>
 <p class="mt-1 flex items-center gap-2 text-sm">
 	<a href="/">&larr; Back to Marketplace</a>
-	<span class="rounded-full bg-surface px-2 py-0.5 text-xs text-ink/70">[{data.itemType}]</span>
+	<span class="rounded-full bg-surface px-2 py-0.5 text-xs text-ink/75">[{data.itemType}]</span>
 </p>
 
 {#if form?.error}
@@ -28,11 +28,11 @@
 
 {#if data.item.description}<p class="mt-4 text-ink/80">{data.item.description}</p>{/if}
 
-<p class="mt-4 text-sm text-ink/70">Published version: v{data.item.published_version}</p>
+<p class="mt-4 text-sm text-ink/75">Published version: v{data.item.published_version}</p>
 {#if data.item.rating_count === 0}
-	<p class="mt-1 text-sm text-ink/70">Not yet rated</p>
+	<p class="mt-1 text-sm text-ink/75">Not yet rated</p>
 {:else}
-	<p class="mt-1 text-sm text-ink/70">
+	<p class="mt-1 text-sm text-ink/75">
 		Rating: {data.item.rating?.toFixed(1)}/5 ({data.item.rating_count} rating{data.item.rating_count ===
 		1
 			? ''
@@ -55,7 +55,7 @@
 {/if}
 
 {#if data.provenance}
-	<p class="mt-4 text-sm text-ink/70">
+	<p class="mt-4 text-sm text-ink/75">
 		Cloned from
 		{#if data.provenance.source_name}
 			{data.provenance.source_name}
@@ -73,7 +73,7 @@
 	</form>
 {/if}
 
-<p class="mt-4 text-sm text-ink/70">Cloned {data.item.clone_count} times</p>
+<p class="mt-4 text-sm text-ink/75">Cloned {data.item.clone_count} times</p>
 
 <h2 class="mt-8 text-lg">Report this item</h2>
 <form method="POST" action="?/report" use:enhance class="mt-2 flex max-w-sm flex-col gap-4">
@@ -99,7 +99,7 @@
 {#if data.itemType === 'AGENT'}
 	<h2 class="mt-8 text-lg">Task Assignments</h2>
 	{#if !data.assignments || data.assignments.length === 0}
-		<p class="mt-2 text-ink/70">No Tasks assigned.</p>
+		<p class="mt-2 text-ink/75">No Tasks assigned.</p>
 	{:else}
 		<ul class="mt-2 flex flex-col gap-2">
 			{#each data.assignments as assignment (assignment.id)}

@@ -48,4 +48,4 @@
 	<button type="submit" class="rounded-md bg-primary px-4 py-1.5 text-white">Create account</button>
 </form>
 
-<p class="mt-4 text-sm text-ink/70">Already have an account? <a href="/login">Log in</a></p>
+<p class="mt-4 text-sm text-ink/75">Already have an account? <a href="/login">Log in</a></p>

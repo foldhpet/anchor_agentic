@@ -13,7 +13,7 @@
 </script>
 
 <h1 class="text-2xl">Marketplace</h1>
-<p class="mt-1 text-ink/70">Browse published Agents, Skills, and Workflows from the community.</p>
+<p class="mt-1 text-ink/75">Browse published Agents, Skills, and Workflows from the community.</p>
 
 <form method="GET" class="mt-6 flex flex-wrap items-end gap-4 rounded-md bg-surface p-4">
 	<label class="flex flex-col gap-1 text-sm">
@@ -49,7 +49,7 @@
 </form>
 
 {#if data.items.length === 0}
-	<p class="mt-6 text-ink/70">No published items yet. Check back soon.</p>
+	<p class="mt-6 text-ink/75">No published items yet. Check back soon.</p>
 {:else}
 	<ul class="mt-6 flex flex-col gap-3">
 		{#each data.items as item (`${item.item_type}-${item.id}`)}
@@ -58,12 +58,12 @@
 					<a class="font-semibold" href="/marketplace/{item.item_type}/{item.id}"
 						>{displayName(item)}</a
 					>
-					<span class="rounded-full bg-surface px-2 py-0.5 text-xs text-ink/70"
+					<span class="rounded-full bg-surface px-2 py-0.5 text-xs text-ink/75"
 						>{item.item_type}</span
 					>
 				</div>
 				{#if item.description}<p class="mt-1 text-ink/80">{item.description}</p>{/if}
-				<p class="mt-2 text-sm text-ink/60">
+				<p class="mt-2 text-sm text-ink/75">
 					{#if item.rating_count === 0}
 						Not yet rated
 					{:else}
@@ -79,7 +79,7 @@
 {/if}
 
 {#if totalPages > 1}
-	<p class="mt-6 flex items-center gap-3 text-sm text-ink/70">
+	<p class="mt-6 flex items-center gap-3 text-sm text-ink/75">
 		Page {data.page} of {totalPages}
 		{#if data.page > 1}
 			<a

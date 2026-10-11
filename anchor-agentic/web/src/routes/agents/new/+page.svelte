@@ -14,7 +14,7 @@
 {/if}
 
 {#if data.availableRoles.length === 0}
-	<p class="mt-6 text-ink/70">
+	<p class="mt-6 text-ink/75">
 		All of your Roles already have an Agent. <a href="/roles/new">Create a new Role</a> first.
 	</p>
 {:else}

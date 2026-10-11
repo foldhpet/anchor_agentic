@@ -42,17 +42,17 @@
 </script>
 
 <h1 class="text-2xl">My Sandbox</h1>
-<p class="mt-1 text-ink/70">
+<p class="mt-1 text-ink/75">
 	Your personal, version-controlled workspace — edit freely, publish when ready.
 </p>
 
-<label class="mt-4 flex items-center gap-2 text-sm text-ink/70">
+<label class="mt-4 flex items-center gap-2 text-sm text-ink/75">
 	<input type="checkbox" bind:checked={showArchived} />
 	Show archived
 </label>
 
 {#if data.items.length === 0}
-	<p class="mt-6 text-ink/70">You haven't created anything yet.</p>
+	<p class="mt-6 text-ink/75">You haven't created anything yet.</p>
 	<p class="mt-2 flex flex-wrap gap-2 text-sm">
 		<a class="rounded-md border border-ink/15 px-3 py-1.5 no-underline" href="/roles/new"
 			>+ New Role</a
@@ -68,7 +68,7 @@
 		>
 	</p>
 {:else if grouped.length === 0}
-	<p class="mt-6 text-ink/70">No items to show. Uncheck "show archived" or create something new.</p>
+	<p class="mt-6 text-ink/75">No items to show. Uncheck "show archived" or create something new.</p>
 {:else}
 	{#each grouped as group (group.type)}
 		<h2 class="mt-8 text-lg">{TYPE_LABEL[group.type]}</h2>

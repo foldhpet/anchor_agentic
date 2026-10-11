@@ -37,9 +37,7 @@ Lifecycle status, from `src/lib/statusStyle.ts` (reuse `STATUS_STYLE`, never re-
 | Published | `bg-primary text-white` | passed |
 | UnderReview | `bg-caution text-ink` | flaky |
 | Removed, Deprecated | `border border-attention text-ink/75` | failed |
-| Archived | `text-ink/50` (icon `text-ink/75`) | skipped |
-
-The code in `statusStyle.ts` still says `text-ink/70` on Draft, Removed and Deprecated until the section 8 follow-up lands; the target is the table above.
+| Archived | `text-ink/75` | skipped |
 
 Badge shape: `rounded-full px-2 py-0.5 text-xs`, icon first, then the text in brackets, e.g. `[Draft]` in lists. Call sites keep their own exact text because e2e tests assert on it.
 
@@ -138,10 +136,10 @@ Drawing rules (every icon, no exceptions):
 | `bg` (white) | `primary` fill | 5.84:1 | Published badge, "New" button, passed badge | yes |
 | `attention` | `bg` | 3.03:1 | Reporter failed icon on cards, tables, headings | yes, only on `bg` |
 | `attention` | `surface` | 2.71:1 | would be the failed icon in a banner | **no**, use an `ink` icon and an `attention` left-rule |
-| `ink/75` | `bg` | 5.12:1 | Archived badge icon (the text beside it stays `ink/50`) | yes |
+| `ink/75` | `bg` | 5.12:1 | Archived badge icon and text, secondary text | yes |
 | `ink/75` | `surface` | 4.80:1 | Draft badge icon and text | yes |
 | `ink/70` | `bg` / `surface` | 4.46:1 / 4.21:1 | legacy secondary text; icon is fine (3:1), text is not (4.5:1) | icon only |
-| `ink/50` | `bg` | 2.68:1 | Archived badge text | **no** for icons; the Archived icon is drawn in `ink/75` |
+| `ink/50` | `bg` | 2.68:1 | nothing: fails for both text and icons | **no** |
 | `caution` | `bg` | 1.65:1 | n/a | **no** as an icon colour |
 - Visible keyboard focus everywhere: the global `:focus-visible` ring is `2px primary` with `2px` offset. Never remove it.
 - Touch and click targets at least 24x24 CSS px with spacing (aim for 44px on primary mobile actions).
@@ -189,7 +187,6 @@ Do not use ✔ ✖ ⚠ ♥ ↗ or similar: they have emoji forms that browsers a
 | Where | Deviation | Target |
 |---|---|---|
 | `src/routes/+layout.svelte` nav | No `aria-current="page"` on the active link | Section 6 |
-| 78 uses of `text-ink/70` in 17 files under `src/` (including `Draft` and `Removed`/`Deprecated` in `src/lib/statusStyle.ts`) | Secondary text at 4.46:1 on `bg` and 4.21:1 on `surface`, below AA for small text | `text-ink/75` (section 2); find them with `grep -rn "ink/70" src` |
 
 ## 9. Changing this guide
 
