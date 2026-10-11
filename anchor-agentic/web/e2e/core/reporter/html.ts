@@ -28,7 +28,8 @@ table { width:100%; border-collapse:collapse; background:var(--card); border:1px
 th, td { text-align:left; padding:6px 10px; border-bottom:1px solid var(--line); font-size:13px; vertical-align:top; }
 th { color:var(--muted); font-weight:600; } td.n, th.n { text-align:right; font-variant-numeric:tabular-nums; }
 .scroll { overflow-x:auto; }
-svg { width:100%; height:auto; background:var(--card); border:1px solid var(--line); border-radius:8px; }
+svg { display:block; width:100%; height:120px; background:var(--card); border:1px solid var(--line); border-radius:8px; }
+@media print { svg, tr, .card, .banner { break-inside:avoid; } h2 { break-after:avoid; } }
 a { color:var(--accent); }
 .banner { border:1px solid var(--warn); background:var(--card); border-radius:8px; padding:10px 12px; margin:16px 0; }
 `;
@@ -37,9 +38,17 @@ function statusClass(run: RunSummary): string {
 	return run.blockingFailed > 0 ? 'bad' : run.flaky > 0 ? 'warn' : 'ok';
 }
 
+/**
+ * Charts have a fixed rendered height and at least this many slots. Sizing the viewBox to the run
+ * count alone made a young history (one run = 10x84) scale to thousands of blank pixels tall.
+ */
+const MIN_SLOTS = 30;
+const STEP = 10;
+const slots = (runs: RunSummary[]) => Math.max(runs.length, MIN_SLOTS);
+
 /** Bars: one per run, height = pass ratio, colour = outcome. Newest on the right. */
 function passRateChart(runs: RunSummary[]): string {
-	const step = 10;
+	const step = STEP;
 	const bars = runs
 		.map((run, i) => {
 			const h = Math.max(2, run.passRate * 70);
@@ -49,14 +58,22 @@ function passRateChart(runs: RunSummary[]): string {
 			return `<rect x="${i * step}" y="${80 - h}" width="8" height="${h}" fill="${color}"><title>${esc(label)}</title></rect>`;
 		})
 		.join('');
-	return `<svg viewBox="0 0 ${Math.max(runs.length, 1) * step} 84" role="img" aria-label="Pass ratio of the last ${runs.length} runs">${bars}</svg>`;
+	return `<svg viewBox="0 0 ${slots(runs) * step} 84" preserveAspectRatio="none" role="img" aria-label="Pass ratio of the last ${runs.length} runs">${bars}</svg>`;
 }
 
 /** Line of the wall-clock time of each run. */
 function durationChart(runs: RunSummary[]): string {
 	const max = Math.max(...runs.map((r) => r.durationMs), 1);
-	const points = runs.map((r, i) => `${i * 10 + 4},${80 - (r.durationMs / max) * 70}`).join(' ');
-	return `<svg viewBox="0 0 ${Math.max(runs.length, 1) * 10} 84" role="img" aria-label="Run time of the last ${runs.length} runs"><polyline points="${points}" fill="none" stroke="var(--accent)" stroke-width="1.5"/></svg>`;
+	const coords = runs.map((r, i) => [i * STEP + 4, 80 - (r.durationMs / max) * 70] as const);
+	const points = coords.map(([x, y]) => `${x},${y}`).join(' ');
+	// A single run has nothing to connect, so mark every point as well.
+	const dots = coords
+		.map(
+			([x, y], i) =>
+				`<path d="M${x} ${y}h0" stroke="var(--accent)" stroke-width="6" stroke-linecap="round" vector-effect="non-scaling-stroke"><title>${esc(`${runs[i].startedAt.slice(0, 16).replace('T', ' ')}: ${formatDuration(runs[i].durationMs)}`)}</title></path>`
+		)
+		.join('');
+	return `<svg viewBox="0 0 ${slots(runs) * STEP} 84" preserveAspectRatio="none" role="img" aria-label="Run time of the last ${runs.length} runs"><polyline points="${points}" fill="none" stroke="var(--accent)" stroke-width="1.5" vector-effect="non-scaling-stroke"/>${dots}</svg>`;
 }
 
 function table(headers: { text: string; num?: boolean }[], rows: string[][]): string {
