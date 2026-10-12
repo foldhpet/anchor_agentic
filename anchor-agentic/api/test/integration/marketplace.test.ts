@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createApp } from '../../src/app'
-import { chain, testEnv } from './testEnv'
+import { chain, chainWithRanges, testEnv } from './testEnv'
 
 const { createRequestSupabaseClient } = vi.hoisted(() => ({
   createRequestSupabaseClient: vi.fn(),
@@ -135,6 +135,35 @@ describe('marketplace routes', () => {
     expect(body.page).toBe(3)
     expect(body.pageSize).toBe(5)
     expect(calls.range).toContainEqual([10, 14])
+  })
+
+  it('GET /items past the last page returns an empty page with the real total, not a 500', async () => {
+    createRequestSupabaseClient.mockReturnValue(
+      anonClient(() =>
+        chainWithRanges(
+          { data: null, error: { code: 'PGRST103', message: 'Requested range not satisfiable' }, count: null },
+          { data: [], error: null, count: 7 },
+        ),
+      ),
+    )
+
+    const res = await get('/api/v1/marketplace/items?page=9&q=zzzz')
+    const body = await res.json<{ items: unknown[]; total: number; page: number; pageSize: number }>()
+
+    expect(res.status).toBe(200)
+    expect(body).toEqual({ items: [], total: 7, page: 9, pageSize: 20 })
+  })
+
+  it('GET /items still fails with a 500 on any other database error', async () => {
+    createRequestSupabaseClient.mockReturnValue(
+      anonClient(() =>
+        chain({ data: null, error: Object.assign(new Error('permission denied'), { code: '42501' }), count: null }),
+      ),
+    )
+
+    const res = await get('/api/v1/marketplace/items?page=2')
+
+    expect(res.status).toBe(500)
   })
 
   it('GET /items/:itemType/:id 400s an invalid itemType', async () => {

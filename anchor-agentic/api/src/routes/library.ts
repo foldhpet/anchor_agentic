@@ -2,6 +2,7 @@ import { Hono } from 'hono'
 import type { AppEnv } from '../types'
 import { requireAuth } from '../middleware/auth'
 import type { VersionedItemType } from '../versioning'
+import { fetchPage } from '../pagination'
 
 export const libraryRouter = new Hono<AppEnv>()
 
@@ -36,11 +37,9 @@ libraryRouter.get('/', async (c) => {
   if (type && (ITEM_TYPES as string[]).includes(type)) query = query.eq('item_type', type)
   if (q && q.trim()) query = query.textSearch('search_vector', q.trim(), { type: 'plain' })
 
-  const from = (page - 1) * pageSize
-  const { data, error, count } = await query.range(from, from + pageSize - 1)
-  if (error) throw error
+  const { rows, total } = await fetchPage(query, page, pageSize)
 
-  return c.json({ items: data ?? [], total: count ?? 0, page, pageSize })
+  return c.json({ items: rows, total, page, pageSize })
 })
 
 // US-015: read-only version history, available to any registered user (not
@@ -64,16 +63,14 @@ libraryRouter.get('/:itemType/:id/versions', async (c) => {
 
   const page = parsePage(c.req.query('page'), 1)
   const pageSize = parsePage(c.req.query('pageSize'), 20)
-  const from = (page - 1) * pageSize
 
-  const { data, error, count } = await supabase
+  const query = supabase
     .from('version_snapshots')
     .select('id, item_type, item_id, version_number, snapshot_data, created_by, created_at', { count: 'exact' })
     .eq('item_type', itemType)
     .eq('item_id', id)
     .order('version_number', { ascending: false })
-    .range(from, from + pageSize - 1)
-  if (error) throw error
+  const { rows, total } = await fetchPage(query, page, pageSize)
 
-  return c.json({ versions: data ?? [], total: count ?? 0, page, pageSize })
+  return c.json({ versions: rows, total, page, pageSize })
 })

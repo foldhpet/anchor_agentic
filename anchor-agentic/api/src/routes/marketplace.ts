@@ -1,6 +1,7 @@
 import { Hono } from 'hono'
 import type { AppEnv } from '../types'
 import { createRequestSupabaseClient } from '../supabase'
+import { fetchPage } from '../pagination'
 
 export const marketplaceRouter = new Hono<AppEnv>()
 
@@ -102,11 +103,9 @@ marketplaceRouter.get('/items', async (c) => {
   if (role && role.trim()) query = query.eq('role_name', role.trim())
   if (q && q.trim()) query = query.textSearch('search_text', q.trim(), { type: 'plain' })
 
-  const from = (page - 1) * pageSize
-  const { data, error, count } = await query.range(from, from + pageSize - 1)
-  if (error) throw error
+  const { rows, total } = await fetchPage(query, page, pageSize)
 
-  return c.json({ items: data ?? [], total: count ?? 0, page, pageSize })
+  return c.json({ items: rows, total, page, pageSize })
 })
 
 // US-027: detail lookup plus type-specific live extras (Agent task

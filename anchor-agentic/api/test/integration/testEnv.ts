@@ -35,3 +35,12 @@ export function chain(result: ChainResult) {
   }
   return builder
 }
+
+// Like chain(), but successive range() calls resolve to successive results (the last one repeats).
+// Used to prove a past-the-end page: the first range() fails with PGRST103, the second returns the count.
+export function chainWithRanges(...results: ChainResult[]) {
+  const builder = chain(results[0])
+  let call = 0
+  builder.range = () => Promise.resolve(results[Math.min(call++, results.length - 1)])
+  return builder
+}
