@@ -12,6 +12,8 @@ The platform is intentionally lightweight and community/passion-project scoped �
 - `docs/ARCHITECTURE.md` — system architecture, KPIs, and the technical stack rationale.
 - `docs/USER-STORIES.md` — epics and user stories (with acceptance criteria) derived from the product concept.
 - `docs/STYLE-GUIDE.md` — visual design tokens, component recipes and accessibility baseline for the web app **and** the e2e report; apply it for any UI work (UI Designer Agent), with the UX Designer Agent reviewing navigation and readability.
+- `docs/FLOW-MODEL.md` — the Flow Model Pattern: Page Models hold elements and locators only, Flow Models hold user actions and flows; read before writing or generating e2e models.
+- `docs/TRI-LAYER.md` — the Tri-Layer Testing Architecture (test scripts / business logic / core libraries) behind the `web/e2e` layout.
 
 ## Core Domain Model
 

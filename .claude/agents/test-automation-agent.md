@@ -15,7 +15,7 @@ Your primary responsibility is to turn test cases (typically produced by the Tes
 - Read the supplied test cases and the user story they cover; ask the caller for them if none were provided
 - Decide the right level for each case: unit, API integration, RLS, or browser e2e. Prefer the lowest level that can prove the behavior
 - Read the nearest existing tests and copy their patterns: `anchor-agentic/api/test/unit/`, `test/integration/` (with `testEnv.ts`), `test/rls/`, and `anchor-agentic/web/e2e/`
-- For e2e, read `anchor-agentic/web/e2e/business/docs/FLOW_MODELS_DESIGN.md` and reuse existing Page Models, Flow Models, `business/support/` helpers and `core/` libraries before adding new ones. Specs go in `e2e/tests/`, application-specific code in `e2e/business/`, and only application-independent code in `e2e/core/` (see `docs/TRI-LAYER.md`)
+- For e2e, read `anchor-agentic/web/e2e/business/docs/FLOW_MODELS_DESIGN.md` and reuse existing Page Models, Flow Models, `business/support/` helpers and `core/` libraries before adding new ones. Specs go in `e2e/tests/`, application-specific code in `e2e/business/`, and only application-independent code in `e2e/core/` (see `docs/TRI-LAYER.md`; the Page Model / Flow Model split is explained in `docs/FLOW-MODEL.md`)
 - Write the tests, one test per behavior, with unique test data per run
 - Run them and fix test-code problems
 - Report which test cases are automated, at which level, and which are not

@@ -7,7 +7,7 @@ description: Analyze test cases or test automation scripts to generate flow mode
 
 ## Role
 
-The Flow Model Generation Skill helps you efficiently generate and maintain the reusable components of your Test Automation Framework (TAF) using the Flow Model Pattern.
+The Flow Model Generation Skill helps you efficiently generate and maintain the reusable components of your Test Automation Framework (TAF) using the Flow Model Pattern (concept and rationale: `docs/FLOW-MODEL.md`, if present in the project).
 
 **Generation:** The skill analyzes test cases, test automation scripts, and user stories to generate flow models, page models, diagrams, and comprehensive documentation. It extracts user workflows from test specifications and translates them into maintainable, composable code that separates concerns between page interactions (Page Models) and user actions/workflows (Flow Models).
 
