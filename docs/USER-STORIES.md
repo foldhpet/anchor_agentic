@@ -128,6 +128,7 @@
 | [US-055](#us-055) | Marketplace journey usability: page titles, item-page clarity, empty/feedback states | F-1.1, F-1.2, F-1.4, F-2.3, F-6.4 | Medium | 8 |
 | [US-056](#us-056) | "Cloned" tag on cloned items in My Sandbox and All Sandbox | F-2.1, F-2.2, F-2.3, F-6.3 | Low | 3 |
 | [US-057](#us-057) | Return to the page I was on after logging in or registering | F-4.2, F-1.1 | Medium | 5 |
+| [US-058](#us-058) | Sort the Marketplace list (Most cloned, Highest rated, Newest) | F-1.2 | Medium | 5 |
 
 ---
 
@@ -191,6 +192,7 @@
 | US-055 | US-020, US-026, US-027, US-028, US-030, US-045, US-050 | Amends the existing Marketplace list and detail pages (US-026/027/028), clone and rating controls (US-020/030), and the report block (US-045). The unique-title criteria extend the WCAG baseline (US-050). Fulfils US-020 AC3 (anonymous prompt) without redefining it. |
 | US-056 | US-016, US-017, US-020, US-021, US-022 | Tags clones in the My/All Sandbox lists (US-016/017), derived from the clone records written by Clone (US-020/021), which exist only for the entities US-022 can clone. |
 | US-057 | US-001, US-002, US-003, US-020, US-027, US-028, US-030, US-055 | Extends login and register (US-001/002) and the guard redirect to login for anonymous Sandbox URLs (US-003) with a validated return target; amends their "lands on the Marketplace" default. Carries the target through the anonymous item-page notice (US-055, US-020 AC3, US-027, US-030) and preserves filtered-list URLs (US-028). |
+| US-058 | US-026, US-028, US-050, US-054, US-055, US-057 | Adds the sort control to the Marketplace list (US-026) and fulfils US-028 AC4 and the `sort=rating` mention in US-054. Follows the US-050 accessibility baseline and the US-055 list presentation. `sort` must round-trip through the US-057 `next` target. |
 
 ---
 
@@ -1968,11 +1970,96 @@ Scope:
 
 ---
 
+### US-058
+**User Story Title:** Sort the Marketplace List by Most Cloned, Highest Rated or Newest
+
+**User Story ID:** US-058
+
+**As a** visitor (anonymous or registered)
+**I want to** choose how the Marketplace list is ordered (Most cloned, Highest rated or Newest)
+**So that** I can find the best-regarded or the freshest Agents, Skills and Workflows without paging through the whole list
+
+**Description:**
+Maps to F-1.2. It fulfils US-028 AC4 (sort by Highest Rated), which was never implemented, and resolves open item 3 in the summary (the tie-breaking rule). Today `GET /api/v1/marketplace/items` returns a fixed order (`clone_count` desc, then `created_at` desc). The `marketplace_items` view already exposes the aggregate `rating` and `rating_count`, so no schema change is needed. US-054 already mentions `sort=rating` in the public API, and US-055 and US-057 left the sort control out of scope. US-057 requires the full list query to survive login. This story adds a `sort` parameter to the API and a sort control on the Marketplace list at `/`. Marketplace items are Agents, Skills and Workflows only. Sandbox lists are not affected.
+
+Decisions made in this story (confirm with the Product Owner):
+- **Options and values.** `cloned` (label "Most cloned", the default and today's behaviour), `rating` (label "Highest rated") and `newest` (label "Newest"). The default is never written into URLs.
+- **Relevance is not a sort option.** US-028 AC1 says search results are "ranked by relevance". The API does not rank by relevance today, and adding `ts_rank` is a separate change. With a search term present, the default stays "Most cloned". Relevance ranking is a later story. This amends the wording of US-028 AC1 to "by default, ordered as per the selected sort".
+- **Unrated items.** An item with `rating_count = 0` is never ranked above a rated one in "Highest rated". Unrated items come last, in the clone order defined below.
+- **No minimum-ratings rule.** A single 5-star rating can top the list. This is accepted for a community-scale V1. The Report mechanism (US-045) is the only mitigation, and a threshold or Bayesian ranking is out of scope.
+- **Clear filters keeps the sort.** Clearing `q`, `type` and `role` does not silently change the order. The select is the way back to "Most cloned".
+
+*Ordering (all orders are total, ending on `id` so that paging is stable):*
+- `cloned`: `clone_count` desc, `created_at` desc, `id` asc.
+- `rating`: rated items first, `rating` desc, `rating_count` desc, `clone_count` desc, `created_at` desc, `id` asc. Unrated items follow, by `clone_count` desc, `created_at` desc, `id` asc.
+- `newest`: `created_at` desc, `id` asc.
+
+*Constraints:*
+- API: `sort` is validated against the allow-list `cloned | rating | newest`. A missing, empty, wrong-case or unknown value falls back to `cloned`, with HTTP 200, no 400, and no echo of the input or error detail in the response. For a repeated parameter the first value wins, and if that first value is invalid the default applies. The value is never concatenated into SQL. It is mapped to a fixed ordering, so no user input reaches the query text.
+- Web: the control is a server-rendered `GET` form containing a native `<select>`. It works with JavaScript disabled, using an explicit "Sort" submit button. JS enhancement (auto-submit on change) is optional and must not be the only way to apply it. The form keeps `q`, `type` and `role` as hidden fields.
+- No new runtime dependency and no database migration. The existing Marketplace pagination and filters are unchanged apart from `sort` joining the list query.
+- `anchor-agentic/api/openapi.yaml` documents `sort` as an enum with the default and the fallback behaviour.
+
+**Acceptance Criteria:**
+
+*API ordering*
+- [ ] Given Published items with different clone counts, When `GET /api/v1/marketplace/items` is called with no `sort` or `sort=cloned`, Then items are ordered by `clone_count` desc, `created_at` desc, `id` asc, identical to today's order.
+- [ ] Given items with different ratings, When `sort=rating` is requested, Then items are ordered by `rating` desc, then `rating_count` desc, then `clone_count` desc, then `created_at` desc, then `id` asc.
+- [ ] Given a mix of rated and unrated items (`rating_count = 0`), When `sort=rating` is requested, Then every unrated item appears after every rated item, even when the unrated item has a higher clone count or is newer. Unrated items are ordered by `clone_count` desc, `created_at` desc, `id` asc.
+- [ ] Given a rated item with one 5-star rating and another with 4.8 across 30 ratings, When `sort=rating` is requested, Then the 5.0 item ranks first, because no minimum-ratings rule applies.
+- [ ] Given items with different creation times, When `sort=newest` is requested, Then items are ordered by `created_at` desc, then `id` asc.
+- [ ] Given items that are equal on every field before `id`, When any page of any sort is requested twice, Then the order is identical both times, and walking all pages returns each item exactly once with no duplicates or gaps.
+- [ ] Given `sort` is combined with `type`, `role`, `q`, `page` and `pageSize`, When the request is made, Then the filters and the total count are applied exactly as without `sort`, and only the order changes.
+
+*API validation [NFR-Security]*
+- [ ] Given `sort` is missing, empty, `SORT`, `Rating` (wrong case), `popular`, `rating desc`, `rating;drop table x`, `rating,created_at`, or repeated (`sort=newest&sort=bogus`), When the request is made, Then the response is `200`. The first value is used if it is valid (`newest` in the repeated example), otherwise the default `cloned` applies. The body contains no error and no echo of the input.
+- [ ] The system should map the validated `sort` value to a fixed ordering through the allow-list, and never interpolate the raw value into a query.
+
+*Web control*
+- [ ] Given a visitor opens `/`, When the page renders, Then a sort control is present, with the visible label "Sort by" programmatically associated with a native `<select>`, with options "Most cloned", "Highest rated", "Newest", and the current choice selected.
+- [ ] Given the visitor opens `/` with no `sort` or an invalid one, When the page renders, Then "Most cloned" is selected and no error is shown.
+- [ ] Given JavaScript is disabled, When the visitor picks "Highest rated" and activates the "Sort" button, Then the page reloads at `/?sort=rating` (plus any current `q`, `type`, `role`) showing the list in that order.
+- [ ] Given the visitor is on `/?q=triage&type=agent&page=3`, When they change the sort, Then the new URL keeps `q` and `type`, carries the new `sort`, and has no `page` (it resets to page 1).
+- [ ] Given a non-default sort is active, When the visitor uses the pagination links, Then every link keeps `sort` along with the other filters.
+- [ ] Given a non-default sort is active, When the visitor changes the type or role filter or submits a new search, Then `sort` is kept and `page` resets to 1.
+- [ ] Given a non-default sort is active, When the visitor activates "Clear filters", Then `q`, `type` and `role` are cleared and the sort is kept.
+- [ ] Given a non-default sort is active, When the page renders, Then the current choice is announced to assistive technology: the `<select>` exposes the selected option as its value, and the results summary names the active order, for example "Sorted by Highest rated". The page title from US-055 is unchanged.
+- [ ] Given the default sort is active, When any list link or the form is built, Then `sort` is omitted from the URL, so the default list URL stays `/`, and existing URLs and Playwright assertions that do not use `sort` still pass.
+
+*Round-trip through login (US-057)*
+- [ ] Given an anonymous visitor is on `/?sort=rating&q=x&page=2` and activates Log in or Register in the nav, When the link is built, Then `next` is the URL-encoded `/?sort=rating&q=x&page=2`, and after a successful login the user lands on exactly that URL with the sort preserved.
+- [ ] Given `next` is `/?sort=rating`, When the US-057 validator checks it, Then it is accepted. The validator needs no change.
+
+*Non-functional (tag: [NFR-A11y])*
+- [ ] The system should make the sort control fully keyboard operable: Tab reaches the select and the button in a logical order after the search and filter controls, the select changes with the arrow keys, and the form submits with Enter or Space on the button.
+- [ ] The system should show a visible focus indicator on the select and the button, text contrast of at least 4.5:1, and a control boundary contrast of at least 3:1, using the existing design tokens from `docs/STYLE-GUIDE.md` (WCAG 2.1 AA: 1.3.1, 1.4.3, 1.4.11, 2.1.1, 2.4.7, 3.3.2, 4.1.2).
+- [ ] The system should keep the control usable at a 320 px viewport width and at 200% zoom, without horizontal scrolling or text clipping.
+- [ ] The system should add no new runtime dependency, and `package.json` dependencies are unchanged.
+
+*Tests*
+- [ ] Given this story is complete, When the tests are reviewed, Then:
+  - (a) API tests cover each ordering above using fixtures with ties on every field before `id`, unrated versus rated items, every invalid `sort` value listed above, and paging stability across at least two pages.
+  - (b) Web unit tests for `listQuery` and `marketplaceListHref` in `src/lib/marketplaceList.ts` cover: `sort` omitted when default, included when non-default, an invalid `sort` normalised to default, preserved across pagination and filter links, and `page` reset on a sort or filter change.
+  - (c) The existing Playwright specs pass without edits.
+  - (d) New Playwright coverage through the Marketplace Page Model and a Flow Model covers: choose "Highest rated" and see the order and the URL; sort kept through pagination; sort kept when a filter changes with page reset; keyboard-only operation; the sort surviving the US-057 login round trip; and an invalid `?sort=bogus` showing "Most cloned" with no error. There are no raw selectors in specs.
+
+**Out of scope:** a minimum-ratings threshold or Bayesian or weighted ranking for "Highest rated"; relevance ranking when a search term is present (separate story, would amend US-028 AC1); remembering a user's preferred sort across sessions; sorting in Sandbox lists (My Sandbox, All Sandbox); a "Lowest rated" or ascending options; and any change to how ratings are calculated.
+
+**Priority:** Medium
+
+**Estimate:** 5 story points
+
+**Dependencies:** US-026, US-028, US-050, US-054, US-055, US-057
+
+**Notes:** Fulfils US-028 AC4 and settles open item 3: rating ties go to `rating_count`, then `clone_count`, then `created_at`, then `id`. US-054's `sort=rating` example now has a defined meaning. Suggested implementation: a single `SORTS` allow-list in the API route mapping each value to an ordered list of `{column, direction, nullsFirst}` entries applied through the query builder (no string building). For `rating`, state in the code whether the view returns null or 0 for unrated items, and test that shape. In the web layer add `sort` to `listQuery` and `marketplaceListHref` with a shared `normaliseSort(raw)` so the default is dropped in one place. If the Product Owner prefers relevance as the default while searching, add a fourth value `relevance` in a follow-up. Do not repurpose `cloned`.
+
+---
+
 ## Summary of Open Items Flagged to the Product Owner / Test Analyst
 
 1. **US-015**: "Restore a prior version" as a write action is not explicitly named in the source docs — currently scoped as read-only history viewing. Confirm if restore is needed for V1.
 2. **US-025**: Exact re-publish UX (explicit action vs. automatic) should be confirmed with design.
-3. **US-028**: Tie-breaking rule for "sort by rating" (clone count vs. recency) is an implementation detail not specified upstream.
+3. **US-028**: Tie-breaking rule for "sort by rating" (clone count vs. recency) is an implementation detail not specified upstream. Resolved by US-058 (rating, then rating count, then clone count, then recency, then id).
 4. **US-044**: "Optional human review" reviewer model (self/peer/platform-designated) is explicitly an open question in `PRODUCT-CONCEPT.md` — acceptance criteria assume designated-reviewer pending clarification.
 5. **US-046**: Moderator role/permission model is undefined in source docs and needed before V2 implementation.
 
