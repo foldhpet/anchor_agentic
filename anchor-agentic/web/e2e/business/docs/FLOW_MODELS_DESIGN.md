@@ -208,6 +208,7 @@ Flows: none needed (single-page assertions through `LoginPage`/`MarketplacePage`
 | `export.spec.ts` | AuthFlow, AuthoringFlow, ExportFlow, SessionFlow |
 | `permission-boundary.spec.ts` | SessionFlow, SandboxFlow (+ LoginPage / MarketplacePage directly) |
 | `sustainability.spec.ts` | MarketplacePage directly |
+| `skip-link.spec.ts` | MarketplacePage / LoginPage directly (`expectSkipLinkBypassesNav` on `AnchorBasePage`) |
 | `marketplace-usability.spec.ts` | AuthFlow, PublishFlow, PageTitleFlow, MarketplaceFlow, CloneFlow, SessionFlow (US-055) |
 
 ## Maintenance notes

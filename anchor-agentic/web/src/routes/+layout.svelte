@@ -16,8 +16,17 @@
 <svelte:head><link rel="icon" href={favicon} /></svelte:head>
 
 <div class="flex min-h-screen flex-col">
+	<!-- First tab stop: lets keyboard and screen-reader users skip the repeated nav (WCAG 2.4.1). -->
+	<a
+		href="#main"
+		class="sr-only rounded-md bg-primary px-3 py-1.5 text-white no-underline focus:not-sr-only focus:absolute focus:top-2 focus:left-4 focus:z-20"
+		>Skip to content</a
+	>
 	<header class="border-b border-ink/10 bg-surface">
-		<nav class="mx-auto flex max-w-4xl flex-wrap items-center gap-4 px-4 py-3 text-sm">
+		<nav
+			aria-label="Main"
+			class="mx-auto flex max-w-4xl flex-wrap items-center gap-4 px-4 py-3 text-sm"
+		>
 			<a class="font-semibold no-underline" href="/">AnchorAgentic</a>
 			<a class={CURRENT} href="/" aria-current={current('/')}>Marketplace</a>
 			<a class={CURRENT} href="/library" aria-current={current('/library')}>My Sandbox</a>
@@ -54,7 +63,11 @@
 		</nav>
 	</header>
 
-	<main class="mx-auto w-full max-w-4xl flex-1 px-4 py-6">
+	<main
+		id="main"
+		tabindex="-1"
+		class="mx-auto w-full max-w-4xl flex-1 px-4 py-6 focus:outline-none"
+	>
 		{@render children()}
 	</main>
 

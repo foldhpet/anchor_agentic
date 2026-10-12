@@ -24,6 +24,27 @@ export abstract class AnchorBasePage extends CoreBasePage {
 		await this.waitForNetworkIdle();
 	}
 
+	// --- Skip link (WCAG 2.4.1 Bypass Blocks) ---
+	get skipLink(): Locator {
+		return this.page.getByRole('link', { name: 'Skip to content' });
+	}
+	get mainLandmark(): Locator {
+		return this.page.getByRole('main');
+	}
+
+	/**
+	 * The skip link is the first Tab stop, becomes visible when focused, and activating it moves focus
+	 * to <main>, past the repeated navigation.
+	 */
+	async expectSkipLinkBypassesNav() {
+		await this.page.keyboard.press('Tab');
+		await expect(this.skipLink).toBeFocused();
+		const box = await this.skipLink.boundingBox();
+		expect(box?.width ?? 0, 'the focused skip link is visibly rendered').toBeGreaterThan(40);
+		await this.page.keyboard.press('Enter');
+		await expect(this.mainLandmark).toBeFocused();
+	}
+
 	// --- Page title (US-055 Part A, WCAG 2.4.2) ---
 	get mainHeading(): Locator {
 		return this.page.getByRole('heading', { level: 1 });

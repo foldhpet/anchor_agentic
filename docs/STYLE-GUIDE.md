@@ -144,7 +144,7 @@ Drawing rules (every icon, no exceptions):
 - Visible keyboard focus everywhere: the global `:focus-visible` ring is `2px primary` with `2px` offset. Never remove it.
 - Touch and click targets at least 24x24 CSS px with spacing (aim for 44px on primary mobile actions).
 - Every control has a programmatic name: `<label for>`, wrapping `<label>`, or `aria-label`.
-- Landmarks: one `<header>`, `<nav>`, `<main>`, `<footer>`. The current nav item carries `aria-current="page"` and is also semi-bold (`navCurrent` in `src/lib/navCurrent.ts`), so the marker is never colour alone.
+- Landmarks: one `<header>`, `<nav aria-label="Main">`, `<main id="main">`, `<footer>`. A "Skip to content" link is the first tab stop: hidden until focused, then a primary button at the top left, and it moves focus to `<main>` (WCAG 2.4.1). The current nav item carries `aria-current="page"` and is also semi-bold (`navCurrent` in `src/lib/navCurrent.ts`), so the marker is never colour alone.
 - Status is never colour-only. Images and SVG charts have a text alternative (`role="img"` + `aria-label` or a `<title>`).
 - Motion: none by default. If ever added, honour `prefers-reduced-motion`.
 
