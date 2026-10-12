@@ -126,6 +126,7 @@
 | ID | Title | Feature ID(s) | Priority | Estimate |
 |---|---|---|---|---|
 | [US-055](#us-055) | Marketplace journey usability: page titles, item-page clarity, empty/feedback states | F-1.1, F-1.2, F-1.4, F-2.3, F-6.4 | Medium | 8 |
+| [US-056](#us-056) | "Cloned" tag on cloned items in My Sandbox and All Sandbox | F-2.1, F-2.2, F-2.3, F-6.3 | Low | 3 |
 
 ---
 
@@ -187,6 +188,7 @@
 | US-053 | US-005, US-052 | The dedicated page needs both Role authoring and the menu entry pointing to it |
 | US-054 | US-047, US-048, US-050, US-051 | Icons use the type/spacing and color tokens (US-047/048), must meet the contrast rules of the accessibility baseline (US-050), and stay light-mode-safe under forced dark mode (US-051) |
 | US-055 | US-020, US-026, US-027, US-028, US-030, US-045, US-050 | Amends the existing Marketplace list and detail pages (US-026/027/028), clone and rating controls (US-020/030), and the report block (US-045). The unique-title criteria extend the WCAG baseline (US-050). Fulfils US-020 AC3 (anonymous prompt) without redefining it. |
+| US-056 | US-016, US-017, US-020, US-021, US-022 | Tags clones in the My/All Sandbox lists (US-016/017), derived from the clone records written by Clone (US-020/021), which exist only for the entities US-022 can clone. |
 
 ---
 
@@ -1850,6 +1852,43 @@ Maps to F-1.1, F-1.2, F-1.4, F-2.3 and F-6.4 (WCAG 2.4.2 Page Titled). It amends
 **Dependencies:** US-020, US-026, US-027, US-028, US-030, US-045, US-050
 
 **Notes:** This is large for one sprint. Suggested split if the team prefers smaller increments: (1) Part A, titles and error page (3 pts); (2) Parts B and C, item page and list and feedback (5 pts). Both halves are independent of each other. The Marketplace list badge (plain item type, no brackets) is the reference form; the item page is brought in line with it. The pager URL helper should preserve unrelated parameters (`type`, `role`) and omit `page=1`. The "Choose a rating…" placeholder must not be submittable, which is a client-side guard only. The API already rejects scores outside 1-5 (US-030 AC3).
+
+---
+
+### US-056
+**User Story Title:** "Cloned" Tag on Cloned Items in My Sandbox and All Sandbox
+
+**User Story ID:** US-056
+
+**As a** registered user
+**I want** items that were created by cloning to carry a visible "Cloned" tag in My Sandbox and All Sandbox
+**So that** I can tell a copy I made from the original I wrote, without opening each item
+
+**Description:**
+Maps to F-2.1, F-2.2 and F-2.3 (Sandbox lists and clone), with F-6.3 (visual cues). From the UX review of the Marketplace journey: after cloning, the copy appears in My Sandbox under the same name as the original, with nothing to say it is a clone; provenance ("Cloned from X") exists only on each item's own page (US-021). This story adds a text tag to the two Sandbox list pages and a `cloned` flag to the library list API that feeds them.
+
+Scope:
+- Only Agents, Skills and Workflows can be clones, because only they have a clone entry point and a clone record (US-021, US-022). Roles and Tasks never show the tag.
+- Provenance stays on the item page (US-021); the tag is only a cue in lists. It does not link anywhere.
+- The flag is derived server-side from the existing `clone_records` table. No new table, view, migration or endpoint, and no per-item request from the web layer.
+
+**Acceptance Criteria:**
+- [ ] Given a registered user cloned a Marketplace item, When they open My Sandbox (`/library`), Then the copy's row shows a "Cloned" tag beside its status badge, and the original author's own row for the same item shows no such tag.
+- [ ] Given any registered user opens All Sandbox (`/library/all`), When it lists a cloned Agent, Skill or Workflow, Then that row shows the "Cloned" tag too, whoever owns it.
+- [ ] Given a Role or Task row, or an Agent, Skill or Workflow that was authored from scratch, When listed, Then it shows no "Cloned" tag.
+- [ ] Given the library list API (`GET /api/v1/library`), When it returns a page of items, Then each item carries a boolean `cloned`, true only when a clone record exists with that item as the cloned item. The flag is computed on the server with at most one extra query per page, and nothing from the client influences it.
+- [ ] Given a page of items contains no Agent, Skill or Workflow, When the list is requested, Then no clone lookup is made and every `cloned` is false.
+- [ ] Given the tag renders, When it is inspected, Then it is the visible word "Cloned" in the same small badge shape as the other badges, in `ink/75` text on `surface`, with no icon, and it is never the only carrier of meaning (the row's name and status remain).
+- [ ] Given existing Playwright and Vitest assertions on Sandbox rows (for example `[Draft]`), When the suites run, Then they pass without edits, except the library list API test that asserts the exact item shape, which gains the additive `cloned` field.
+- [ ] Given this story is complete, When the tests are reviewed, Then they include a unit test of the pure flagging helper, API integration tests (cloned, not cloned, no candidate types, clone-lookup error), and a Playwright check through the existing Clone Flow and My Sandbox Page Model.
+
+**Priority:** Low
+
+**Estimate:** 3 story points
+
+**Dependencies:** US-016, US-017, US-020, US-021, US-022
+
+**Notes:** A "Cloned from X" link or sorting clones first are deliberately left out. A tag icon would need a new icon in the US-054 vocabulary, so this story uses text only.
 
 ---
 
