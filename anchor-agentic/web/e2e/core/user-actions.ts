@@ -28,10 +28,13 @@ function show(value: string): string {
 export class UserActions {
 	constructor(private readonly page: Page) {}
 
-	/** Opens a path or URL. Returns the navigation response so callers can assert on status. */
-	async goTo(path: string): Promise<Response | null> {
-		const response = await this.page.goto(path);
-		log.action(`Opened ${path}`);
+	/**
+	 * Opens a path or URL. Returns the navigation response so callers can assert on status.
+	 * `referer` simulates arriving from another page (sets the Referer header and `document.referrer`).
+	 */
+	async goTo(path: string, options: { referer?: string } = {}): Promise<Response | null> {
+		const response = await this.page.goto(path, options);
+		log.action(options.referer ? `Opened ${path} (from ${options.referer})` : `Opened ${path}`);
 		return response;
 	}
 

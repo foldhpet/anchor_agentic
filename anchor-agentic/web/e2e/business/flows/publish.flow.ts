@@ -1,5 +1,6 @@
 import { expect, type Page } from '@playwright/test';
 import type { ItemDetailPage } from '../pages/item-detail.page';
+import { AuthoringFlow } from './authoring.flow';
 import { log } from '../../core/log';
 
 const FLOW = 'PublishFlow';
@@ -15,6 +16,13 @@ export class PublishFlow {
 		await detail.expectPublishedVersion();
 		log.ok(FLOW, 'Published');
 		return this.page.url();
+	}
+
+	/** Creates a Skill that passes the quality gates and publishes it; returns what browsers need to find it. */
+	async publishNewSkill(name: string): Promise<{ id: string; name: string }> {
+		const skill = await new AuthoringFlow(this.page).createSkill(name);
+		await this.publishItem(skill);
+		return { id: skill.currentId, name };
 	}
 
 	/** Publish attempt that is expected to be blocked by a publish-time gate. */

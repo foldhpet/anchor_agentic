@@ -14,8 +14,8 @@ export abstract class BasePage {
 		this.actions = new UserActions(page);
 	}
 
-	async goto(path: string) {
-		return this.actions.goTo(path);
+	async goto(path: string, options: { referer?: string } = {}) {
+		return this.actions.goTo(path, options);
 	}
 
 	/** Waits until the page has no in-flight network requests. */

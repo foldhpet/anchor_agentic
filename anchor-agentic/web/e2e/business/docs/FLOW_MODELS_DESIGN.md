@@ -87,15 +87,17 @@ The calculations are pure functions covered by `core/reporter/*.test.ts` (`npm r
 
 | Page Model | Route | Used by |
 |---|---|---|
-| `AnchorBasePage` (`business/pages/anchor-base.page.ts`) | application-specific base page; extends the core `BasePage`; adds header/footer (Log out, Log in, donation link, alert), `waitForHydration` | all pages |
+| `AnchorBasePage` (`business/pages/anchor-base.page.ts`) | application-specific base page; extends the core `BasePage`; adds header/footer (Log out, Log in, donation link, alert), `waitForHydration`, `reload`, page-title checks `expectTitleMatchesHeading` / `expectTitle` (US-055) | all pages |
 | `RegisterPage` | `/register` | AuthFlow |
 | `LoginPage` | `/login` | AuthFlow, permission-boundary spec |
-| `MarketplacePage` | `/` (search `q`, filter `type`, `role`) | MarketplaceFlow, sustainability spec |
-| `MarketplaceDetailPage` | `/marketplace/[itemType]/[id]` (rate, clone, report) | MarketplaceFlow, CloneFlow |
-| `MySandboxPage` | `/library` (grouped by type, status badges, "Show archived") | SandboxFlow, clone spec |
-| `AllSandboxPage` | `/library/all` (read-only, searchable) | SandboxFlow |
+| `MarketplacePage` | `/` (search `q`, filter `type`, `role`, `page`; search form, count line, "No items match" + Clear filters, pager) | MarketplaceFlow, PageTitleFlow, sustainability spec |
+| `MarketplaceDetailPage` | `/marketplace/[itemType]/[id]` (rate + placeholder/confirmation, clone, collapsible report, anonymous log-in notice, Back to Marketplace, type badge) | MarketplaceFlow, CloneFlow, PageTitleFlow |
+| `MySandboxPage` | `/library` (grouped by type, status badges, "Show archived") | SandboxFlow, CloneFlow, PageTitleFlow, clone spec |
+| `AllSandboxPage` | `/library/all` (read-only, searchable) | SandboxFlow, PageTitleFlow |
+| `SettingsPage` | `/settings` (Account Settings; opened for its title) | PageTitleFlow |
+| `ErrorPage` | any failing route, rendered by `+error.svelte` (404 wording, links to Marketplace / Log in, no internals) | PageTitleFlow |
 | `LegacySandboxPage` / `LegacyAllSandboxPage` | `/sandbox`, `/sandbox/all` (original generic items; still routed) | SandboxFlow (US-004) |
-| `ItemDetailPage` *(abstract)* | shared detail behaviour: status, Publish/Archive/Clone, provenance, Version History | all detail pages below |
+| `ItemDetailPage` *(abstract)* | shared detail behaviour: status, Publish/Archive/Clone, "Cloned into My Sandbox" confirmation, provenance, Version History | all detail pages below |
 | `NewRolePage` / `RoleDetailPage` | `/roles/new`, `/roles/[id]` (inline "create Task" form) | AuthoringFlow, SandboxFlow |
 | `TaskDetailPage` | `/tasks/[id]` | SandboxFlow, export spec |
 | `NewAgentPage` / `AgentDetailPage` | `/agents/new`, `/agents/[id]` (Task assignment) | AuthoringFlow, CloneFlow |
@@ -111,9 +113,10 @@ The removed list pages (`/roles`, `/agents`, `/skills`, `/workflows`) have no mo
 | `AuthFlow` | `registerNewUser`, `logIn`, `logOut`, `registerLogOutAndLogBackIn`, `registerDuplicateEmail`, `logInWithInvalidCredentials` | Register, Login |
 | `SessionFlow` | `startAnonymous`, `startRegistered` — isolated browser contexts for "other user" scenarios | (AuthFlow) |
 | `AuthoringFlow` | `createRole`, `createRoleWithTasks`, `createAgentForRole`, `assignTasks`, `createPublishableAgent`, `createSkill`, `createWorkflow(WithSteps)`, `editStep`, `removeStepAndExpectRemaining`, `reorderAndRemoveSteps` | New*/…Detail pages |
-| `PublishFlow` | `publishItem`, `publishExpectingRejection` (quality gates) | ItemDetailPage |
-| `CloneFlow` | `cloneFromSandboxUrl`, `cloneFromMarketplace`, `expectCloneCount` | ItemDetailPage, MarketplaceDetailPage |
-| `MarketplaceFlow` | `browseAndOpenDetail`, `expectFound`, `expectFilteredOut`, `rateTwiceAndVerifyUpsert`, `expectAggregateWithoutRatingControl`, `expectDraftNotFound` | MarketplacePage, MarketplaceDetailPage |
+| `PublishFlow` | `publishItem`, `publishNewSkill`, `publishExpectingRejection` (quality gates) | ItemDetailPage, AuthoringFlow |
+| `CloneFlow` | `cloneFromSandboxUrl`, `cloneFromMarketplace`, `expectCloneCount`, `cloneAndExpectConfirmationOnce`, `doubleClickCreatesOneCopy` (US-055) | ItemDetailPage, MarketplaceDetailPage, MySandboxPage |
+| `MarketplaceFlow` | `browseAndOpenDetail`, `expectFound`, `expectFilteredOut`, `rateTwiceAndVerifyUpsert`, `expectAggregateWithoutRatingControl`, `expectDraftNotFound`; US-055: `expectAnonymousItemPage`, `expectRegisteredItemControls`, `expectBackLinkReturnsToFilteredList`, `expectBackLinkKeepsAllListParameters`, `expectBackLinkGoesHomeOnDirectArrival`, `searchAndClearFilters`, `rateAndExpectFeedback`, `expectOwnRatingPreselected` | MarketplacePage, MarketplaceDetailPage |
+| `PageTitleFlow` | `expectUniqueTitles` (every representative page is `<h1> - AnchorAgentic` and unique), `expectFriendly404s` (US-055 Part A) | Marketplace, MarketplaceDetail, Login, Register, MySandbox, AllSandbox, Settings, Error |
 | `SandboxFlow` | `expectLibraryGroupedWithDrafts`, `archiveTaskAndVerifyHidden`, `saveRevisionsAndInspectHistory`, `expectReadOnlyAcrossUsers`, `nonOwnerCannotEdit` | MySandbox, AllSandbox, Legacy*, Task/Role/Skill detail |
 | `ExportFlow` | `exportSingleFile`, `exportWorkflowBundle`, `expectForbidden`, `expectDanglingStepRejection` (HTTP against the `/export/[type]/[id]` proxy) | — (API parity, US-039) |
 
@@ -205,6 +208,7 @@ Flows: none needed (single-page assertions through `LoginPage`/`MarketplacePage`
 | `export.spec.ts` | AuthFlow, AuthoringFlow, ExportFlow, SessionFlow |
 | `permission-boundary.spec.ts` | SessionFlow, SandboxFlow (+ LoginPage / MarketplacePage directly) |
 | `sustainability.spec.ts` | MarketplacePage directly |
+| `marketplace-usability.spec.ts` | AuthFlow, PublishFlow, PageTitleFlow, MarketplaceFlow, CloneFlow, SessionFlow (US-055) |
 
 ## Maintenance notes
 

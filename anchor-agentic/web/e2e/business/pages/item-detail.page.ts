@@ -63,6 +63,33 @@ export abstract class ItemDetailPage extends AnchorBasePage {
 		);
 	}
 
+	// --- Clone confirmation (US-055 Part C) ---
+	get clonedConfirmation(): Locator {
+		return this.page
+			.getByRole('status')
+			.filter({ hasText: 'Cloned into My Sandbox as a Draft. It is yours to edit.' });
+	}
+
+	async expectClonedConfirmation() {
+		await expect(this.clonedConfirmation).toBeVisible();
+		await expect(this.clonedConfirmation.getByRole('link', { name: 'My Sandbox' })).toHaveAttribute(
+			'href',
+			'/library'
+		);
+	}
+
+	async expectNoClonedConfirmation() {
+		await expect(this.clonedConfirmation).toHaveCount(0);
+	}
+
+	async followClonedConfirmationToSandbox() {
+		await this.actions.clickAndWaitForUrl(
+			this.clonedConfirmation.getByRole('link', { name: 'My Sandbox' }),
+			/\/library$/,
+			'My Sandbox (confirmation)'
+		);
+	}
+
 	// --- Read-only / provenance ---
 	async expectReadOnly() {
 		await expect(this.saveButton).toHaveCount(0);

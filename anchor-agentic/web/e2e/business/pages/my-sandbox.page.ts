@@ -34,6 +34,11 @@ export class MySandboxPage extends AnchorBasePage {
 		await expect(this.itemRow(name)).toContainText(`[${status}]`);
 	}
 
+	/** Exactly `count` rows link to an item with this name (e.g. a double-clicked Clone made one copy). */
+	async expectItemCount(name: string, count: number) {
+		await expect(this.itemLink(name)).toHaveCount(count);
+	}
+
 	async expectItemVisible(name: string) {
 		await expect(this.itemLink(name)).toBeVisible();
 	}
