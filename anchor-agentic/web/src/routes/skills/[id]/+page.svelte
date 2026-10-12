@@ -30,6 +30,9 @@
 		}
 	}
 
+	// A writable $derived would be flagged here, but it is not deeply reactive: addFile()/removeFile() mutate
+	// the array in place and the inputs bind to its items, which only a $state proxy re-renders.
+	// eslint-disable-next-line svelte/prefer-writable-derived
 	let files = $state(data.skill.skill_files.map((f) => ({ ...f })));
 
 	$effect(() => {

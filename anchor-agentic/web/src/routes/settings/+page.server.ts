@@ -1,5 +1,5 @@
 import { fail, type Actions } from '@sveltejs/kit'
-import { apiRequest, ApiError, type ApiError as ApiErrorType } from '$lib/api/client'
+import { apiRequest, ApiError } from '$lib/api/client'
 import type { PageServerLoad } from './$types'
 
 export const load: PageServerLoad = async ({ locals, fetch }) => {
