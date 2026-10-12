@@ -65,6 +65,19 @@
 		font-size: 1rem;
 	}
 
+	/* Tailwind v4's base styles no longer give buttons a pointer cursor, so every clickable control
+	 * gets the hand here (Clone, Export, Search, Rate, ...); a disabled button says it is unavailable. */
+	button:not(:disabled),
+	summary,
+	select,
+	input:is([type='submit'], [type='button'], [type='checkbox'], [type='radio']):not(:disabled) {
+		cursor: pointer;
+	}
+
+	button:disabled {
+		cursor: not-allowed;
+	}
+
 	/* Visible keyboard focus everywhere (US-050) */
 	:focus-visible {
 		outline: 2px solid var(--color-primary);

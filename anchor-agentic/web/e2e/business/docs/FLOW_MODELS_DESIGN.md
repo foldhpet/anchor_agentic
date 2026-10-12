@@ -208,6 +208,7 @@ Flows: none needed (single-page assertions through `LoginPage`/`MarketplacePage`
 | `export.spec.ts` | AuthFlow, AuthoringFlow, ExportFlow, SessionFlow |
 | `permission-boundary.spec.ts` | SessionFlow, SandboxFlow (+ LoginPage / MarketplacePage directly) |
 | `sustainability.spec.ts` | MarketplacePage directly |
+| `control-cursor.spec.ts` | AuthFlow, PublishFlow, SessionFlow; SkillDetailPage / MarketplaceDetailPage directly (`expectPointerCursor` on `AnchorBasePage`) |
 | `skip-link.spec.ts` | MarketplacePage / LoginPage directly (`expectSkipLinkBypassesNav` on `AnchorBasePage`) |
 | `cloned-tag.spec.ts` | AuthFlow, PublishFlow, SessionFlow, CloneFlow (`expectClonedTagOnlyOnTheCopy`) (US-056) |
 | `marketplace-usability.spec.ts` | AuthFlow, PublishFlow, PageTitleFlow, MarketplaceFlow, CloneFlow, SessionFlow (US-055) |

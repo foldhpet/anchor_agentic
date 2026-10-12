@@ -24,6 +24,12 @@ export abstract class AnchorBasePage extends CoreBasePage {
 		await this.waitForNetworkIdle();
 	}
 
+	// --- Affordance ---
+	/** Clickable controls show the hand cursor (a base rule in layout.css; Tailwind v4 no longer sets it). */
+	async expectPointerCursor(control: Locator) {
+		await expect(control).toHaveCSS('cursor', 'pointer');
+	}
+
 	// --- Skip link (WCAG 2.4.1 Bypass Blocks) ---
 	get skipLink(): Locator {
 		return this.page.getByRole('link', { name: 'Skip to content' });

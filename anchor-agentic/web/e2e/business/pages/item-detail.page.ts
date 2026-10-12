@@ -18,6 +18,9 @@ export abstract class ItemDetailPage extends AnchorBasePage {
 	get archiveButton(): Locator {
 		return this.page.getByRole('button', { name: 'Archive' });
 	}
+	get exportButton(): Locator {
+		return this.page.getByRole('button', { name: 'Export to .claude' });
+	}
 	get cloneButton(): Locator {
 		return this.page.getByRole('button', { name: 'Clone into My Sandbox' });
 	}

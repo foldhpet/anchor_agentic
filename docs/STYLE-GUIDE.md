@@ -84,7 +84,8 @@ Compose from these. A new pattern needs a reason and an entry here.
 | **Primary button** | `rounded-md bg-primary px-3 py-1.5 text-white` (one per view for the main action) |
 | **Secondary button / link-button** | `rounded-md border border-ink/15 px-3 py-1.5 no-underline` |
 | **Quiet button** | `rounded-md px-2 py-1.5 hover:bg-ink/5` (Log out, toolbar actions) |
-| **Disabled** | `disabled:opacity-40`, plus the `disabled` attribute; say why nearby |
+| **Disabled** | `disabled:opacity-40`, plus the `disabled` attribute; say why nearby. Disabled buttons show the `not-allowed` cursor |
+| **Cursor** | Every enabled button, `<summary>`, `<select>`, submit/checkbox/radio input shows the pointer (hand) cursor. It is one base rule in `layout.css` (Tailwind v4 no longer sets it), so do not add `cursor-pointer` per element |
 | **List row / card** | `rounded-md border border-ink/10 p-3`, name as a link in `font-semibold`, badge after |
 | **Notice** | `role="status"` (or `role="alert"` for errors), `rounded-md border-l-4 border-attention bg-surface px-4 py-3 text-ink`. Existing instance: `DegradedNotice.svelte`. Reuse it for degraded or partial content |
 | **Read-only banner** | Plain sentence starting "Read-only — ..." in `text-ink/75` on the page (US-049). Editable pages show controls; read-only pages omit them rather than disabling a wall of fields |
