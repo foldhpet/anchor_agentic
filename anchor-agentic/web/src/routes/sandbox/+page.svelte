@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { resolve } from '$app/paths';
 	import { pageTitle } from '$lib/pageTitle';
 	import { enhance } from '$app/forms';
 	import type { PageProps } from './$types';
@@ -47,4 +48,4 @@
 	</ul>
 {/if}
 
-<p><a href="/sandbox/all">View All Sandbox</a></p>
+<p><a href={resolve('/sandbox/all')}>View All Sandbox</a></p>

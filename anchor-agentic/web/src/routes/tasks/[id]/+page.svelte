@@ -1,4 +1,7 @@
 <script lang="ts">
+	import { searchWith } from '$lib/searchWith';
+	import { page } from '$app/state';
+	import { resolve } from '$app/paths';
 	import { pageTitle } from '$lib/pageTitle';
 	import Icon from '$lib/Icon.svelte';
 	import DegradedNotice from '$lib/DegradedNotice.svelte';
@@ -14,12 +17,20 @@
 	let versionsTotalPages = $derived(
 		Math.max(1, Math.ceil(data.versionsTotal / data.versionsPageSize))
 	);
+	// Previous/next page of the version history; keeps the other query parameters (e.g. ?from=).
+	function versionsHref(vpage: number) {
+		return resolve(`/tasks/[id]?${searchWith(page.url.searchParams, { vpage })}` as const, {
+			id: data.task.id
+		});
+	}
 </script>
 
 <svelte:head><title>{pageTitle(data.task.name)}</title></svelte:head>
 
 <h1 class="text-2xl">{data.task.name}</h1>
-<p class="mt-1 text-sm"><a href="/roles/{data.role.id}">&larr; {data.role.name}</a></p>
+<p class="mt-1 text-sm">
+	<a href={resolve('/roles/[id]', { id: data.role.id })}>&larr; {data.role.name}</a>
+</p>
 
 <DegradedNotice missing={data.degraded} />
 
@@ -137,12 +148,12 @@
 		<p class="mt-4 flex items-center gap-3 text-sm text-ink/75">
 			Version page {data.versionsPage} of {versionsTotalPages}
 			{#if data.versionsPage > 1}
-				<a class="inline-flex items-center gap-1" href="?vpage={data.versionsPage - 1}"
+				<a class="inline-flex items-center gap-1" href={versionsHref(data.versionsPage - 1)}
 					><Icon name="previous" />Prev</a
 				>
 			{/if}
 			{#if data.versionsPage < versionsTotalPages}
-				<a class="inline-flex items-center gap-1" href="?vpage={data.versionsPage + 1}"
+				<a class="inline-flex items-center gap-1" href={versionsHref(data.versionsPage + 1)}
 					>Next<Icon name="next" /></a
 				>
 			{/if}

@@ -2,7 +2,7 @@
 	import { resolve } from '$app/paths';
 	import { enhance } from '$app/forms';
 	import { afterNavigate } from '$app/navigation';
-	import { listStateFromParams, marketplaceListHref } from '$lib/marketplaceList';
+	import { listQuery, listStateFromParams } from '$lib/marketplaceList';
 	import { pageTitle } from '$lib/pageTitle';
 	import type { PageProps } from './$types';
 
@@ -15,7 +15,7 @@
 	// "Back to Marketplace" returns to the filtered/paginated list the visitor came from. It is
 	// rebuilt from ONLY the list's four known parameters (q, type, role, page) into a same-site
 	// path, never from an arbitrary URL. A direct arrival keeps the plain "/".
-	let backHref = $state('/');
+	let backHref = $state(resolve('/'));
 	afterNavigate(({ from, type }) => {
 		let source: URL | null = from?.url ?? null;
 		if (!source && type === 'enter' && document.referrer) {
@@ -25,10 +25,12 @@
 				source = null;
 			}
 		}
-		backHref =
+		// Only the four known list parameters are rebuilt, so nothing arbitrary is echoed into the link.
+		const query =
 			source && source.origin === location.origin && source.pathname === '/'
-				? marketplaceListHref(listStateFromParams(source.searchParams))
-				: '/';
+				? listQuery(listStateFromParams(source.searchParams))
+				: '';
+		backHref = query ? resolve(`/?${query}` as const) : resolve('/');
 	});
 
 	let cloning = $state(false);

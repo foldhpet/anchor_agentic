@@ -1,8 +1,10 @@
 <script lang="ts">
+	import { searchWith } from '$lib/searchWith';
+	import { detailHref } from '$lib/detailHref';
+	import { resolve } from '$app/paths';
 	import { pageTitle } from '$lib/pageTitle';
 	import Icon from '$lib/Icon.svelte';
 	import type { LibraryItemType } from '$lib/api/types';
-	import { withOrigin } from '$lib/backLink';
 	import { STATUS_STYLE } from '$lib/statusStyle';
 	import ClonedTag from '$lib/ClonedTag.svelte';
 	import StatusIcon from '$lib/StatusIcon.svelte';
@@ -10,19 +12,16 @@
 
 	let { data }: PageProps = $props();
 
-	const DETAIL_ROUTE: Record<LibraryItemType, string> = {
-		ROLE: '/roles',
-		TASK: '/tasks',
-		AGENT: '/agents',
-		SKILL: '/skills',
-		WORKFLOW: '/workflows'
-	};
-
 	function displayName(item: { item_type: LibraryItemType; name: string }) {
 		return item.item_type === 'AGENT' ? `Agent for ${item.name}` : item.name;
 	}
 
 	let totalPages = $derived(Math.max(1, Math.ceil(data.total / data.pageSize)));
+	// Previous/next page of the same search.
+	function pageHref(page: number) {
+		const query = searchWith(new URLSearchParams(), { q: data.q, type: data.type, page });
+		return resolve(`/library/all?${query}` as const);
+	}
 </script>
 
 <svelte:head><title>{pageTitle('All Sandbox')}</title></svelte:head>
@@ -62,9 +61,7 @@
 	<ul class="mt-6 flex flex-col gap-2">
 		{#each data.items as item (item.id)}
 			<li class="flex items-center gap-2 rounded-md border border-ink/10 p-3">
-				<a
-					class="font-semibold"
-					href={withOrigin(`${DETAIL_ROUTE[item.item_type]}/${item.id}`, 'all')}
+				<a class="font-semibold" href={detailHref(item.item_type, item.id, 'all')}
 					>{displayName(item)}</a
 				>
 				<span class="rounded-full bg-surface px-2 py-0.5 text-xs text-ink/75"
@@ -87,18 +84,16 @@
 	<p class="mt-6 flex items-center gap-3 text-sm text-ink/75">
 		Page {data.page} of {totalPages}
 		{#if data.page > 1}
-			<a
-				class="inline-flex items-center gap-1"
-				href="?q={data.q}&type={data.type}&page={data.page - 1}"><Icon name="previous" />Prev</a
+			<a class="inline-flex items-center gap-1" href={pageHref(data.page - 1)}
+				><Icon name="previous" />Prev</a
 			>
 		{/if}
 		{#if data.page < totalPages}
-			<a
-				class="inline-flex items-center gap-1"
-				href="?q={data.q}&type={data.type}&page={data.page + 1}">Next<Icon name="next" /></a
+			<a class="inline-flex items-center gap-1" href={pageHref(data.page + 1)}
+				>Next<Icon name="next" /></a
 			>
 		{/if}
 	</p>
 {/if}
 
-<p class="mt-8 text-sm"><a href="/library">← Back to My Sandbox</a></p>
+<p class="mt-8 text-sm"><a href={resolve('/library')}>← Back to My Sandbox</a></p>

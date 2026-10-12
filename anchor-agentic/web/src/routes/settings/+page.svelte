@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { resolve } from '$app/paths';
 	import { pageTitle } from '$lib/pageTitle';
 	import Icon from '$lib/Icon.svelte';
 	import type { PageData } from './$types';
@@ -27,7 +28,7 @@
 <svelte:head><title>{pageTitle('Account Settings')}</title></svelte:head>
 
 <h1 class="text-2xl">Account Settings</h1>
-<p class="mt-1 text-sm"><a href="/">← Back to Home</a></p>
+<p class="mt-1 text-sm"><a href={resolve('/')}>← Back to Home</a></p>
 
 {#if form?.error}
 	<p role="alert" class="mt-4 rounded-md border-l-4 border-attention bg-surface px-4 py-3 text-ink">

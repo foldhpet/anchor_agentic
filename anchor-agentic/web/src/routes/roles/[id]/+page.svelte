@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { searchWith } from '$lib/searchWith';
+	import { resolve } from '$app/paths';
 	import { pageTitle } from '$lib/pageTitle';
 	import Icon from '$lib/Icon.svelte';
 	import DegradedNotice from '$lib/DegradedNotice.svelte';
@@ -18,12 +20,18 @@
 	let versionsTotalPages = $derived(
 		Math.max(1, Math.ceil(data.versionsTotal / data.versionsPageSize))
 	);
+	// Previous/next page of the version history; keeps the other query parameters (e.g. ?from=).
+	function versionsHref(vpage: number) {
+		return resolve(`/roles/[id]?${searchWith(page.url.searchParams, { vpage })}` as const, {
+			id: data.role.id
+		});
+	}
 </script>
 
 <svelte:head><title>{pageTitle(data.role.name)}</title></svelte:head>
 
 <h1 class="text-2xl">{data.role.name}</h1>
-<p class="mt-1 text-sm"><a href={back.href}>&larr; {back.label}</a></p>
+<p class="mt-1 text-sm"><a href={resolve(back.href)}>&larr; {back.label}</a></p>
 
 <DegradedNotice missing={data.degraded} />
 
@@ -106,7 +114,7 @@
 	<ul class="mt-2 flex flex-col gap-2">
 		{#each data.tasks as task (task.id)}
 			<li class="flex items-center gap-2 rounded-md border border-ink/10 p-3">
-				<a class="font-semibold" href="/tasks/{task.id}">{task.name}</a>
+				<a class="font-semibold" href={resolve('/tasks/[id]', { id: task.id })}>{task.name}</a>
 				<span
 					class="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs {STATUS_STYLE[
 						task.status
@@ -168,12 +176,12 @@
 		<p class="mt-4 flex items-center gap-3 text-sm text-ink/75">
 			Version page {data.versionsPage} of {versionsTotalPages}
 			{#if data.versionsPage > 1}
-				<a class="inline-flex items-center gap-1" href="?vpage={data.versionsPage - 1}"
+				<a class="inline-flex items-center gap-1" href={versionsHref(data.versionsPage - 1)}
 					><Icon name="previous" />Prev</a
 				>
 			{/if}
 			{#if data.versionsPage < versionsTotalPages}
-				<a class="inline-flex items-center gap-1" href="?vpage={data.versionsPage + 1}"
+				<a class="inline-flex items-center gap-1" href={versionsHref(data.versionsPage + 1)}
 					>Next<Icon name="next" /></a
 				>
 			{/if}

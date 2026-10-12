@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { detailHref } from '$lib/detailHref';
+	import { resolve } from '$app/paths';
 	import { pageTitle } from '$lib/pageTitle';
 	import type { LibraryItem, LibraryItemType } from '$lib/api/types';
 	import { STATUS_STYLE } from '$lib/statusStyle';
@@ -9,14 +11,6 @@
 	let { data }: PageProps = $props();
 
 	let showArchived = $state(false);
-
-	const DETAIL_ROUTE: Record<LibraryItemType, string> = {
-		ROLE: '/roles',
-		TASK: '/tasks',
-		AGENT: '/agents',
-		SKILL: '/skills',
-		WORKFLOW: '/workflows'
-	};
 
 	const TYPE_LABEL: Record<LibraryItemType, string> = {
 		ROLE: 'Roles',
@@ -58,17 +52,20 @@
 {#if data.items.length === 0}
 	<p class="mt-6 text-ink/75">You haven't created anything yet.</p>
 	<p class="mt-2 flex flex-wrap gap-2 text-sm">
-		<a class="rounded-md border border-ink/15 px-3 py-1.5 no-underline" href="/roles/new"
+		<a class="rounded-md border border-ink/15 px-3 py-1.5 no-underline" href={resolve('/roles/new')}
 			>+ New Role</a
 		>
-		<a class="rounded-md border border-ink/15 px-3 py-1.5 no-underline" href="/agents/new"
-			>+ New Agent</a
+		<a
+			class="rounded-md border border-ink/15 px-3 py-1.5 no-underline"
+			href={resolve('/agents/new')}>+ New Agent</a
 		>
-		<a class="rounded-md border border-ink/15 px-3 py-1.5 no-underline" href="/skills/new"
-			>+ New Skill</a
+		<a
+			class="rounded-md border border-ink/15 px-3 py-1.5 no-underline"
+			href={resolve('/skills/new')}>+ New Skill</a
 		>
-		<a class="rounded-md border border-ink/15 px-3 py-1.5 no-underline" href="/workflows/new"
-			>+ New Workflow</a
+		<a
+			class="rounded-md border border-ink/15 px-3 py-1.5 no-underline"
+			href={resolve('/workflows/new')}>+ New Workflow</a
 		>
 	</p>
 {:else if grouped.length === 0}
@@ -79,8 +76,7 @@
 		<ul class="mt-2 flex flex-col gap-2">
 			{#each group.items as item (item.id)}
 				<li class="flex items-center gap-2 rounded-md border border-ink/10 p-3">
-					<a class="font-semibold" href="{DETAIL_ROUTE[item.item_type]}/{item.id}"
-						>{displayName(item)}</a
+					<a class="font-semibold" href={detailHref(item.item_type, item.id)}>{displayName(item)}</a
 					>
 					<span
 						class="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs {STATUS_STYLE[
@@ -96,4 +92,4 @@
 	{/each}
 {/if}
 
-<p class="mt-8 text-sm"><a href="/library/all">View All Sandbox</a></p>
+<p class="mt-8 text-sm"><a href={resolve('/library/all')}>View All Sandbox</a></p>

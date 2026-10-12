@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { resolve } from '$app/paths';
 	import { pageTitle } from '$lib/pageTitle';
 	import type { PageProps } from './$types';
 
@@ -49,4 +50,6 @@
 	<button type="submit" class="rounded-md bg-primary px-4 py-1.5 text-white">Log in</button>
 </form>
 
-<p class="mt-4 text-sm text-ink/75">Don't have an account? <a href="/register">Register</a></p>
+<p class="mt-4 text-sm text-ink/75">
+	Don't have an account? <a href={resolve('/register')}>Register</a>
+</p>

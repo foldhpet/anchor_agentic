@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { resolve } from '$app/paths';
 	import './layout.css';
 	import favicon from '$lib/assets/favicon.svg';
 	import Icon from '$lib/Icon.svelte';
@@ -27,10 +28,13 @@
 			aria-label="Main"
 			class="mx-auto flex max-w-4xl flex-wrap items-center gap-4 px-4 py-3 text-sm"
 		>
-			<a class="font-semibold no-underline" href="/">AnchorAgentic</a>
-			<a class={CURRENT} href="/" aria-current={current('/')}>Marketplace</a>
-			<a class={CURRENT} href="/library" aria-current={current('/library')}>My Sandbox</a>
-			<a class={CURRENT} href="/library/all" aria-current={current('/library/all')}>All Sandbox</a>
+			<a class="font-semibold no-underline" href={resolve('/')}>AnchorAgentic</a>
+			<a class={CURRENT} href={resolve('/')} aria-current={current('/')}>Marketplace</a>
+			<a class={CURRENT} href={resolve('/library')} aria-current={current('/library')}>My Sandbox</a
+			>
+			<a class={CURRENT} href={resolve('/library/all')} aria-current={current('/library/all')}
+				>All Sandbox</a
+			>
 			<span class="flex-1"></span>
 			{#if data.session}
 				<details class="relative">
@@ -42,20 +46,22 @@
 					<div
 						class="absolute right-0 z-10 mt-1 flex flex-col gap-1 rounded-md border border-ink/10 bg-bg p-2 shadow-sm"
 					>
-						<a href="/roles/new">New Role</a>
-						<a href="/agents/new">New Agent</a>
-						<a href="/skills/new">New Skill</a>
-						<a href="/workflows/new">New Workflow</a>
+						<a href={resolve('/roles/new')}>New Role</a>
+						<a href={resolve('/agents/new')}>New Agent</a>
+						<a href={resolve('/skills/new')}>New Skill</a>
+						<a href={resolve('/workflows/new')}>New Workflow</a>
 					</div>
 				</details>
-				<a class={CURRENT} href="/settings" aria-current={current('/settings')}>Settings</a>
+				<a class={CURRENT} href={resolve('/settings')} aria-current={current('/settings')}
+					>Settings</a
+				>
 				<form method="POST" action="/logout">
 					<button type="submit" class="rounded-md px-2 py-1.5 hover:bg-ink/5">Log out</button>
 				</form>
 			{:else}
-				<a class={CURRENT} href="/login" aria-current={current('/login')}>Log in</a>
+				<a class={CURRENT} href={resolve('/login')} aria-current={current('/login')}>Log in</a>
 				<a
-					href="/register"
+					href={resolve('/register')}
 					aria-current={current('/register')}
 					class="{CURRENT} rounded-md bg-primary px-3 py-1.5 text-white no-underline">Register</a
 				>

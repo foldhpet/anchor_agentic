@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { searchWith } from '$lib/searchWith';
 	import { resolve } from '$app/paths';
 	import { pageTitle } from '$lib/pageTitle';
 	import Icon from '$lib/Icon.svelte';
@@ -33,13 +34,20 @@
 			exportError = err instanceof Error ? err.message : 'Export failed';
 		}
 	}
+	// Previous/next page of the version history; keeps the other query parameters (e.g. ?from=).
+	function versionsHref(vpage: number) {
+		return resolve(`/agents/[id]?${searchWith(page.url.searchParams, { vpage })}` as const, {
+			id: data.agent.id
+		});
+	}
 </script>
 
 <svelte:head><title>{pageTitle(`Agent for ${data.role.name}`)}</title></svelte:head>
 
 <h1 class="text-2xl">Agent for {data.role.name}</h1>
 <p class="mt-1 text-sm">
-	<a href={back.href}>&larr; {back.label}</a> &middot; <a href="/roles/{data.role.id}">View Role</a>
+	<a href={resolve(back.href)}>&larr; {back.label}</a> &middot;
+	<a href={resolve('/roles/[id]', { id: data.role.id })}>View Role</a>
 </p>
 
 <DegradedNotice missing={data.degraded} />
@@ -64,7 +72,9 @@
 	<p class="mt-2 text-sm text-ink/75">
 		Cloned from
 		{#if data.provenance.source_name}
-			<a href="/agents/{data.provenance.source_item_id}">{data.provenance.source_name}</a>
+			<a href={resolve('/agents/[id]', { id: data.provenance.source_item_id })}
+				>{data.provenance.source_name}</a
+			>
 		{:else}
 			a since-removed item
 		{/if}
@@ -163,7 +173,8 @@
 	<h2 class="mt-8 text-lg">Task Assignments</h2>
 	{#if data.tasks.length === 0}
 		<p class="mt-2 text-ink/75">
-			This Role has no Tasks yet. <a href="/roles/{data.role.id}">Add one</a>.
+			This Role has no Tasks yet. <a href={resolve('/roles/[id]', { id: data.role.id })}>Add one</a
+			>.
 		</p>
 	{:else}
 		<ul class="mt-2 flex flex-col gap-2">
@@ -258,12 +269,12 @@
 		<p class="mt-4 flex items-center gap-3 text-sm text-ink/75">
 			Version page {data.versionsPage} of {versionsTotalPages}
 			{#if data.versionsPage > 1}
-				<a class="inline-flex items-center gap-1" href="?vpage={data.versionsPage - 1}"
+				<a class="inline-flex items-center gap-1" href={versionsHref(data.versionsPage - 1)}
 					><Icon name="previous" />Prev</a
 				>
 			{/if}
 			{#if data.versionsPage < versionsTotalPages}
-				<a class="inline-flex items-center gap-1" href="?vpage={data.versionsPage + 1}"
+				<a class="inline-flex items-center gap-1" href={versionsHref(data.versionsPage + 1)}
 					>Next<Icon name="next" /></a
 				>
 			{/if}

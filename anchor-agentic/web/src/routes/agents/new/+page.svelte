@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { resolve } from '$app/paths';
 	import { pageTitle } from '$lib/pageTitle';
 	import { enhance } from '$app/forms';
 	import type { PageProps } from './$types';
@@ -18,7 +19,7 @@
 
 {#if data.availableRoles.length === 0}
 	<p class="mt-6 text-ink/75">
-		All of your Roles already have an Agent. <a href="/roles/new">Create a new Role</a> first.
+		All of your Roles already have an Agent. <a href={resolve('/roles/new')}>Create a new Role</a> first.
 	</p>
 {:else}
 	<form method="POST" action="?/create" use:enhance class="mt-6 flex max-w-sm flex-col gap-4">
@@ -41,4 +42,4 @@
 	</form>
 {/if}
 
-<p class="mt-6 text-sm"><a href="/roles/new">+ New Role</a></p>
+<p class="mt-6 text-sm"><a href={resolve('/roles/new')}>+ New Role</a></p>
