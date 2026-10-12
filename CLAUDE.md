@@ -65,7 +65,8 @@ anchor_agentic/
 1. Ground any new feature work in `docs/USER-STORIES.md` (find or add the relevant epic/story and its acceptance criteria) before writing code.
 2. Implement against the layer boundaries above: UI in `web`, business logic and authorization in `api`, schema/RLS in `supabase`.
 3. Write/extend tests alongside the change: Vitest (`api`, including a dedicated `test/rls/` suite that talks to Supabase directly to prove RLS independent of the Worker) and Playwright (`web`, in `e2e/`).
-4. Re-check the relevant acceptance criteria against the implementation before considering a story done.
+4. Run the api (Vitest) and e2e (Playwright) suites through the `test-runner-agent` sub-agent, never directly in the main context; it runs them in a fresh context and returns a compact result. Quick single-file checks (`npm run check`, `npm run lint`, a single unit test while developing) may still be run inline.
+5. Re-check the relevant acceptance criteria against the implementation before considering a story done.
 
 ## Collaboration Notes
 
