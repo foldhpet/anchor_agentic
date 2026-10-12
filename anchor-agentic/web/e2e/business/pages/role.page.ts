@@ -32,6 +32,11 @@ export class NewRolePage extends AnchorBasePage {
 export class RoleDetailPage extends ItemDetailPage {
 	protected readonly routeSegment = 'roles';
 
+	/** A non-owner's hand-built request to the update action; returns what the server answered. */
+	async submitRenameDirectly(roleId: string, name: string) {
+		return this.postFormAction(`/roles/${roleId}?/update`, { name, description: '' });
+	}
+
 	get updateForm(): Locator {
 		return this.page.locator('form[action="?/update"]');
 	}

@@ -53,7 +53,7 @@ const supabaseHandle: Handle = async ({ event, resolve }) => {
 // authoring): anonymous direct navigation to a Sandbox-only URL redirects to
 // login rather than rendering the page or 500ing.
 const AUTHORING_PREFIXES = [
-	'/sandbox',
+	'/library',
 	'/roles',
 	'/tasks',
 	'/agents',

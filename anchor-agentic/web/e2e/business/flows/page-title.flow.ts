@@ -1,7 +1,6 @@
 import { expect, type Page } from '@playwright/test';
 import { AllSandboxPage } from '../pages/all-sandbox.page';
 import { ErrorPage } from '../pages/error.page';
-import { LegacyAllSandboxPage, LegacySandboxPage } from '../pages/legacy-sandbox.page';
 import { LoginPage } from '../pages/login.page';
 import { MarketplaceDetailPage } from '../pages/marketplace-detail.page';
 import { MarketplacePage } from '../pages/marketplace.page';
@@ -66,15 +65,6 @@ export class PageTitleFlow {
 		const allSandbox = new AllSandboxPage(member);
 		await allSandbox.open();
 		titles.push(await allSandbox.expectTitleMatchesHeading());
-
-		// The legacy generic-item pages are still routed and must not share a title with the library pages.
-		const legacy = new LegacySandboxPage(member);
-		await legacy.open();
-		titles.push(await legacy.expectTitleMatchesHeading());
-
-		const legacyAll = new LegacyAllSandboxPage(member);
-		await legacyAll.open();
-		titles.push(await legacyAll.expectTitleMatchesHeading());
 
 		const settings = new SettingsPage(member);
 		await settings.open();

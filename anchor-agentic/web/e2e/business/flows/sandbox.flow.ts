@@ -1,8 +1,8 @@
-import type { Page } from '@playwright/test';
+import { expect, type Page } from '@playwright/test';
 import { AllSandboxPage } from '../pages/all-sandbox.page';
-import { LegacyAllSandboxPage, LegacySandboxPage } from '../pages/legacy-sandbox.page';
 import { MySandboxPage } from '../pages/my-sandbox.page';
-import type { RoleDetailPage } from '../pages/role.page';
+import { RoleDetailPage } from '../pages/role.page';
+import { AuthoringFlow } from './authoring.flow';
 import { SkillDetailPage } from '../pages/skill.page';
 import { TaskDetailPage } from '../pages/task.page';
 import { log } from '../../core/log';
@@ -75,17 +75,24 @@ export class SandboxFlow {
 		log.ok(FLOW, 'Viewer has read-only access');
 	}
 
-	/** US-004: a non-owner's edit attempt on the generic Sandbox is rejected with 403/"Forbidden". */
-	async nonOwnerCannotEdit(owner: UserSession, viewer: UserSession, title: string) {
-		log.step(FLOW, `Owner creating "${title}"; viewer attempting an edit`);
-		const ownerSandbox = new LegacySandboxPage(owner.page);
-		await ownerSandbox.open();
-		await ownerSandbox.createItem(title);
+	/**
+	 * US-004: a non-owner cannot change another user's item. The page shows them no edit form, so the
+	 * probe posts the update action by hand with the viewer's session: the web action, the API and
+	 * Postgres must still refuse (403), and the owner's item must be unchanged.
+	 */
+	async nonOwnerCannotEdit(owner: UserSession, viewer: UserSession, roleName: string) {
+		log.step(FLOW, `Owner creating Role "${roleName}"; viewer attempting a direct rename`);
+		await new AuthoringFlow(owner.page).createRole(roleName);
+		const roleId = owner.page.url().split('/').pop()!;
 
-		const viewerAll = new LegacyAllSandboxPage(viewer.page);
-		await viewerAll.open();
-		await viewerAll.expectItemListed(title);
-		await viewerAll.attemptForbiddenEdit(title);
-		log.ok(FLOW, 'Edit rejected with Forbidden');
+		const viewerRole = new RoleDetailPage(viewer.page);
+		await viewerRole.goto(`/roles/${roleId}`);
+		const result = await viewerRole.submitRenameDirectly(roleId, `Hijacked ${roleName}`);
+		expect(result.type, 'the action answers with a failure').toBe('failure');
+		expect(result.status, 'the rename is forbidden').toBe(403);
+
+		await new RoleDetailPage(owner.page).goto(`/roles/${roleId}`);
+		await expect(owner.page.getByRole('heading', { level: 1 })).toHaveText(roleName);
+		log.ok(FLOW, "Direct rename rejected with 403; the owner's Role is unchanged");
 	}
 }

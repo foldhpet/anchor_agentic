@@ -18,16 +18,16 @@ test.describe('Anonymous browsing (US-003)', () => {
 		await marketplace.expectLoggedOut();
 	});
 
-	test('anonymous direct navigation to /sandbox redirects to login with a reason banner', async ({
+	test('anonymous direct navigation to /library redirects to login with a reason banner', async ({
 		page
 	}) => {
-		await page.goto('/sandbox');
+		await page.goto('/library');
 		await expect(page).toHaveURL(/\/login\?reason=sandbox/);
 		await new LoginPage(page).expectSandboxReasonBanner();
 	});
 
-	test('anonymous direct navigation to /sandbox/all redirects to login', async ({ page }) => {
-		await page.goto('/sandbox/all');
+	test('anonymous direct navigation to /library/all redirects to login', async ({ page }) => {
+		await page.goto('/library/all');
 		await expect(page).toHaveURL(/\/login\?reason=sandbox/);
 	});
 });
@@ -35,7 +35,7 @@ test.describe('Anonymous browsing (US-003)', () => {
 test.describe('Permission boundary enforcement (US-004)', () => {
 	requireLiveSupabase();
 
-	test("a registered user cannot edit another user's sandbox item", async ({ browser }) => {
+	test("a registered user cannot edit another user's item", async ({ browser }) => {
 		const sessions = new SessionFlow(browser);
 		const owner = await sessions.startRegistered('owner');
 		const viewer = await sessions.startRegistered('viewer');

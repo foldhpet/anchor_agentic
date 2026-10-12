@@ -24,6 +24,24 @@ export abstract class AnchorBasePage extends CoreBasePage {
 		await this.waitForNetworkIdle();
 	}
 
+	// --- Direct form-action requests (bypass the UI, keep the session) ---
+	/**
+	 * POSTs a SvelteKit form action as the signed-in user, the way a hand-built request would: the page
+	 * hides the form from a non-owner, but the action endpoint still has to refuse. Needs a loaded page
+	 * (for the origin SvelteKit checks) and returns the action result (`type`, `status`, `data`).
+	 */
+	async postFormAction(
+		path: string,
+		form: Record<string, string>
+	): Promise<{ type: string; status: number; data: string }> {
+		const origin = new URL(this.page.url()).origin;
+		const response = await this.page.request.post(path, {
+			form,
+			headers: { origin, 'x-sveltekit-action': 'true', accept: 'application/json' }
+		});
+		return await response.json();
+	}
+
 	// --- Affordance ---
 	/** Clickable controls show the hand cursor (a base rule in layout.css; Tailwind v4 no longer sets it). */
 	async expectPointerCursor(control: Locator) {
