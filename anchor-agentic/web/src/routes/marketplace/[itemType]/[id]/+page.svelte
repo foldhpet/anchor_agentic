@@ -2,11 +2,22 @@
 	import { resolve } from '$app/paths';
 	import { enhance } from '$app/forms';
 	import { afterNavigate } from '$app/navigation';
+	import { page } from '$app/state';
 	import { listQuery, listStateFromParams } from '$lib/marketplaceList';
 	import { pageTitle } from '$lib/pageTitle';
+	import { nextQuery, targetFromUrl } from '$lib/returnTo';
 	import type { PageProps } from './$types';
 
 	let { data, form }: PageProps = $props();
+
+	// US-057: the Log in / Register links of the anonymous notice return the visitor to this page.
+	let returnQuery = $derived(nextQuery(targetFromUrl(page.url)));
+	let loginHref = $derived(
+		returnQuery ? resolve(`/login?${returnQuery}` as const) : resolve('/login')
+	);
+	let registerHref = $derived(
+		returnQuery ? resolve(`/register?${returnQuery}` as const) : resolve('/register')
+	);
 
 	let displayName = $derived(
 		data.itemType === 'AGENT' ? `Agent for ${data.item.role_name}` : data.item.name
@@ -93,7 +104,7 @@
 		class="mt-4 rounded-md border-l-4 border-attention bg-surface px-4 py-3 text-ink"
 	>
 		Log in or register to clone this item into your Sandbox and rate it.
-		<a href={resolve('/login')}>Log in</a> or <a href={resolve('/register')}>Register</a>
+		<a href={loginHref}>Log in</a> or <a href={registerHref}>Register</a>
 	</p>
 {/if}
 

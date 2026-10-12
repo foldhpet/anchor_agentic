@@ -1,5 +1,6 @@
 import { fail, redirect } from '@sveltejs/kit';
 import { z } from 'zod';
+import { nextFromParams, nextQuery } from '$lib/returnTo';
 import type { Actions, PageServerLoad } from './$types';
 
 const loginSchema = z.object({
@@ -8,12 +9,16 @@ const loginSchema = z.object({
 });
 
 export const load: PageServerLoad = async ({ locals, url }) => {
-	if (locals.session) throw redirect(303, '/');
-	return { reason: url.searchParams.get('reason') };
+	if (locals.session) throw redirect(303, nextFromParams(url.searchParams));
+	// Only a validated, non-default target is handed to the page (for the link to Register).
+	return {
+		reason: url.searchParams.get('reason'),
+		returnQuery: nextQuery(nextFromParams(url.searchParams))
+	};
 };
 
 export const actions: Actions = {
-	default: async ({ request, locals }) => {
+	default: async ({ request, locals, url }) => {
 		const form = await request.formData();
 		const parsed = loginSchema.safeParse({
 			email: form.get('email'),
@@ -29,6 +34,6 @@ export const actions: Actions = {
 			return fail(400, { error: 'Invalid email or password.' });
 		}
 
-		throw redirect(303, '/');
+		throw redirect(303, nextFromParams(url.searchParams));
 	}
 };

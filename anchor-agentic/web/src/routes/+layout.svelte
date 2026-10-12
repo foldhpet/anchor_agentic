@@ -4,12 +4,23 @@
 	import favicon from '$lib/assets/favicon.svg';
 	import Icon from '$lib/Icon.svelte';
 	import { navCurrent } from '$lib/navCurrent';
+	import { nextQuery, targetFromUrl } from '$lib/returnTo';
 	import { page } from '$app/state';
 	import type { LayoutProps } from './$types';
 
 	let { data, children }: LayoutProps = $props();
 
 	const current = (href: string) => navCurrent(page.url.pathname, href);
+
+	// US-057: Log in / Register return the visitor to the page they are on (none on /login,
+	// /register or /logout, which targetFromUrl rejects).
+	let returnQuery = $derived(nextQuery(targetFromUrl(page.url)));
+	let loginHref = $derived(
+		returnQuery ? resolve(`/login?${returnQuery}` as const) : resolve('/login')
+	);
+	let registerHref = $derived(
+		returnQuery ? resolve(`/register?${returnQuery}` as const) : resolve('/register')
+	);
 	// The current page is also marked by weight, so it is never colour alone.
 	const CURRENT = 'aria-[current=page]:font-semibold';
 </script>
@@ -59,9 +70,9 @@
 					<button type="submit" class="rounded-md px-2 py-1.5 hover:bg-ink/5">Log out</button>
 				</form>
 			{:else}
-				<a class={CURRENT} href={resolve('/login')} aria-current={current('/login')}>Log in</a>
+				<a class={CURRENT} href={loginHref} aria-current={current('/login')}>Log in</a>
 				<a
-					href={resolve('/register')}
+					href={registerHref}
 					aria-current={current('/register')}
 					class="{CURRENT} rounded-md bg-primary px-3 py-1.5 text-white no-underline">Register</a
 				>

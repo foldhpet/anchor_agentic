@@ -4,6 +4,11 @@
 	import type { PageProps } from './$types';
 
 	let { data, form }: PageProps = $props();
+
+	// US-057: keep a validated return target when switching to the Register form.
+	let registerHref = $derived(
+		data.returnQuery ? resolve(`/register?${data.returnQuery}` as const) : resolve('/register')
+	);
 </script>
 
 <svelte:head><title>{pageTitle('Log in')}</title></svelte:head>
@@ -51,5 +56,5 @@
 </form>
 
 <p class="mt-4 text-sm text-ink/75">
-	Don't have an account? <a href={resolve('/register')}>Register</a>
+	Don't have an account? <a href={registerHref}>Register</a>
 </p>

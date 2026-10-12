@@ -2,6 +2,7 @@ import { createServerClient } from '@supabase/ssr';
 import { type Handle, error, redirect } from '@sveltejs/kit';
 import { sequence } from '@sveltejs/kit/hooks';
 import { PUBLIC_SUPABASE_URL, PUBLIC_SUPABASE_ANON_KEY } from '$env/static/public';
+import { nextQuery, targetFromUrl } from '$lib/returnTo';
 
 const supabaseHandle: Handle = async ({ event, resolve }) => {
 	event.locals.requestId = event.request.headers.get('x-request-id') ?? crypto.randomUUID();
@@ -65,7 +66,9 @@ const AUTHORING_PREFIXES = [
 
 const sandboxGuard: Handle = async ({ event, resolve }) => {
 	if (AUTHORING_PREFIXES.some((p) => event.url.pathname.startsWith(p)) && !event.locals.session) {
-		throw redirect(303, '/login?reason=sandbox');
+		// US-057: carry the requested page (only if it passes the validator) through login.
+		const query = nextQuery(targetFromUrl(event.url));
+		throw redirect(303, query ? `/login?reason=sandbox&${query}` : '/login?reason=sandbox');
 	}
 	return resolve(event);
 };

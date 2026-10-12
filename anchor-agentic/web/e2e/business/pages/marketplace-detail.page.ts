@@ -1,5 +1,6 @@
 import { expect, type Locator } from '@playwright/test';
 import { AnchorBasePage } from './anchor-base.page';
+import { authHrefFor } from '../support/return-to-data';
 import type { ItemType } from '../support/test-data';
 
 /** `/marketplace/[itemType]/[id]` — published item detail with rating, clone and report. */
@@ -76,15 +77,17 @@ export class MarketplaceDetailPage extends AnchorBasePage {
 			.filter({ hasText: 'Log in or register to clone this item into your Sandbox and rate it' });
 	}
 
+	/** US-057: the notice links carry this item page as the encoded return target. */
 	async expectAnonymousNotice() {
+		const itemPage = this.pathAndQuery;
 		await expect(this.anonymousNotice).toBeVisible();
 		await expect(this.anonymousNotice.getByRole('link', { name: 'Log in' })).toHaveAttribute(
 			'href',
-			'/login'
+			authHrefFor('/login', itemPage)
 		);
 		await expect(this.anonymousNotice.getByRole('link', { name: 'Register' })).toHaveAttribute(
 			'href',
-			'/register'
+			authHrefFor('/register', itemPage)
 		);
 	}
 
@@ -93,17 +96,19 @@ export class MarketplaceDetailPage extends AnchorBasePage {
 	}
 
 	async followNoticeLogInLink() {
+		const itemPage = this.pathAndQuery;
 		await this.actions.clickAndWaitForUrl(
 			this.anonymousNotice.getByRole('link', { name: 'Log in' }),
-			/\/login$/,
+			(url) => url.pathname === '/login' && url.searchParams.get('next') === itemPage,
 			'Log in (notice)'
 		);
 	}
 
 	async followNoticeRegisterLink() {
+		const itemPage = this.pathAndQuery;
 		await this.actions.clickAndWaitForUrl(
 			this.anonymousNotice.getByRole('link', { name: 'Register' }),
-			/\/register$/,
+			(url) => url.pathname === '/register' && url.searchParams.get('next') === itemPage,
 			'Register (notice)'
 		);
 	}

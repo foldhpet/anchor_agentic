@@ -3,7 +3,12 @@
 	import { pageTitle } from '$lib/pageTitle';
 	import type { PageProps } from './$types';
 
-	let { form }: PageProps = $props();
+	let { data, form }: PageProps = $props();
+
+	// US-057: keep a validated return target when switching to the Log in form.
+	let loginHref = $derived(
+		data.returnQuery ? resolve(`/login?${data.returnQuery}` as const) : resolve('/login')
+	);
 </script>
 
 <svelte:head><title>{pageTitle('Register')}</title></svelte:head>
@@ -53,5 +58,5 @@
 </form>
 
 <p class="mt-4 text-sm text-ink/75">
-	Already have an account? <a href={resolve('/login')}>Log in</a>
+	Already have an account? <a href={loginHref}>Log in</a>
 </p>

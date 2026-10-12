@@ -1,5 +1,6 @@
 import { fail, redirect } from '@sveltejs/kit';
 import { z } from 'zod';
+import { nextFromParams, nextQuery } from '$lib/returnTo';
 import type { Actions, PageServerLoad } from './$types';
 
 const registerSchema = z.object({
@@ -12,12 +13,14 @@ const registerSchema = z.object({
 	password: z.string().min(8, 'Password must be at least 8 characters.')
 });
 
-export const load: PageServerLoad = async ({ locals }) => {
-	if (locals.session) throw redirect(303, '/');
+export const load: PageServerLoad = async ({ locals, url }) => {
+	if (locals.session) throw redirect(303, nextFromParams(url.searchParams));
+	// Only a validated, non-default target is handed to the page (for the link to Log in).
+	return { returnQuery: nextQuery(nextFromParams(url.searchParams)) };
 };
 
 export const actions: Actions = {
-	default: async ({ request, locals }) => {
+	default: async ({ request, locals, url }) => {
 		const form = await request.formData();
 		const parsed = registerSchema.safeParse({
 			username: form.get('username'),
@@ -50,6 +53,6 @@ export const actions: Actions = {
 			});
 		}
 
-		throw redirect(303, '/');
+		throw redirect(303, nextFromParams(url.searchParams));
 	}
 };

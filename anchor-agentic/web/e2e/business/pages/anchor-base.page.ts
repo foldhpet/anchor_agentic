@@ -1,5 +1,6 @@
 import { expect, type Locator } from '@playwright/test';
 import { BasePage as CoreBasePage } from '../../core/base.page';
+import { authHrefFor } from '../support/return-to-data';
 
 export const SITE_NAME = 'AnchorAgentic';
 
@@ -102,5 +103,60 @@ export abstract class AnchorBasePage extends CoreBasePage {
 
 	async expectLoggedOut() {
 		await expect(this.logInLink).toBeVisible();
+	}
+
+	// --- Return to the page I was on (US-057) ---
+	get mainNav(): Locator {
+		return this.page.getByRole('navigation', { name: 'Main' });
+	}
+	get navLogInLink(): Locator {
+		return this.mainNav.getByRole('link', { name: 'Log in' });
+	}
+	get navRegisterLink(): Locator {
+		return this.mainNav.getByRole('link', { name: 'Register' });
+	}
+
+	/** Path and query string of the browser's current URL (what a return target is made of). */
+	get pathAndQuery(): string {
+		const url = new URL(this.page.url());
+		return `${url.pathname}${url.search}`;
+	}
+
+	/** Waits until the browser is exactly on `expected` (path plus query string). */
+	async expectPathAndQuery(expected: string) {
+		await expect
+			.poll(() => this.pathAndQuery, { message: 'the page the browser is on' })
+			.toBe(expected);
+	}
+
+	/** The nav Log in / Register links on the current page return the visitor to `target`. */
+	async expectNavAuthLinksCarry(target: string) {
+		await expect(this.navLogInLink).toHaveAttribute('href', authHrefFor('/login', target));
+		await expect(this.navRegisterLink).toHaveAttribute('href', authHrefFor('/register', target));
+	}
+
+	/** On /login and /register the nav links add no return target of their own. */
+	async expectNavAuthLinksWithoutTarget() {
+		await expect(this.navLogInLink).toHaveAttribute('href', '/login');
+		await expect(this.navRegisterLink).toHaveAttribute('href', '/register');
+	}
+
+	/** Clicks the nav Log in link and waits for /login carrying exactly `target` as `next`. */
+	async followNavLogInLink(target: string) {
+		await this.actions.clickAndWaitForUrl(
+			this.navLogInLink,
+			(url) => url.pathname === '/login' && url.searchParams.get('next') === target,
+			'Log in (nav)'
+		);
+	}
+
+	/**
+	 * Requests `path` as the signed-in user, follows every redirect like a browser and returns the
+	 * final URL. Used to check redirects without rendering each target page.
+	 */
+	async finalUrlOf(path: string): Promise<URL> {
+		const response = await this.page.request.get(path);
+		expect(response.ok(), `${path} answered ${response.status()}`).toBe(true);
+		return new URL(response.url());
 	}
 }
