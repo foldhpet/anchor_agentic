@@ -167,6 +167,18 @@ export class MarketplaceFlow {
 		log.ok(FLOW, 'Count line, type labels, no-match message and Clear filters all work');
 	}
 
+	/** A page number past the last one explains itself and links back, instead of a 500 or a misleading empty state. */
+	async visitPageBeyondTheLast(page: number) {
+		log.step(FLOW, `Opening page ${page}, far past the last page`);
+		await this.listing.openPage(page);
+		await this.listing.expectNoSuchPage(page);
+		await this.listing.goToFirstPage();
+		log.ok(
+			FLOW,
+			'The message names the missing page and "Go to the first page" returns to the list'
+		);
+	}
+
 	/** US-055 Part C: placeholder for an unrated item, then the "Thanks" confirmation after saving. */
 	async rateAndExpectFeedback(itemType: ItemType, id: string, score: number) {
 		log.step(FLOW, `Rating ${itemType} ${id} with ${score} and checking the feedback`);

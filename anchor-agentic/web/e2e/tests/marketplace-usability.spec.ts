@@ -85,6 +85,16 @@ test.describe('Marketplace journey usability (US-055)', () => {
 	);
 
 	test(
+		'a page number past the last page says so and links back instead of failing',
+		{ tag: '@US-055' },
+		async ({ page }) => {
+			const { stamp } = await new AuthFlow(page).signInAs('owner');
+			await new PublishFlow(page).publishNewSkill(`Past End Skill ${stamp}`);
+			await new MarketplaceFlow(page).visitPageBeyondTheLast(9999);
+		}
+	);
+
+	test(
 		'a registered user sees Rate and Clone instead of the notice, rates with a placeholder and confirmation, and sees a one-time clone confirmation',
 		{ tag: '@US-055' },
 		async ({ page, browser }) => {

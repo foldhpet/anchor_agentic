@@ -2,7 +2,14 @@
 	import { resolve } from '$app/paths';
 	import Icon from '$lib/Icon.svelte';
 	import type { MarketplaceItemType } from '$lib/api/types';
-	import { describeFilters, itemCount, marketplaceListHref, typeLabel } from '$lib/marketplaceList';
+	import {
+		describeFilters,
+		itemCount,
+		isPastLastPage,
+		marketplaceListHref,
+		pageCount,
+		typeLabel
+	} from '$lib/marketplaceList';
 	import { marketplaceTitle } from '$lib/pageTitle';
 	import type { PageProps } from './$types';
 
@@ -12,9 +19,11 @@
 		return item.item_type === 'AGENT' ? `Agent for ${item.name}` : item.name;
 	}
 
-	let totalPages = $derived(Math.max(1, Math.ceil(data.total / data.pageSize)));
+	let totalPages = $derived(pageCount(data.total, data.pageSize));
+	let pastEnd = $derived(isPastLastPage(data.items.length, data.total));
 	let filters = $derived(describeFilters(data));
 
+	// Link to another page of the same list (page 1 omits the page parameter).
 	function pageHref(page: number) {
 		return marketplaceListHref({ q: data.q, type: data.type, role: data.role, page });
 	}
@@ -58,7 +67,16 @@
 	<button type="submit" class="rounded-md bg-primary px-4 py-1.5 text-white">Search</button>
 </form>
 
-{#if data.items.length === 0}
+{#if pastEnd}
+	<p class="mt-6 text-ink/75">
+		There is no page {data.page}. {filters ? `Results for ${filters}` : 'The Marketplace'}
+		{totalPages === 1 ? 'fit on one page' : `have ${totalPages} pages`}.
+		<a href={pageHref(1)}>Go to the first page</a>
+		{#if totalPages > 1}
+			<a href={pageHref(totalPages)}>Go to the last page</a>
+		{/if}
+	</p>
+{:else if data.items.length === 0}
 	{#if filters}
 		<p class="mt-6 text-ink/75">
 			No items match {filters}.
@@ -98,7 +116,7 @@
 	</ul>
 {/if}
 
-{#if totalPages > 1}
+{#if totalPages > 1 && !pastEnd}
 	<nav aria-label="Marketplace pages" class="mt-6 flex items-center gap-3 text-sm text-ink/75">
 		Page {data.page} of {totalPages}
 		{#if data.page > 1}

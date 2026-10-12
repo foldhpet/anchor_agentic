@@ -55,6 +55,19 @@ export function describeFilters(state: Pick<ListState, 'q' | 'type' | 'role'>): 
 	return parts.join(', ');
 }
 
+/** Number of pages for a result set; an empty result still has one (empty) page. */
+export function pageCount(total: number, pageSize: number): number {
+	return Math.max(1, Math.ceil(total / pageSize));
+}
+
+/**
+ * True when the list is asking for a page that does not exist although results do: an in-range
+ * page always has rows, so "no rows but a positive total" means the page is past the last one.
+ */
+export function isPastLastPage(rowCount: number, total: number): boolean {
+	return rowCount === 0 && total > 0;
+}
+
 /** "1 item" / "12 items". */
 export function itemCount(total: number): string {
 	return `${total} ${total === 1 ? 'item' : 'items'}`;

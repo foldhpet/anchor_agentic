@@ -133,6 +133,25 @@ export class MarketplacePage extends AnchorBasePage {
 		);
 	}
 
+	// --- A page past the last one ---
+	async openPage(page: number) {
+		await this.actions.goTo(`/?page=${page}`);
+	}
+
+	async expectNoSuchPage(page: number) {
+		await expect(this.page.getByText(`There is no page ${page}.`)).toBeVisible();
+		await this.expectColdStartTextAbsent();
+		await expect(this.pager).toHaveCount(0);
+	}
+
+	async goToFirstPage() {
+		await this.actions.clickAndWaitForUrl(
+			this.page.getByRole('link', { name: 'Go to the first page' }),
+			(url) => url.pathname === '/' && !url.searchParams.has('page'),
+			'Go to the first page'
+		);
+	}
+
 	// --- Pager ---
 	get pager(): Locator {
 		return this.page.getByRole('navigation', { name: 'Marketplace pages' });

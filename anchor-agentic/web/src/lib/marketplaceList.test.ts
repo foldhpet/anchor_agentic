@@ -3,8 +3,10 @@ import {
 	describeFilters,
 	itemCount,
 	listQuery,
+	isPastLastPage,
 	listStateFromParams,
-	marketplaceListHref
+	marketplaceListHref,
+	pageCount
 } from './marketplaceList';
 
 describe('marketplaceListHref', () => {
@@ -55,5 +57,16 @@ describe('describeFilters / itemCount / listQuery', () => {
 	});
 	it('listQuery omits empties', () => {
 		expect(listQuery({ q: '', page: 1 })).toBe('');
+	});
+	it('counts pages, with at least one even when empty', () => {
+		expect(pageCount(0, 20)).toBe(1);
+		expect(pageCount(20, 20)).toBe(1);
+		expect(pageCount(21, 20)).toBe(2);
+		expect(pageCount(95, 20)).toBe(5);
+	});
+	it('detects a page past the last one only when results exist', () => {
+		expect(isPastLastPage(0, 95)).toBe(true);
+		expect(isPastLastPage(0, 0)).toBe(false);
+		expect(isPastLastPage(5, 95)).toBe(false);
 	});
 });
