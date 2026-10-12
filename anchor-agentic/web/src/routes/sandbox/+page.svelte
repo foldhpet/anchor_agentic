@@ -6,9 +6,9 @@
 	let { data, form }: PageProps = $props();
 </script>
 
-<svelte:head><title>{pageTitle('My Sandbox')}</title></svelte:head>
+<svelte:head><title>{pageTitle('Generic Sandbox Items')}</title></svelte:head>
 
-<h1>My Sandbox</h1>
+<h1>Generic Sandbox Items</h1>
 
 {#if form?.error}
 	<p role="alert">{form.error}</p>

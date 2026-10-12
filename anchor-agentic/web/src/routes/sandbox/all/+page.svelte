@@ -6,9 +6,9 @@
 	let { data, form }: PageProps = $props();
 </script>
 
-<svelte:head><title>{pageTitle('All Sandbox')}</title></svelte:head>
+<svelte:head><title>{pageTitle('All Generic Sandbox Items')}</title></svelte:head>
 
-<h1>All Sandbox</h1>
+<h1>All Generic Sandbox Items</h1>
 <p>Every registered user's items are listed here. You can only edit items you own.</p>
 
 {#if form?.error}

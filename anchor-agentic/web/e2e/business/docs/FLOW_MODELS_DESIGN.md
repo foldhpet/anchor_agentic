@@ -96,7 +96,7 @@ The calculations are pure functions covered by `core/reporter/*.test.ts` (`npm r
 | `AllSandboxPage` | `/library/all` (read-only, searchable) | SandboxFlow, PageTitleFlow |
 | `SettingsPage` | `/settings` (Account Settings; opened for its title) | PageTitleFlow |
 | `ErrorPage` | any failing route, rendered by `+error.svelte` (404 wording, links to Marketplace / Log in, no internals) | PageTitleFlow |
-| `LegacySandboxPage` / `LegacyAllSandboxPage` | `/sandbox`, `/sandbox/all` (original generic items; still routed) | SandboxFlow (US-004) |
+| `LegacySandboxPage` / `LegacyAllSandboxPage` | `/sandbox`, `/sandbox/all` (original generic items; still routed; headings "Generic Sandbox Items" / "All Generic Sandbox Items" so titles stay unique) | SandboxFlow (US-004), PageTitleFlow |
 | `ItemDetailPage` *(abstract)* | shared detail behaviour: status, Publish/Archive/Clone, "Cloned into My Sandbox" confirmation, provenance, Version History | all detail pages below |
 | `NewRolePage` / `RoleDetailPage` | `/roles/new`, `/roles/[id]` (inline "create Task" form) | AuthoringFlow, SandboxFlow |
 | `TaskDetailPage` | `/tasks/[id]` | SandboxFlow, export spec |
@@ -116,7 +116,7 @@ The removed list pages (`/roles`, `/agents`, `/skills`, `/workflows`) have no mo
 | `PublishFlow` | `publishItem`, `publishNewSkill`, `publishExpectingRejection` (quality gates) | ItemDetailPage, AuthoringFlow |
 | `CloneFlow` | `cloneFromSandboxUrl`, `cloneFromMarketplace`, `expectCloneCount`, `cloneAndExpectConfirmationOnce`, `doubleClickCreatesOneCopy` (US-055) | ItemDetailPage, MarketplaceDetailPage, MySandboxPage |
 | `MarketplaceFlow` | `browseAndOpenDetail`, `expectFound`, `expectFilteredOut`, `rateTwiceAndVerifyUpsert`, `expectAggregateWithoutRatingControl`, `expectDraftNotFound`; US-055: `expectAnonymousItemPage`, `expectRegisteredItemControls`, `expectBackLinkReturnsToFilteredList`, `expectBackLinkKeepsAllListParameters`, `expectBackLinkGoesHomeOnDirectArrival`, `searchAndClearFilters`, `visitPageBeyondTheLast`, `rateAndExpectFeedback`, `expectOwnRatingPreselected` | MarketplacePage, MarketplaceDetailPage |
-| `PageTitleFlow` | `expectUniqueTitles` (every representative page is `<h1> - AnchorAgentic` and unique), `expectFriendly404s` (US-055 Part A) | Marketplace, MarketplaceDetail, Login, Register, MySandbox, AllSandbox, Settings, Error |
+| `PageTitleFlow` | `expectUniqueTitles` (every representative page is `<h1> - AnchorAgentic` and unique), `expectFriendly404s` (US-055 Part A) | Marketplace, MarketplaceDetail, Login, Register, MySandbox, AllSandbox, LegacySandbox, LegacyAllSandbox, Settings, Error |
 | `SandboxFlow` | `expectLibraryGroupedWithDrafts`, `archiveTaskAndVerifyHidden`, `saveRevisionsAndInspectHistory`, `expectReadOnlyAcrossUsers`, `nonOwnerCannotEdit` | MySandbox, AllSandbox, Legacy*, Task/Role/Skill detail |
 | `ExportFlow` | `exportSingleFile`, `exportWorkflowBundle`, `expectForbidden`, `expectDanglingStepRejection` (HTTP against the `/export/[type]/[id]` proxy) | — (API parity, US-039) |
 
