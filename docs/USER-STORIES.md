@@ -127,6 +127,7 @@
 |---|---|---|---|---|
 | [US-055](#us-055) | Marketplace journey usability: page titles, item-page clarity, empty/feedback states | F-1.1, F-1.2, F-1.4, F-2.3, F-6.4 | Medium | 8 |
 | [US-056](#us-056) | "Cloned" tag on cloned items in My Sandbox and All Sandbox | F-2.1, F-2.2, F-2.3, F-6.3 | Low | 3 |
+| [US-057](#us-057) | Return to the page I was on after logging in or registering | F-4.2, F-1.1 | Medium | 5 |
 
 ---
 
@@ -189,6 +190,7 @@
 | US-054 | US-047, US-048, US-050, US-051 | Icons use the type/spacing and color tokens (US-047/048), must meet the contrast rules of the accessibility baseline (US-050), and stay light-mode-safe under forced dark mode (US-051) |
 | US-055 | US-020, US-026, US-027, US-028, US-030, US-045, US-050 | Amends the existing Marketplace list and detail pages (US-026/027/028), clone and rating controls (US-020/030), and the report block (US-045). The unique-title criteria extend the WCAG baseline (US-050). Fulfils US-020 AC3 (anonymous prompt) without redefining it. |
 | US-056 | US-016, US-017, US-020, US-021, US-022 | Tags clones in the My/All Sandbox lists (US-016/017), derived from the clone records written by Clone (US-020/021), which exist only for the entities US-022 can clone. |
+| US-057 | US-001, US-002, US-003, US-020, US-027, US-028, US-030, US-055 | Extends login and register (US-001/002) and the guard redirect to login for anonymous Sandbox URLs (US-003) with a validated return target; amends their "lands on the Marketplace" default. Carries the target through the anonymous item-page notice (US-055, US-020 AC3, US-027, US-030) and preserves filtered-list URLs (US-028). |
 
 ---
 
@@ -1788,7 +1790,7 @@ Maps to F-2.5/F-3.1. Adds `/roles/new`, mirroring the existing `/agents/new`, `/
 
 ## Epic M — Marketplace Journey Usability
 
-> Post-v1.1 usability pass from a UX review of the Marketplace journey (list, item page, login/register, layout). It changes presentation, feedback and navigation only. It adds no new capability, no new dependency, and no API contract change. Sort control (US-028 AC4) and returning to the previous page after login are explicitly out of scope and are left for later stories.
+> Post-v1.1 usability pass from a UX review of the Marketplace journey (list, item page, login/register, layout). It changes presentation, feedback and navigation only. It adds no new capability, no new dependency, and no API contract change. Sort control (US-028 AC4) is explicitly out of scope and is left for a later story. Returning to the previous page after login is delivered by US-057.
 
 ### US-055
 **User Story Title:** Marketplace Journey Usability: Page Titles, Item-Page Clarity, Empty and Feedback States
@@ -1889,6 +1891,80 @@ Scope:
 **Dependencies:** US-016, US-017, US-020, US-021, US-022
 
 **Notes:** A "Cloned from X" link or sorting clones first are deliberately left out. A tag icon would need a new icon in the US-054 vocabulary, so this story uses text only.
+
+---
+
+### US-057
+**User Story Title:** Return to the Page I Was On After Logging In or Registering
+
+**User Story ID:** US-057
+
+**As a** visitor (anonymous, about to become registered)
+**I want** to be returned to the page I was on after I log in or register
+**So that** I can continue what I was doing, such as reading a Marketplace item, without finding my way back from the home page
+
+**Description:**
+Maps to F-4.2 and F-1.1. From the UX review of the Marketplace journey: today login and registration always end on `/`, so a visitor who clicked "Log in" on an item page, or who was bounced from a Sandbox URL, loses their place. US-055 explicitly left this out of scope. This story adds a "where I was" target that travels through the Log in and Register links and the route guard's redirect, and is honoured after a successful login or registration.
+
+Scope:
+- Carrying the target: the item-page notice (US-055 Part B) Log in and Register links, the global nav Log in and Register links, and the route guard's redirect to `/login?reason=sandbox`, which today drops the requested URL. The target is carried in a `next` query parameter holding a same-site relative path plus its query string (for example `/marketplace/agent/abc123` or `/?q=triage&page=2`).
+- Honouring it: after successful login and after successful register. With no target, or an invalid one, the destination stays `/`.
+- Already logged in: a user who opens `/login?next=<valid target>` (or `/register?next=...`) is redirected to the target instead of being redirected to `/`. With no or an invalid target, behaviour is unchanged from today: a logged-in user opening `/login` is already redirected to `/`.
+- Switching forms: the Login page's link to Register and the Register page's link to Login carry the current valid `next`. The nav on `/login` and `/register` does not add a target of its own.
+- A failed submit (wrong password, duplicate email, validation error) re-renders the form with the same valid target still carried.
+- The reason banner (`?reason=sandbox`) behaves exactly as today and can appear together with `next`.
+- Page views only: the redirect replays a page VIEW (GET), never a form action. A clone or rating attempted before login is not replayed. The user lands on the page and acts again.
+- The target is validated server-side by one shared pure helper. It is never echoed, rendered or redirected to unless it passes. The client is never trusted to have validated it.
+
+*Constraints:*
+- Existing Playwright assertions on visible text must keep passing without edits. This story lists no changed strings.
+- No new dependency and no API contract change. Everything is web-layer (`anchor-agentic/web`: `hooks.server.ts`, `+layout`, `login` and `register` routes, `marketplace/[itemType]/[id]`). Supabase Auth is untouched.
+- Pure helpers (target validation and link building) are unit tested, including the payload list below. The journey is covered by Playwright through the existing Page/Flow Models, with no raw selectors in specs.
+
+**Acceptance Criteria:**
+
+*Carrying the target*
+- [ ] Given an anonymous visitor is on a Marketplace item page, When they activate Log in or Register in the "Log in or register to clone this item..." notice, Then the URL is `/login?next=<encoded path of that item page>` or `/register?next=...`. The notice text from US-055 is unchanged.
+- [ ] Given an anonymous visitor is on any page other than `/login`, `/register` or `/logout` (for example `/?q=triage&page=2`), When they activate Log in or Register in the global nav, Then the link carries `next` set to that page's path and query string, URL-encoded so that `&` and `#` in it round-trip intact.
+- [ ] Given an anonymous visitor requests a guarded URL (`/library`, `/library/all`, `/roles`, `/tasks`, `/agents`, `/skills`, `/workflows`, `/settings` or `/moderation` prefix, including a sub-path and query such as `/agents/abc?tab=2`), When the route guard redirects, Then the response goes to `/login?reason=sandbox&next=<encoded requested path and query>`, and the reason banner shows as today.
+- [ ] Given the visitor is on `/login?next=<valid>` or `/register?next=<valid>`, When they use the link to the other form, Then the other form's URL carries the same `next`. Given the visitor is on `/login` or `/register` and uses the nav Log in or Register link, Then the link adds no `next` of its own.
+
+*Honouring the target*
+- [ ] Given a registered user is on `/login?next=%2Fmarketplace%2Fagent%2Fabc123`, When they submit valid credentials, Then they are redirected (303) to `/marketplace/agent/abc123` as a logged-in user. The same holds for a successful registration from `/register?next=...`.
+- [ ] Given the target is a filtered Marketplace list such as `/?q=x&page=2&type=agent`, When login or register succeeds, Then the user lands on exactly that path with every query parameter preserved. The same holds for an item page URL.
+- [ ] Given there is no `next`, or `next` is empty, or `next` is invalid (see the rejected list below), When login or register succeeds, Then the user is redirected to `/`. No error is shown for an invalid target, and the page renders and works as it does today.
+- [ ] Given a login or register submit fails (wrong password, existing email, invalid email, weak password), When the form re-renders, Then the error is shown as today, no redirect happens, and a still-valid target remains carried for the next attempt.
+- [ ] Given a logged-in user opens `/login?next=<valid>` or `/register?next=<valid>`, When the request is handled, Then they are redirected (303) to the target and the form is not rendered. Given they open `/login` or `/register` with no target or an invalid one, Then behaviour is unchanged from today (redirect to `/`).
+- [ ] Given the page that carries `?reason=sandbox` also has a valid `next`, When it renders, Then the reason banner shows exactly as today, and the banner and the target do not affect each other.
+
+*Page view only, never a form action*
+- [ ] Given an anonymous visitor tried to clone or rate an item before logging in, When they then log in or register, Then they are returned to the item page as a plain page view. No clone or rating is created, and no form action is re-submitted or replayed.
+- [ ] Given `next` has a query starting with `/` (a SvelteKit form-action URL, for example `/marketplace/agent/abc123?/clone`), When it is validated, Then it is rejected and the fallback is `/`.
+
+*Security: target validation [NFR-Security]*
+- [ ] The system should accept a target only if all of these hold: it starts with exactly one `/`, with the second character not `/` or `\`; it contains no scheme, host, backslash or control character (U+0000 to U+001F, U+007F); it is at most 512 characters in total; and its path (before `?` or `#`) does not contain an encoded slash or backslash (`%2f`, `%5c`, case-insensitive) or an encoded control character. Any other value falls back to `/`.
+- [ ] The system should reject, with fallback to `/`, at least these values (each one is a unit test case for the helper and a server-level check for login and register): `https://evil.example`; `http://evil.example/path`; `//evil.example`; `///evil.example`; `/\evil.example`; `\\evil.example`; `\/evil.example`; `javascript:alert(1)`; `data:text/html,x`; `evil.example` (no leading `/`); empty and whitespace-only values; ` //evil.example` and `\t//evil.example` (leading whitespace or tab); `/%2Fevil.example` and `/%2fevil.example` (encoded slash); `/%5Cevil.example` (encoded backslash); `/%252Fevil.example` (double encoded); `/%0d%0aSet-Cookie:x=1` and `/%00` (encoded control characters); `/ok\nhttps://evil.example` (raw newline); a value of 513 characters starting with `/`; and a value passed more than once (`next=/a&next=//evil.example`), where the first value is validated and any later duplicates are ignored.
+- [ ] The system should accept and preserve at least these values: `/`; `/?q=triage&page=2`; `/?q=a%20b%26c`; `/marketplace/agent/0a1b2c`; `/library`; `/agents/abc?tab=2`; and a 512-character valid path.
+- [ ] Given a target whose path is `/login`, `/register` or `/logout`, or any sub-path or trailing-slash variant of them, in any letter case (for example `/LOGIN`, `/login/`, `/register?x=1`), When it is validated, Then it is rejected and the fallback is `/`, so login and register can never redirect back to themselves and a loop is impossible.
+- [ ] The system should never render an unvalidated `next` into HTML, a link, a form field or a `Location` header. Links and hidden fields carry only a value that has already passed the helper, and the redirect is built from the helper's return value, not from raw input.
+- [ ] The system should build the `Location` header so it is always a same-origin relative path. Playwright asserts that after login with each rejected payload above the final URL's origin is the app's own and its path is `/`.
+
+*Non-functional (tag: [NFR-A11y])*
+- [ ] The system should add no visible text, so the existing Log in and Register link labels, the notice text and the reason banner text are unchanged, and the link accessible names stay the same.
+- [ ] The system should add no new runtime dependency and no network call, and `package.json` dependencies are unchanged.
+
+*Tests*
+- [ ] Given this story is complete, When the tests are reviewed, Then: (a) the pure helpers (validate target, build login/register link, build guard redirect) have unit tests covering every accepted and rejected value listed above plus the loop and form-action cases; (b) the existing Playwright specs pass without edits; (c) new Playwright coverage via the Login, Register and Marketplace Item Page Models and a Flow Model covers: item page to Log in to back on the item page; item page to Register to back on the item page; filtered list to Log in to the same filtered list; guarded URL to `/login` to back on that URL; failed login keeps the target; already-logged-in redirect; invalid-target fallback to `/`; and the clone-before-login case, which lands on the page with nothing cloned.
+
+**Out of scope:** the Marketplace sort control (US-028 AC4); replaying form actions such as a clone or rating attempted before login; remember-me and session length.
+
+**Priority:** Medium
+
+**Estimate:** 5 story points
+
+**Dependencies:** US-001, US-002, US-003, US-020, US-027, US-028, US-030, US-055
+
+**Notes:** This amends the wording of US-001 AC4 and US-002 AC1 ("lands on the Marketplace" / "redirected to the Marketplace"), and of US-003 AC3 (redirect to a "Register/Login to continue" prompt). Read them as "by default, when there is no valid return target"; they are not otherwise changed. US-055's out-of-scope line about returning the user after login is fulfilled here. Suggested implementation: one pure module (for example `lib/returnTo.ts`) exporting `safeNext(raw)` (returns a validated path or `/`) and builders for the login and register URLs. The hooks guard, layout nav, item-page notice and both form actions all import it. Carry `next` through the form POST either as the form's `action` query string or as a hidden field, and re-validate it in the action in both cases. A relative `Location` such as `/marketplace/agent/abc123` is acceptable, but verify behaviour on Cloudflare Pages. Use `URL` parsing against a dummy base only as an extra check (the parsed origin must equal the dummy origin), never as the only check. Using a single `next` name keeps the helper simple. An allow-list of known route prefixes was considered and rejected: it adds maintenance, and the structural checks above are sufficient for a view-only redirect. Today a logged-in user who opens `/login` is already redirected to `/`; that stays the default when there is no valid target.
 
 ---
 
