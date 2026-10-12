@@ -1,6 +1,7 @@
 import { env } from 'cloudflare:test'
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import { describe, expect, it } from 'vitest'
+import { SIGN_IN_TIMEOUT_MS, signInAs } from './support/signIn'
 
 // delete_workflow_step / reorder_workflow_steps (0024_workflow_step_rpcs.sql)
 // run as SECURITY INVOKER, so the caller's RLS still applies. This proves, with
@@ -17,22 +18,8 @@ const canRun =
   !!env.RLS_TEST_USER_B_EMAIL &&
   !!env.RLS_TEST_USER_B_PASSWORD
 
-type Session = { userId: string; client: SupabaseClient }
+type Session = Awaited<ReturnType<typeof signInAs>>
 type Probe = { roleId?: string; taskId?: string; workflowId?: string; stepIds: string[] }
-
-async function signIn(email: string, password: string): Promise<Session> {
-  const anon = createClient(env.SUPABASE_URL, env.SUPABASE_ANON_KEY)
-  const {
-    data: { session },
-  } = await anon.auth.signInWithPassword({ email, password })
-  if (!session) throw new Error(`could not sign in as ${email}`)
-  return {
-    userId: session.user.id,
-    client: createClient(env.SUPABASE_URL, env.SUPABASE_ANON_KEY, {
-      global: { headers: { Authorization: `Bearer ${session.access_token}` } },
-    }),
-  }
-}
 
 // Records ids on `probe` as it goes so cleanup works even if setup fails midway.
 async function seedWorkflowWithSteps(owner: Session, probe: Probe, stepCount: number) {
@@ -40,7 +27,7 @@ async function seedWorkflowWithSteps(owner: Session, probe: Probe, stepCount: nu
 
   const { data: role, error: roleError } = await owner.client
     .from('roles')
-    .insert({ name: `RLS probe role step-rpc ${suffix}`, owner_id: owner.userId })
+    .insert({ name: `RLS probe role step-rpc ${suffix}`, owner_id: owner.session.user.id })
     .select('id')
     .single()
   expect(roleError).toBeNull()
@@ -48,7 +35,7 @@ async function seedWorkflowWithSteps(owner: Session, probe: Probe, stepCount: nu
 
   const { data: task, error: taskError } = await owner.client
     .from('tasks')
-    .insert({ name: `RLS probe task step-rpc ${suffix}`, role_id: probe.roleId, owner_id: owner.userId })
+    .insert({ name: `RLS probe task step-rpc ${suffix}`, role_id: probe.roleId, owner_id: owner.session.user.id })
     .select('id')
     .single()
   expect(taskError).toBeNull()
@@ -56,7 +43,7 @@ async function seedWorkflowWithSteps(owner: Session, probe: Probe, stepCount: nu
 
   const { data: workflow, error: workflowError } = await owner.client
     .from('workflows')
-    .insert({ name: `RLS probe workflow step-rpc ${suffix}`, owner_id: owner.userId })
+    .insert({ name: `RLS probe workflow step-rpc ${suffix}`, owner_id: owner.session.user.id })
     .select('id')
     .single()
   expect(workflowError).toBeNull()
@@ -97,9 +84,9 @@ async function currentVersion(client: SupabaseClient, workflowId: string) {
   return data!.current_version as number
 }
 
-describe.skipIf(!canRun)('workflow step RPCs (atomic, invoker-rights)', () => {
+describe.skipIf(!canRun)('workflow step RPCs (atomic, invoker-rights)', { timeout: SIGN_IN_TIMEOUT_MS }, () => {
   it('delete_workflow_step removes the step, closes the gap, bumps the version once and writes one snapshot', async () => {
-    const a = await signIn(env.RLS_TEST_USER_A_EMAIL, env.RLS_TEST_USER_A_PASSWORD)
+    const a = await signInAs('A')
     const probe: Probe = { stepIds: [] }
     try {
       await seedWorkflowWithSteps(a, probe, 3)
@@ -133,7 +120,7 @@ describe.skipIf(!canRun)('workflow step RPCs (atomic, invoker-rights)', () => {
   })
 
   it('delete_workflow_step refuses to empty a Published workflow and changes nothing', async () => {
-    const a = await signIn(env.RLS_TEST_USER_A_EMAIL, env.RLS_TEST_USER_A_PASSWORD)
+    const a = await signInAs('A')
     const probe: Probe = { stepIds: [] }
     try {
       await seedWorkflowWithSteps(a, probe, 1)
@@ -153,7 +140,7 @@ describe.skipIf(!canRun)('workflow step RPCs (atomic, invoker-rights)', () => {
   })
 
   it('reorder_workflow_steps applies the order and bumps the version once; a mismatched set changes nothing', async () => {
-    const a = await signIn(env.RLS_TEST_USER_A_EMAIL, env.RLS_TEST_USER_A_PASSWORD)
+    const a = await signInAs('A')
     const probe: Probe = { stepIds: [] }
     try {
       await seedWorkflowWithSteps(a, probe, 3)
@@ -185,8 +172,8 @@ describe.skipIf(!canRun)('workflow step RPCs (atomic, invoker-rights)', () => {
   })
 
   it("blocks a non-owner from deleting or reordering another user's steps, and anon from calling the functions at all", async () => {
-    const a = await signIn(env.RLS_TEST_USER_A_EMAIL, env.RLS_TEST_USER_A_PASSWORD)
-    const b = await signIn(env.RLS_TEST_USER_B_EMAIL, env.RLS_TEST_USER_B_PASSWORD)
+    const a = await signInAs('A')
+    const b = await signInAs('B')
     const anon = createClient(env.SUPABASE_URL, env.SUPABASE_ANON_KEY)
     const probe: Probe = { stepIds: [] }
     try {
@@ -219,7 +206,7 @@ describe.skipIf(!canRun)('workflow step RPCs (atomic, invoker-rights)', () => {
   })
 
   it('add_workflow_step appends at the end, bumps the version once and writes one snapshot', async () => {
-    const a = await signIn(env.RLS_TEST_USER_A_EMAIL, env.RLS_TEST_USER_A_PASSWORD)
+    const a = await signInAs('A')
     const probe: Probe = { stepIds: [] }
     try {
       await seedWorkflowWithSteps(a, probe, 2)
@@ -251,7 +238,7 @@ describe.skipIf(!canRun)('workflow step RPCs (atomic, invoker-rights)', () => {
   })
 
   it('add_workflow_step rejects a reference that breaks the one-field invariant and changes nothing', async () => {
-    const a = await signIn(env.RLS_TEST_USER_A_EMAIL, env.RLS_TEST_USER_A_PASSWORD)
+    const a = await signInAs('A')
     const probe: Probe = { stepIds: [] }
     try {
       await seedWorkflowWithSteps(a, probe, 1)
@@ -273,7 +260,7 @@ describe.skipIf(!canRun)('workflow step RPCs (atomic, invoker-rights)', () => {
   })
 
   it('update_workflow_step edits in place without touching order, bumps once; an unknown step changes nothing', async () => {
-    const a = await signIn(env.RLS_TEST_USER_A_EMAIL, env.RLS_TEST_USER_A_PASSWORD)
+    const a = await signInAs('A')
     const probe: Probe = { stepIds: [] }
     try {
       await seedWorkflowWithSteps(a, probe, 2)
@@ -308,8 +295,8 @@ describe.skipIf(!canRun)('workflow step RPCs (atomic, invoker-rights)', () => {
   })
 
   it("blocks a non-owner from adding or editing steps on another user's workflow, and anon from calling them", async () => {
-    const a = await signIn(env.RLS_TEST_USER_A_EMAIL, env.RLS_TEST_USER_A_PASSWORD)
-    const b = await signIn(env.RLS_TEST_USER_B_EMAIL, env.RLS_TEST_USER_B_PASSWORD)
+    const a = await signInAs('A')
+    const b = await signInAs('B')
     const anon = createClient(env.SUPABASE_URL, env.SUPABASE_ANON_KEY)
     const probe: Probe = { stepIds: [] }
     try {

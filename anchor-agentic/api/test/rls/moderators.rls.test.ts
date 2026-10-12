@@ -1,6 +1,6 @@
 import { env } from 'cloudflare:test'
-import { createClient } from '@supabase/supabase-js'
 import { describe, expect, it } from 'vitest'
+import { clientForSession, getSession, SIGN_IN_TIMEOUT_MS } from './support/signIn'
 
 // Proves two independent DB-level invariants around the moderator role:
 //   1. 0020_moderators.sql's rewritten profiles_self_write policy — a normal
@@ -26,20 +26,9 @@ const canRun =
   !!env.RLS_TEST_MODERATOR_EMAIL &&
   !!env.RLS_TEST_MODERATOR_PASSWORD
 
-async function signIn(email: string, password: string) {
-  const anonClient = createClient(env.SUPABASE_URL, env.SUPABASE_ANON_KEY)
-  const {
-    data: { session },
-  } = await anonClient.auth.signInWithPassword({ email, password })
-  if (!session) throw new Error(`could not sign in as ${email}`)
-  return createClient(env.SUPABASE_URL, env.SUPABASE_ANON_KEY, {
-    global: { headers: { Authorization: `Bearer ${session.access_token}` } },
-  })
-}
-
-describe.skipIf(!canRun)('moderator role RLS', () => {
+describe.skipIf(!canRun)('moderator role RLS', { timeout: SIGN_IN_TIMEOUT_MS }, () => {
   it("still allows a user to update their own profile's non-moderator fields", async () => {
-    const clientA = await signIn(env.RLS_TEST_USER_A_EMAIL!, env.RLS_TEST_USER_A_PASSWORD!)
+    const clientA = clientForSession(await getSession('A'))
     const {
       data: { user },
     } = await clientA.auth.getUser()
@@ -58,7 +47,7 @@ describe.skipIf(!canRun)('moderator role RLS', () => {
   })
 
   it('blocks a user from self-promoting is_moderator via a direct update', async () => {
-    const clientA = await signIn(env.RLS_TEST_USER_A_EMAIL!, env.RLS_TEST_USER_A_PASSWORD!)
+    const clientA = clientForSession(await getSession('A'))
     const {
       data: { user },
     } = await clientA.auth.getUser()
@@ -73,7 +62,7 @@ describe.skipIf(!canRun)('moderator role RLS', () => {
   })
 
   it('confirms the manually-provisioned moderator test identity has is_moderator = true', async () => {
-    const moderatorClient = await signIn(env.RLS_TEST_MODERATOR_EMAIL!, env.RLS_TEST_MODERATOR_PASSWORD!)
+    const moderatorClient = clientForSession(await getSession('MODERATOR'))
     const {
       data: { user: moderator },
     } = await moderatorClient.auth.getUser()
@@ -85,7 +74,7 @@ describe.skipIf(!canRun)('moderator role RLS', () => {
   })
 
   it("blocks a non-moderator, non-owner from updating another user's skill", async () => {
-    const clientA = await signIn(env.RLS_TEST_USER_A_EMAIL!, env.RLS_TEST_USER_A_PASSWORD!)
+    const clientA = clientForSession(await getSession('A'))
     const {
       data: { user: userA },
     } = await clientA.auth.getUser()
@@ -97,7 +86,7 @@ describe.skipIf(!canRun)('moderator role RLS', () => {
       .single()
     expect(skillError).toBeNull()
 
-    const clientB = await signIn(env.RLS_TEST_USER_B_EMAIL!, env.RLS_TEST_USER_B_PASSWORD!)
+    const clientB = clientForSession(await getSession('B'))
     const { data: updated, error: updateError } = await clientB
       .from('skills')
       .update({ status: 'Draft' })
@@ -111,7 +100,7 @@ describe.skipIf(!canRun)('moderator role RLS', () => {
   })
 
   it("lets a moderator update another user's skill via moderator_update", async () => {
-    const clientA = await signIn(env.RLS_TEST_USER_A_EMAIL!, env.RLS_TEST_USER_A_PASSWORD!)
+    const clientA = clientForSession(await getSession('A'))
     const {
       data: { user: userA },
     } = await clientA.auth.getUser()
@@ -123,7 +112,7 @@ describe.skipIf(!canRun)('moderator role RLS', () => {
       .single()
     expect(skillError).toBeNull()
 
-    const moderatorClient = await signIn(env.RLS_TEST_MODERATOR_EMAIL!, env.RLS_TEST_MODERATOR_PASSWORD!)
+    const moderatorClient = clientForSession(await getSession('MODERATOR'))
 
     const { data: updated, error: updateError } = await moderatorClient
       .from('skills')

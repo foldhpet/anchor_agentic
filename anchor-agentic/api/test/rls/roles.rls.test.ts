@@ -1,6 +1,6 @@
 import { env } from 'cloudflare:test'
-import { createClient } from '@supabase/supabase-js'
 import { describe, expect, it } from 'vitest'
+import { clientForSession, getSession, SIGN_IN_TIMEOUT_MS } from './support/signIn'
 
 // Proves RLS blocks a non-owner write on a Role on its own — this suite
 // talks to supabase-js directly, bypassing the Hono app entirely, so a bug
@@ -17,20 +17,11 @@ const canRun =
   !!env.RLS_TEST_USER_B_EMAIL &&
   !!env.RLS_TEST_USER_B_PASSWORD
 
-describe.skipIf(!canRun)('roles RLS policies', () => {
+describe.skipIf(!canRun)('roles RLS policies', { timeout: SIGN_IN_TIMEOUT_MS }, () => {
   it("blocks user B from updating user A's role even with a valid, unrelated JWT", async () => {
-    const anonClientA = createClient(env.SUPABASE_URL, env.SUPABASE_ANON_KEY)
-    const {
-      data: { session: sessionA },
-    } = await anonClientA.auth.signInWithPassword({
-      email: env.RLS_TEST_USER_A_EMAIL,
-      password: env.RLS_TEST_USER_A_PASSWORD,
-    })
-    if (!sessionA) throw new Error('could not sign in as RLS_TEST_USER_A')
+    const sessionA = await getSession('A')
 
-    const clientA = createClient(env.SUPABASE_URL, env.SUPABASE_ANON_KEY, {
-      global: { headers: { Authorization: `Bearer ${sessionA.access_token}` } },
-    })
+    const clientA = clientForSession(sessionA)
     const { data: created, error: insertError } = await clientA
       .from('roles')
       .insert({ name: 'RLS probe role', owner_id: sessionA.user.id })
@@ -38,18 +29,9 @@ describe.skipIf(!canRun)('roles RLS policies', () => {
       .single()
     expect(insertError).toBeNull()
 
-    const anonClientB = createClient(env.SUPABASE_URL, env.SUPABASE_ANON_KEY)
-    const {
-      data: { session: sessionB },
-    } = await anonClientB.auth.signInWithPassword({
-      email: env.RLS_TEST_USER_B_EMAIL,
-      password: env.RLS_TEST_USER_B_PASSWORD,
-    })
-    if (!sessionB) throw new Error('could not sign in as RLS_TEST_USER_B')
+    const sessionB = await getSession('B')
 
-    const clientB = createClient(env.SUPABASE_URL, env.SUPABASE_ANON_KEY, {
-      global: { headers: { Authorization: `Bearer ${sessionB.access_token}` } },
-    })
+    const clientB = clientForSession(sessionB)
     const { data: updated, error: updateError } = await clientB
       .from('roles')
       .update({ name: 'hijacked' })
@@ -65,18 +47,9 @@ describe.skipIf(!canRun)('roles RLS policies', () => {
   })
 
   it('lets any authenticated user read a role regardless of owner (Sandbox items are never private)', async () => {
-    const anonClientA = createClient(env.SUPABASE_URL, env.SUPABASE_ANON_KEY)
-    const {
-      data: { session: sessionA },
-    } = await anonClientA.auth.signInWithPassword({
-      email: env.RLS_TEST_USER_A_EMAIL,
-      password: env.RLS_TEST_USER_A_PASSWORD,
-    })
-    if (!sessionA) throw new Error('could not sign in as RLS_TEST_USER_A')
+    const sessionA = await getSession('A')
 
-    const clientA = createClient(env.SUPABASE_URL, env.SUPABASE_ANON_KEY, {
-      global: { headers: { Authorization: `Bearer ${sessionA.access_token}` } },
-    })
+    const clientA = clientForSession(sessionA)
     const { data: created, error: insertError } = await clientA
       .from('roles')
       .insert({ name: 'RLS read probe role', owner_id: sessionA.user.id, status: 'Draft' })
@@ -84,18 +57,9 @@ describe.skipIf(!canRun)('roles RLS policies', () => {
       .single()
     expect(insertError).toBeNull()
 
-    const anonClientB = createClient(env.SUPABASE_URL, env.SUPABASE_ANON_KEY)
-    const {
-      data: { session: sessionB },
-    } = await anonClientB.auth.signInWithPassword({
-      email: env.RLS_TEST_USER_B_EMAIL,
-      password: env.RLS_TEST_USER_B_PASSWORD,
-    })
-    if (!sessionB) throw new Error('could not sign in as RLS_TEST_USER_B')
+    const sessionB = await getSession('B')
 
-    const clientB = createClient(env.SUPABASE_URL, env.SUPABASE_ANON_KEY, {
-      global: { headers: { Authorization: `Bearer ${sessionB.access_token}` } },
-    })
+    const clientB = clientForSession(sessionB)
     const { data: readByB, error: readError } = await clientB
       .from('roles')
       .select('id')

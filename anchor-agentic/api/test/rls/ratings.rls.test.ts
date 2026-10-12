@@ -1,6 +1,7 @@
 import { env } from 'cloudflare:test'
 import { createClient } from '@supabase/supabase-js'
 import { describe, expect, it } from 'vitest'
+import { clientForSession, getSession, SIGN_IN_TIMEOUT_MS } from './support/signIn'
 
 // Proves RLS enforces ratings' public-read / self-attributed-write policies
 // independently of the Worker's own logic (ratings.ts always sets user_id
@@ -18,20 +19,11 @@ const FAKE_ITEM_ID_RESUBMIT = '00000000-0000-0000-0000-000000000010'
 const FAKE_ITEM_ID_ANON_READ = '00000000-0000-0000-0000-000000000011'
 const FAKE_ITEM_ID_HIJACK = '00000000-0000-0000-0000-000000000012'
 
-describe.skipIf(!canRun)('ratings RLS policies', () => {
+describe.skipIf(!canRun)('ratings RLS policies', { timeout: SIGN_IN_TIMEOUT_MS }, () => {
   it('lets user A upsert their own rating, and a resubmit updates the row in place rather than duplicating it', async () => {
-    const anonClientA = createClient(env.SUPABASE_URL, env.SUPABASE_ANON_KEY)
-    const {
-      data: { session: sessionA },
-    } = await anonClientA.auth.signInWithPassword({
-      email: env.RLS_TEST_USER_A_EMAIL,
-      password: env.RLS_TEST_USER_A_PASSWORD,
-    })
-    if (!sessionA) throw new Error('could not sign in as RLS_TEST_USER_A')
+    const sessionA = await getSession('A')
 
-    const clientA = createClient(env.SUPABASE_URL, env.SUPABASE_ANON_KEY, {
-      global: { headers: { Authorization: `Bearer ${sessionA.access_token}` } },
-    })
+    const clientA = clientForSession(sessionA)
 
     const { error: firstError } = await clientA
       .from('ratings')
@@ -66,18 +58,9 @@ describe.skipIf(!canRun)('ratings RLS policies', () => {
   })
 
   it('lets a truly anonymous (unauthenticated) client read ratings (US-031 AC1)', async () => {
-    const anonClientA = createClient(env.SUPABASE_URL, env.SUPABASE_ANON_KEY)
-    const {
-      data: { session: sessionA },
-    } = await anonClientA.auth.signInWithPassword({
-      email: env.RLS_TEST_USER_A_EMAIL,
-      password: env.RLS_TEST_USER_A_PASSWORD,
-    })
-    if (!sessionA) throw new Error('could not sign in as RLS_TEST_USER_A')
+    const sessionA = await getSession('A')
 
-    const clientA = createClient(env.SUPABASE_URL, env.SUPABASE_ANON_KEY, {
-      global: { headers: { Authorization: `Bearer ${sessionA.access_token}` } },
-    })
+    const clientA = clientForSession(sessionA)
     const { error: upsertError } = await clientA
       .from('ratings')
       .upsert(
@@ -100,18 +83,9 @@ describe.skipIf(!canRun)('ratings RLS policies', () => {
   })
 
   it("blocks user B from writing a rating attributed to user A", async () => {
-    const anonClientA = createClient(env.SUPABASE_URL, env.SUPABASE_ANON_KEY)
-    const {
-      data: { session: sessionA },
-    } = await anonClientA.auth.signInWithPassword({
-      email: env.RLS_TEST_USER_A_EMAIL,
-      password: env.RLS_TEST_USER_A_PASSWORD,
-    })
-    if (!sessionA) throw new Error('could not sign in as RLS_TEST_USER_A')
+    const sessionA = await getSession('A')
 
-    const clientA = createClient(env.SUPABASE_URL, env.SUPABASE_ANON_KEY, {
-      global: { headers: { Authorization: `Bearer ${sessionA.access_token}` } },
-    })
+    const clientA = clientForSession(sessionA)
     const { error: seedError } = await clientA
       .from('ratings')
       .upsert(
@@ -120,18 +94,9 @@ describe.skipIf(!canRun)('ratings RLS policies', () => {
       )
     expect(seedError).toBeNull()
 
-    const anonClientB = createClient(env.SUPABASE_URL, env.SUPABASE_ANON_KEY)
-    const {
-      data: { session: sessionB },
-    } = await anonClientB.auth.signInWithPassword({
-      email: env.RLS_TEST_USER_B_EMAIL,
-      password: env.RLS_TEST_USER_B_PASSWORD,
-    })
-    if (!sessionB) throw new Error('could not sign in as RLS_TEST_USER_B')
+    const sessionB = await getSession('B')
 
-    const clientB = createClient(env.SUPABASE_URL, env.SUPABASE_ANON_KEY, {
-      global: { headers: { Authorization: `Bearer ${sessionB.access_token}` } },
-    })
+    const clientB = clientForSession(sessionB)
 
     // An INSERT `with check` violation is a hard error, not a filtered
     // result (same shape as clone_records' creator_insert policy) — user B

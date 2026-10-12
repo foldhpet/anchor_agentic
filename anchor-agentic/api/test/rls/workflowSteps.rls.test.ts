@@ -1,6 +1,7 @@
 import { env } from 'cloudflare:test'
 import { createClient } from '@supabase/supabase-js'
 import { describe, expect, it } from 'vitest'
+import { clientForSession, getSession, SIGN_IN_TIMEOUT_MS, signInAs } from './support/signIn'
 
 // workflow_steps has no owner_id of its own (see 0012_rls_policies_epic_b.sql)
 // — ownership is derived via a subquery to the parent Workflow's owner_id.
@@ -17,20 +18,11 @@ const canRun =
   !!env.RLS_TEST_USER_B_EMAIL &&
   !!env.RLS_TEST_USER_B_PASSWORD
 
-describe.skipIf(!canRun)('workflow_steps RLS (ownership derived from parent Workflow)', () => {
+describe.skipIf(!canRun)('workflow_steps RLS (ownership derived from parent Workflow)', { timeout: SIGN_IN_TIMEOUT_MS }, () => {
   it("blocks user B from inserting, updating, or deleting a step on user A's workflow", async () => {
-    const anonClientA = createClient(env.SUPABASE_URL, env.SUPABASE_ANON_KEY)
-    const {
-      data: { session: sessionA },
-    } = await anonClientA.auth.signInWithPassword({
-      email: env.RLS_TEST_USER_A_EMAIL,
-      password: env.RLS_TEST_USER_A_PASSWORD,
-    })
-    if (!sessionA) throw new Error('could not sign in as RLS_TEST_USER_A')
+    const sessionA = await getSession('A')
 
-    const clientA = createClient(env.SUPABASE_URL, env.SUPABASE_ANON_KEY, {
-      global: { headers: { Authorization: `Bearer ${sessionA.access_token}` } },
-    })
+    const clientA = clientForSession(sessionA)
 
     const { data: role, error: roleError } = await clientA
       .from('roles')
@@ -60,18 +52,9 @@ describe.skipIf(!canRun)('workflow_steps RLS (ownership derived from parent Work
       .single()
     expect(stepError).toBeNull()
 
-    const anonClientB = createClient(env.SUPABASE_URL, env.SUPABASE_ANON_KEY)
-    const {
-      data: { session: sessionB },
-    } = await anonClientB.auth.signInWithPassword({
-      email: env.RLS_TEST_USER_B_EMAIL,
-      password: env.RLS_TEST_USER_B_PASSWORD,
-    })
-    if (!sessionB) throw new Error('could not sign in as RLS_TEST_USER_B')
+    const sessionB = await getSession('B')
 
-    const clientB = createClient(env.SUPABASE_URL, env.SUPABASE_ANON_KEY, {
-      global: { headers: { Authorization: `Bearer ${sessionB.access_token}` } },
-    })
+    const clientB = clientForSession(sessionB)
 
     const { data: insertedByB, error: insertErrorByB } = await clientB
       .from('workflow_steps')
@@ -108,8 +91,8 @@ describe.skipIf(!canRun)('workflow_steps RLS (ownership derived from parent Work
   // US-012 (TC-21/TC-22): read visibility for registered/anon users, and the
   // owner's own update + delete rights, which the test above does not assert.
   it('lets any registered user read a Draft step, and hides it from anon with all writes blocked', async () => {
-    const a = await signIn(env.RLS_TEST_USER_A_EMAIL, env.RLS_TEST_USER_A_PASSWORD)
-    const b = await signIn(env.RLS_TEST_USER_B_EMAIL, env.RLS_TEST_USER_B_PASSWORD)
+    const a = await signInAs('A')
+    const b = await signInAs('B')
     const anonClient = createClient(env.SUPABASE_URL, env.SUPABASE_ANON_KEY)
     const probe: Probe = {}
 
@@ -148,7 +131,7 @@ describe.skipIf(!canRun)('workflow_steps RLS (ownership derived from parent Work
   })
 
   it('lets the owner update and then delete their own step', async () => {
-    const a = await signIn(env.RLS_TEST_USER_A_EMAIL, env.RLS_TEST_USER_A_PASSWORD)
+    const a = await signInAs('A')
     const probe: Probe = {}
 
     try {
@@ -177,22 +160,8 @@ describe.skipIf(!canRun)('workflow_steps RLS (ownership derived from parent Work
   })
 })
 
-type Session = Awaited<ReturnType<typeof signIn>>
+type Session = Awaited<ReturnType<typeof signInAs>>
 type Probe = { roleId?: string; taskId?: string; workflowId?: string; stepId?: string }
-
-async function signIn(email: string, password: string) {
-  const anon = createClient(env.SUPABASE_URL, env.SUPABASE_ANON_KEY)
-  const {
-    data: { session },
-  } = await anon.auth.signInWithPassword({ email, password })
-  if (!session) throw new Error(`could not sign in as ${email}`)
-  return {
-    userId: session.user.id,
-    client: createClient(env.SUPABASE_URL, env.SUPABASE_ANON_KEY, {
-      global: { headers: { Authorization: `Bearer ${session.access_token}` } },
-    }),
-  }
-}
 
 // Records each created id on `probe` as it goes, so cleanup removes whatever got created even if setup fails midway.
 async function seedProbe(owner: Session, probe: Probe) {
@@ -200,7 +169,7 @@ async function seedProbe(owner: Session, probe: Probe) {
 
   const { data: role, error: roleError } = await owner.client
     .from('roles')
-    .insert({ name: `RLS probe role US-012 ${suffix}`, owner_id: owner.userId })
+    .insert({ name: `RLS probe role US-012 ${suffix}`, owner_id: owner.session.user.id })
     .select('id')
     .single()
   expect(roleError).toBeNull()
@@ -208,7 +177,7 @@ async function seedProbe(owner: Session, probe: Probe) {
 
   const { data: task, error: taskError } = await owner.client
     .from('tasks')
-    .insert({ name: `RLS probe task US-012 ${suffix}`, role_id: probe.roleId, owner_id: owner.userId })
+    .insert({ name: `RLS probe task US-012 ${suffix}`, role_id: probe.roleId, owner_id: owner.session.user.id })
     .select('id')
     .single()
   expect(taskError).toBeNull()
@@ -216,7 +185,7 @@ async function seedProbe(owner: Session, probe: Probe) {
 
   const { data: workflow, error: workflowError } = await owner.client
     .from('workflows')
-    .insert({ name: `RLS probe workflow US-012 ${suffix}`, owner_id: owner.userId })
+    .insert({ name: `RLS probe workflow US-012 ${suffix}`, owner_id: owner.session.user.id })
     .select('id, status')
     .single()
   expect(workflowError).toBeNull()

@@ -1,6 +1,6 @@
 import { env } from 'cloudflare:test'
-import { createClient } from '@supabase/supabase-js'
 import { describe, expect, it } from 'vitest'
+import { clientForSession, getSession, SIGN_IN_TIMEOUT_MS } from './support/signIn'
 
 // Proves RLS enforces clone_records' append-only, self-attributed-insert
 // policy independently of the Worker's own logic (clone.ts always sets
@@ -21,29 +21,13 @@ const canRun =
 const FAKE_SOURCE_ID = '00000000-0000-0000-0000-000000000001'
 const FAKE_CLONED_ID = '00000000-0000-0000-0000-000000000002'
 
-describe.skipIf(!canRun)('clone_records RLS policies', () => {
+describe.skipIf(!canRun)('clone_records RLS policies', { timeout: SIGN_IN_TIMEOUT_MS }, () => {
   it("blocks user B from inserting a clone_records row attributed to user A", async () => {
-    const anonClientA = createClient(env.SUPABASE_URL, env.SUPABASE_ANON_KEY)
-    const {
-      data: { session: sessionA },
-    } = await anonClientA.auth.signInWithPassword({
-      email: env.RLS_TEST_USER_A_EMAIL,
-      password: env.RLS_TEST_USER_A_PASSWORD,
-    })
-    if (!sessionA) throw new Error('could not sign in as RLS_TEST_USER_A')
+    const sessionA = await getSession('A')
 
-    const anonClientB = createClient(env.SUPABASE_URL, env.SUPABASE_ANON_KEY)
-    const {
-      data: { session: sessionB },
-    } = await anonClientB.auth.signInWithPassword({
-      email: env.RLS_TEST_USER_B_EMAIL,
-      password: env.RLS_TEST_USER_B_PASSWORD,
-    })
-    if (!sessionB) throw new Error('could not sign in as RLS_TEST_USER_B')
+    const sessionB = await getSession('B')
 
-    const clientB = createClient(env.SUPABASE_URL, env.SUPABASE_ANON_KEY, {
-      global: { headers: { Authorization: `Bearer ${sessionB.access_token}` } },
-    })
+    const clientB = clientForSession(sessionB)
     const { data: inserted, error: insertError } = await clientB
       .from('clone_records')
       .insert({
@@ -60,18 +44,9 @@ describe.skipIf(!canRun)('clone_records RLS policies', () => {
   })
 
   it('lets any authenticated user read a clone_records row they do not own (needed for cloneCount)', async () => {
-    const anonClientA = createClient(env.SUPABASE_URL, env.SUPABASE_ANON_KEY)
-    const {
-      data: { session: sessionA },
-    } = await anonClientA.auth.signInWithPassword({
-      email: env.RLS_TEST_USER_A_EMAIL,
-      password: env.RLS_TEST_USER_A_PASSWORD,
-    })
-    if (!sessionA) throw new Error('could not sign in as RLS_TEST_USER_A')
+    const sessionA = await getSession('A')
 
-    const clientA = createClient(env.SUPABASE_URL, env.SUPABASE_ANON_KEY, {
-      global: { headers: { Authorization: `Bearer ${sessionA.access_token}` } },
-    })
+    const clientA = clientForSession(sessionA)
     const { data: created, error: insertError } = await clientA
       .from('clone_records')
       .insert({
@@ -84,18 +59,9 @@ describe.skipIf(!canRun)('clone_records RLS policies', () => {
       .single()
     expect(insertError).toBeNull()
 
-    const anonClientB = createClient(env.SUPABASE_URL, env.SUPABASE_ANON_KEY)
-    const {
-      data: { session: sessionB },
-    } = await anonClientB.auth.signInWithPassword({
-      email: env.RLS_TEST_USER_B_EMAIL,
-      password: env.RLS_TEST_USER_B_PASSWORD,
-    })
-    if (!sessionB) throw new Error('could not sign in as RLS_TEST_USER_B')
+    const sessionB = await getSession('B')
 
-    const clientB = createClient(env.SUPABASE_URL, env.SUPABASE_ANON_KEY, {
-      global: { headers: { Authorization: `Bearer ${sessionB.access_token}` } },
-    })
+    const clientB = clientForSession(sessionB)
     const { data: readByB, error: readError } = await clientB
       .from('clone_records')
       .select('id')

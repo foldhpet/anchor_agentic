@@ -1,6 +1,7 @@
 import { env } from 'cloudflare:test'
 import { createClient } from '@supabase/supabase-js'
 import { describe, expect, it } from 'vitest'
+import { clientForSession, getSession, SIGN_IN_TIMEOUT_MS } from './support/signIn'
 
 // Proves the three abuse_reports policies (0021_abuse_reports.sql) directly
 // against Postgres, bypassing the Hono app (reports.ts / moderation.ts)
@@ -22,18 +23,7 @@ const canRun =
   !!env.RLS_TEST_MODERATOR_EMAIL &&
   !!env.RLS_TEST_MODERATOR_PASSWORD
 
-async function signIn(email: string, password: string) {
-  const anonClient = createClient(env.SUPABASE_URL, env.SUPABASE_ANON_KEY)
-  const {
-    data: { session },
-  } = await anonClient.auth.signInWithPassword({ email, password })
-  if (!session) throw new Error(`could not sign in as ${email}`)
-  return createClient(env.SUPABASE_URL, env.SUPABASE_ANON_KEY, {
-    global: { headers: { Authorization: `Bearer ${session.access_token}` } },
-  })
-}
-
-describe.skipIf(!canRun)('abuse_reports RLS', () => {
+describe.skipIf(!canRun)('abuse_reports RLS', { timeout: SIGN_IN_TIMEOUT_MS }, () => {
   it('allows an anonymous insert with a null reporter_id', async () => {
     const anonClient = createClient(env.SUPABASE_URL, env.SUPABASE_ANON_KEY)
 
@@ -70,7 +60,7 @@ describe.skipIf(!canRun)('abuse_reports RLS', () => {
   })
 
   it('allows an authenticated insert whose reporter_id matches the caller', async () => {
-    const clientA = await signIn(env.RLS_TEST_USER_A_EMAIL!, env.RLS_TEST_USER_A_PASSWORD!)
+    const clientA = clientForSession(await getSession('A'))
     const {
       data: { user },
     } = await clientA.auth.getUser()
@@ -92,7 +82,7 @@ describe.skipIf(!canRun)('abuse_reports RLS', () => {
   })
 
   it("blocks an authenticated insert whose reporter_id doesn't match the caller", async () => {
-    const clientA = await signIn(env.RLS_TEST_USER_A_EMAIL!, env.RLS_TEST_USER_A_PASSWORD!)
+    const clientA = clientForSession(await getSession('A'))
 
     const { data, error } = await clientA
       .from('abuse_reports')
@@ -109,7 +99,7 @@ describe.skipIf(!canRun)('abuse_reports RLS', () => {
   })
 
   it('blocks a non-moderator from reading abuse_reports back', async () => {
-    const clientA = await signIn(env.RLS_TEST_USER_A_EMAIL!, env.RLS_TEST_USER_A_PASSWORD!)
+    const clientA = clientForSession(await getSession('A'))
 
     const { data, error } = await clientA
       .from('abuse_reports')
@@ -121,7 +111,7 @@ describe.skipIf(!canRun)('abuse_reports RLS', () => {
   })
 
   it('allows a moderator to read abuse_reports', async () => {
-    const moderatorClient = await signIn(env.RLS_TEST_MODERATOR_EMAIL!, env.RLS_TEST_MODERATOR_PASSWORD!)
+    const moderatorClient = clientForSession(await getSession('MODERATOR'))
 
     const { data, error } = await moderatorClient
       .from('abuse_reports')
@@ -133,7 +123,7 @@ describe.skipIf(!canRun)('abuse_reports RLS', () => {
   })
 
   it('blocks a non-moderator from resolving (updating) an abuse_report', async () => {
-    const clientA = await signIn(env.RLS_TEST_USER_A_EMAIL!, env.RLS_TEST_USER_A_PASSWORD!)
+    const clientA = clientForSession(await getSession('A'))
 
     const { data, error } = await clientA
       .from('abuse_reports')
@@ -146,7 +136,7 @@ describe.skipIf(!canRun)('abuse_reports RLS', () => {
   })
 
   it('allows a moderator to resolve an abuse_report', async () => {
-    const moderatorClient = await signIn(env.RLS_TEST_MODERATOR_EMAIL!, env.RLS_TEST_MODERATOR_PASSWORD!)
+    const moderatorClient = clientForSession(await getSession('MODERATOR'))
     const {
       data: { user: moderator },
     } = await moderatorClient.auth.getUser()

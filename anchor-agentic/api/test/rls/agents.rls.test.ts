@@ -1,6 +1,6 @@
 import { env } from 'cloudflare:test'
-import { createClient } from '@supabase/supabase-js'
 import { describe, expect, it } from 'vitest'
+import { clientForSession, getSession, SIGN_IN_TIMEOUT_MS } from './support/signIn'
 
 // Proves two independent DB-level invariants for Agents, bypassing the Hono
 // app entirely so a bug in the Worker (agents.ts) can never make either
@@ -20,20 +20,11 @@ const canRun =
   !!env.RLS_TEST_USER_B_EMAIL &&
   !!env.RLS_TEST_USER_B_PASSWORD
 
-describe.skipIf(!canRun)('agents RLS and unique(role_id) constraint', () => {
+describe.skipIf(!canRun)('agents RLS and unique(role_id) constraint', { timeout: SIGN_IN_TIMEOUT_MS }, () => {
   it("blocks user B from updating user A's agent even with a valid, unrelated JWT", async () => {
-    const anonClientA = createClient(env.SUPABASE_URL, env.SUPABASE_ANON_KEY)
-    const {
-      data: { session: sessionA },
-    } = await anonClientA.auth.signInWithPassword({
-      email: env.RLS_TEST_USER_A_EMAIL,
-      password: env.RLS_TEST_USER_A_PASSWORD,
-    })
-    if (!sessionA) throw new Error('could not sign in as RLS_TEST_USER_A')
+    const sessionA = await getSession('A')
 
-    const clientA = createClient(env.SUPABASE_URL, env.SUPABASE_ANON_KEY, {
-      global: { headers: { Authorization: `Bearer ${sessionA.access_token}` } },
-    })
+    const clientA = clientForSession(sessionA)
     const { data: role, error: roleError } = await clientA
       .from('roles')
       .insert({ name: 'RLS probe role for agent boundary', owner_id: sessionA.user.id })
@@ -48,18 +39,9 @@ describe.skipIf(!canRun)('agents RLS and unique(role_id) constraint', () => {
       .single()
     expect(agentError).toBeNull()
 
-    const anonClientB = createClient(env.SUPABASE_URL, env.SUPABASE_ANON_KEY)
-    const {
-      data: { session: sessionB },
-    } = await anonClientB.auth.signInWithPassword({
-      email: env.RLS_TEST_USER_B_EMAIL,
-      password: env.RLS_TEST_USER_B_PASSWORD,
-    })
-    if (!sessionB) throw new Error('could not sign in as RLS_TEST_USER_B')
+    const sessionB = await getSession('B')
 
-    const clientB = createClient(env.SUPABASE_URL, env.SUPABASE_ANON_KEY, {
-      global: { headers: { Authorization: `Bearer ${sessionB.access_token}` } },
-    })
+    const clientB = clientForSession(sessionB)
     const { data: updated, error: updateError } = await clientB
       .from('agents')
       .update({ system_prompt: 'hijacked' })
@@ -74,18 +56,9 @@ describe.skipIf(!canRun)('agents RLS and unique(role_id) constraint', () => {
   })
 
   it('rejects a second Agent for the same Role with a raw insert, independent of the Worker pre-check', async () => {
-    const anonClientA = createClient(env.SUPABASE_URL, env.SUPABASE_ANON_KEY)
-    const {
-      data: { session: sessionA },
-    } = await anonClientA.auth.signInWithPassword({
-      email: env.RLS_TEST_USER_A_EMAIL,
-      password: env.RLS_TEST_USER_A_PASSWORD,
-    })
-    if (!sessionA) throw new Error('could not sign in as RLS_TEST_USER_A')
+    const sessionA = await getSession('A')
 
-    const clientA = createClient(env.SUPABASE_URL, env.SUPABASE_ANON_KEY, {
-      global: { headers: { Authorization: `Bearer ${sessionA.access_token}` } },
-    })
+    const clientA = clientForSession(sessionA)
     const { data: role, error: roleError } = await clientA
       .from('roles')
       .insert({ name: 'RLS probe role for 1:1 constraint', owner_id: sessionA.user.id })
