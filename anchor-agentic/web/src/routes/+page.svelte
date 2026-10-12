@@ -6,7 +6,7 @@
 		describeFilters,
 		itemCount,
 		isPastLastPage,
-		marketplaceListHref,
+		listQuery,
 		pageCount,
 		typeLabel
 	} from '$lib/marketplaceList';
@@ -23,9 +23,11 @@
 	let pastEnd = $derived(isPastLastPage(data.items.length, data.total));
 	let filters = $derived(describeFilters(data));
 
-	// Link to another page of the same list (page 1 omits the page parameter).
+	// Link to another page of the same list (page 1 omits the page parameter). resolve() accepts a
+	// route with a query string, and its ResolvedPathname result is what no-navigation-without-resolve wants.
 	function pageHref(page: number) {
-		return marketplaceListHref({ q: data.q, type: data.type, role: data.role, page });
+		const query = listQuery({ q: data.q, type: data.type, role: data.role, page });
+		return query ? resolve(`/?${query}` as const) : resolve('/');
 	}
 </script>
 
@@ -93,8 +95,12 @@
 		{#each data.items as item (`${item.item_type}-${item.id}`)}
 			<li class="rounded-md border border-ink/10 p-4">
 				<div class="flex items-center gap-2">
-					<a class="font-semibold" href="/marketplace/{item.item_type}/{item.id}"
-						>{displayName(item)}</a
+					<a
+						class="font-semibold"
+						href={resolve('/marketplace/[itemType]/[id]', {
+							itemType: item.item_type,
+							id: item.id
+						})}>{displayName(item)}</a
 					>
 					<span class="rounded-full bg-surface px-2 py-0.5 text-xs text-ink/75"
 						>{item.item_type}</span
