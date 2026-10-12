@@ -50,9 +50,21 @@ paths:
     get:
       tags: [Marketplace]
       summary: List published Marketplace items
-      description: Public — no authentication required. Reads the live `marketplace_items` view, sorted by clone_count desc, created_at desc.
+      description: Public — no authentication required. Reads the live `marketplace_items` view, ordered by `sort` (default `cloned`). Every ordering ends on `id` so paging is stable.
       security: []
       parameters:
+        - name: sort
+          in: query
+          description: >-
+            Ordering. `cloned` (default) is clone_count desc, created_at desc, id asc. `rating` lists rated items first
+            (rating desc, rating_count desc, clone_count desc, created_at desc, id asc), then unrated items
+            (clone_count desc, created_at desc, id asc). `newest` is created_at desc, id asc. A missing, empty,
+            wrong-case or unknown value falls back to `cloned` with HTTP 200 (never a 400, and the value is not echoed).
+            For a repeated parameter the first value wins.
+          schema:
+            type: string
+            enum: [cloned, rating, newest]
+            default: cloned
         - name: type
           in: query
           schema:

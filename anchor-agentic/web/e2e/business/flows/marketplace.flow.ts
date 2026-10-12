@@ -128,7 +128,7 @@ export class MarketplaceFlow {
 	async expectBackLinkKeepsAllListParameters(
 		itemType: ItemType,
 		id: string,
-		list: Required<MarketplaceQuery>
+		list: Required<Omit<MarketplaceQuery, 'sort'>>
 	) {
 		const params = new URLSearchParams();
 		for (const [key, value] of Object.entries(list)) params.set(key, String(value));

@@ -124,6 +124,103 @@ describe('marketplace routes', () => {
     expect(calls.textSearch).toContainEqual(['search_text', 'shelve', { type: 'plain' }])
   })
 
+  describe('sort (US-058)', () => {
+    function orderCalls() {
+      const { builder } = capturingChain({ data: [], error: null, count: 0 })
+      const calls: unknown[][] = []
+      const b = builder as unknown as Record<string, (...args: unknown[]) => unknown>
+      b.order = (...args: unknown[]) => {
+        calls.push(args)
+        return builder
+      }
+      createRequestSupabaseClient.mockReturnValue(anonClient(() => builder as ReturnType<typeof chain>))
+      return calls
+    }
+
+    const CLONED = [
+      ['clone_count', { ascending: false }],
+      ['created_at', { ascending: false }],
+      ['id', { ascending: true }],
+    ]
+
+    it('defaults to cloned (today order plus id tie-break) with no sort', async () => {
+      const calls = orderCalls()
+      const res = await get('/api/v1/marketplace/items')
+      expect(res.status).toBe(200)
+      expect(calls).toEqual(CLONED)
+    })
+
+    it('sort=cloned is the same as the default', async () => {
+      const calls = orderCalls()
+      await get('/api/v1/marketplace/items?sort=cloned')
+      expect(calls).toEqual(CLONED)
+    })
+
+    it('sort=rating ranks rated first (nulls last), then count, clones, recency, id', async () => {
+      const calls = orderCalls()
+      const res = await get('/api/v1/marketplace/items?sort=rating')
+      expect(res.status).toBe(200)
+      expect(calls).toEqual([
+        ['rating', { ascending: false, nullsFirst: false }],
+        ['rating_count', { ascending: false }],
+        ['clone_count', { ascending: false }],
+        ['created_at', { ascending: false }],
+        ['id', { ascending: true }],
+      ])
+    })
+
+    it('sort=newest orders by created_at desc then id', async () => {
+      const calls = orderCalls()
+      const res = await get('/api/v1/marketplace/items?sort=newest')
+      expect(res.status).toBe(200)
+      expect(calls).toEqual([
+        ['created_at', { ascending: false }],
+        ['id', { ascending: true }],
+      ])
+    })
+
+    it.each(['', 'SORT', 'Rating', 'popular', 'rating%20desc', 'rating%3Bdrop%20table%20x', 'rating%2Ccreated_at'])(
+      'falls back to cloned with 200 and no echo for sort=%s',
+      async (value) => {
+        const calls = orderCalls()
+        const res = await get(`/api/v1/marketplace/items?sort=${value}`)
+        const text = await res.text()
+        expect(res.status).toBe(200)
+        expect(calls).toEqual(CLONED)
+        expect(text).not.toContain('error')
+        if (value) expect(text).not.toContain(decodeURIComponent(value))
+      },
+    )
+
+    it('uses the first value of a repeated sort when valid', async () => {
+      const calls = orderCalls()
+      const res = await get('/api/v1/marketplace/items?sort=newest&sort=bogus')
+      expect(res.status).toBe(200)
+      expect(calls[0]).toEqual(['created_at', { ascending: false }])
+      expect(calls).toHaveLength(2)
+    })
+
+    it('falls back to cloned when the first repeated value is invalid', async () => {
+      const calls = orderCalls()
+      await get('/api/v1/marketplace/items?sort=bogus&sort=newest')
+      expect(calls).toEqual(CLONED)
+    })
+
+    it('keeps filters, paging and total unchanged when sort is combined', async () => {
+      const { builder, calls } = capturingChain({ data: [], error: null, count: 4 })
+      createRequestSupabaseClient.mockReturnValue(anonClient(() => builder as ReturnType<typeof chain>))
+      const res = await get('/api/v1/marketplace/items?sort=rating&type=AGENT&role=QA&q=triage&page=2&pageSize=5')
+      const body = await res.json<{ total: number; page: number; pageSize: number }>()
+      expect(res.status).toBe(200)
+      expect(calls.eq).toContainEqual(['item_type', 'AGENT'])
+      expect(calls.eq).toContainEqual(['role_name', 'QA'])
+      expect(calls.textSearch).toContainEqual(['search_text', 'triage', { type: 'plain' }])
+      expect(calls.range).toContainEqual([5, 9])
+      expect(body.total).toBe(4)
+      expect(body.page).toBe(2)
+    })
+  })
+
   it('GET /items paginates using page/pageSize', async () => {
     const { builder, calls } = capturingChain({ data: [], error: null, count: 0 })
     createRequestSupabaseClient.mockReturnValue(anonClient(() => builder as ReturnType<typeof chain>))

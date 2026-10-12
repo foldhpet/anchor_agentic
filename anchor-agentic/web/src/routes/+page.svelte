@@ -8,6 +8,8 @@
 		isPastLastPage,
 		listQuery,
 		pageCount,
+		SORT_OPTIONS,
+		sortLabel,
 		typeLabel
 	} from '$lib/marketplaceList';
 	import { marketplaceTitle } from '$lib/pageTitle';
@@ -22,11 +24,21 @@
 	let totalPages = $derived(pageCount(data.total, data.pageSize));
 	let pastEnd = $derived(isPastLastPage(data.items.length, data.total));
 	let filters = $derived(describeFilters(data));
+	let sortActive = $derived(data.sort !== 'cloned');
+	// "Clear filters" drops q/type/role but keeps the chosen order (US-058).
+	let clearHref = $derived(pageHref(1, { q: '', type: '', role: '' }));
 
 	// Link to another page of the same list (page 1 omits the page parameter). resolve() accepts a
 	// route with a query string, and its ResolvedPathname result is what no-navigation-without-resolve wants.
-	function pageHref(page: number) {
-		const query = listQuery({ q: data.q, type: data.type, role: data.role, page });
+	function pageHref(page: number, filtersOverride?: { q: string; type: string; role: string }) {
+		const query = listQuery({
+			q: data.q,
+			type: data.type,
+			role: data.role,
+			...filtersOverride,
+			sort: data.sort,
+			page
+		});
 		return query ? resolve(`/?${query}` as const) : resolve('/');
 	}
 </script>
@@ -67,6 +79,15 @@
 		/>
 	</label>
 	<button type="submit" class="rounded-md bg-primary px-4 py-1.5 text-white">Search</button>
+	<label class="flex flex-col gap-1 text-sm">
+		Sort by
+		<select name="sort" class="rounded-md border border-ink/15 bg-bg px-3 py-1.5">
+			{#each SORT_OPTIONS as option (option.value)}
+				<option value={option.value} selected={data.sort === option.value}>{option.label}</option>
+			{/each}
+		</select>
+	</label>
+	<button type="submit" class="rounded-md border border-ink/15 px-3 py-1.5">Sort</button>
 </form>
 
 {#if pastEnd}
@@ -82,14 +103,16 @@
 	{#if filters}
 		<p class="mt-6 text-ink/75">
 			No items match {filters}.
-			<a href={resolve('/')}>Clear filters</a>
+			<a href={clearHref}>Clear filters</a>
 		</p>
 	{:else}
 		<p class="mt-6 text-ink/75">No published items yet. Check back soon.</p>
 	{/if}
 {:else}
 	<p class="mt-6 text-sm text-ink/75">
-		{itemCount(data.total)}{filters ? ` matching ${filters}` : ''}
+		{itemCount(data.total)}{filters ? ` matching ${filters}` : ''}{sortActive
+			? `. Sorted by ${sortLabel(data.sort)}`
+			: ''}
 	</p>
 	<ul class="mt-3 flex flex-col gap-3">
 		{#each data.items as item (`${item.item_type}-${item.id}`)}

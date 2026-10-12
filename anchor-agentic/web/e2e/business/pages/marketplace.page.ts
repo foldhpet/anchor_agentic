@@ -7,6 +7,8 @@ export interface MarketplaceQuery {
 	type?: ItemType;
 	role?: string;
 	page?: number;
+	/** Raw `sort` query value, so invalid values (e.g. "bogus") can be tried too (US-058). */
+	sort?: string;
 }
 
 /** `/` — public Marketplace listing with search, type and role filters. */
@@ -23,7 +25,7 @@ export class MarketplacePage extends AnchorBasePage {
 		const params = new URLSearchParams();
 		for (const [key, value] of Object.entries(query)) if (value) params.set(key, String(value));
 		const qs = params.toString();
-		await this.goto(qs ? `/?${qs}` : '/');
+		return this.goto(qs ? `/?${qs}` : '/');
 	}
 
 	async expectListed(name: string) {
@@ -131,6 +133,96 @@ export class MarketplacePage extends AnchorBasePage {
 			(url) => url.pathname === '/' && url.search === '',
 			'Clear filters'
 		);
+	}
+
+	// --- Sort control (US-058) ---
+	get sortSelect(): Locator {
+		return this.page.getByLabel('Sort by');
+	}
+	get sortButton(): Locator {
+		return this.page.getByRole('button', { name: 'Sort', exact: true });
+	}
+
+	/** Picks an order by its visible label and applies it with the Sort button. */
+	async sortBy(label: string, expectedValue: string) {
+		await this.actions.select(this.sortSelect, { label }, 'Sort by');
+		await this.actions.clickAndWaitForUrl(
+			this.sortButton,
+			(url) => url.pathname === '/' && url.searchParams.get('sort') === expectedValue,
+			'Sort'
+		);
+	}
+
+	/**
+	 * Choosing the default. The GET form submits `sort=cloned`; the server redirects it away, so
+	 * the default never stays in the URL (US-058).
+	 */
+	async sortByDefault() {
+		await this.actions.select(this.sortSelect, { label: 'Most cloned' }, 'Sort by');
+		await this.actions.clickAndWaitForUrl(
+			this.sortButton,
+			(url) => url.pathname === '/' && url.searchParams.get('sort') === null,
+			'Sort'
+		);
+	}
+
+	/** Keyboard only: focus the select, ArrowDown to the next option, Tab to Sort, Enter. */
+	async sortByKeyboardNextOption(expectedValue: string) {
+		await this.sortSelect.focus();
+		await this.page.keyboard.press('ArrowDown');
+		await this.page.keyboard.press('Tab');
+		await expect(this.sortButton).toBeFocused();
+		await this.page.keyboard.press('Enter');
+		await this.actions.waitForUrl(
+			(url) => url.pathname === '/' && url.searchParams.get('sort') === expectedValue,
+			'Sort via keyboard'
+		);
+	}
+
+	/** The select shows this option as chosen and the visible order options are exactly the three. */
+	async expectSortSelected(label: string) {
+		await expect(this.sortSelect.locator('option')).toHaveText([
+			'Most cloned',
+			'Highest rated',
+			'Newest'
+		]);
+		await expect(this.sortSelect.locator('option:checked')).toHaveText(label);
+	}
+
+	expectSortParam(value: string | null) {
+		expect(this.currentParams.get('sort')).toBe(value);
+	}
+
+	async expectSortedBySummary(label: string | null) {
+		const summary = this.page.getByText(/Sorted by /);
+		if (label === null) await expect(summary).toHaveCount(0);
+		else await expect(summary).toHaveText(new RegExp(`Sorted by ${label}$`));
+	}
+
+	/** An unknown sort value is not an error: the list renders with the default order. */
+	async expectRenderedWithoutError() {
+		await expect(this.heading).toBeVisible();
+		await expect(this.alert).toHaveCount(0);
+		await expect(this.page.getByText('Unexpected error')).toHaveCount(0);
+	}
+
+	async clearFiltersKeepingSort(sort: string) {
+		await this.actions.clickAndWaitForUrl(
+			this.clearFiltersLink,
+			(url) => url.pathname === '/' && url.search === `?sort=${sort}`,
+			'Clear filters'
+		);
+	}
+
+	/** Pager links carry the chosen sort. Returns false when the list has a single page. */
+	async expectPagerLinksKeepSort(sort: string): Promise<boolean> {
+		if ((await this.pager.count()) === 0) return false;
+		const hrefs = await this.pager
+			.getByRole('link')
+			.evaluateAll((els) => els.map((el) => el.getAttribute('href') ?? ''));
+		expect(hrefs.length).toBeGreaterThan(0);
+		for (const href of hrefs) expect(new URL(href, 'http://x').searchParams.get('sort')).toBe(sort);
+		return true;
 	}
 
 	// --- A page past the last one ---

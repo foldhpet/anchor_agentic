@@ -1,11 +1,21 @@
-// US-055: pure helpers for the Marketplace list state (q, type, role, page), used by the pager
+// US-055: pure helpers for the Marketplace list state (q, type, role, sort, page), used by the pager
 // links, the "Back to Marketplace" link on item pages and the empty/count messages.
 export interface ListState {
 	q: string;
 	type: string;
 	role: string;
+	sort: MarketplaceSort;
 	page: number;
 }
+
+// US-058: the default ('cloned') is never written into URLs. Values mirror the API allow-list.
+export type MarketplaceSort = 'cloned' | 'rating' | 'newest';
+export const DEFAULT_SORT: MarketplaceSort = 'cloned';
+export const SORT_OPTIONS: { value: MarketplaceSort; label: string }[] = [
+	{ value: 'cloned', label: 'Most cloned' },
+	{ value: 'rating', label: 'Highest rated' },
+	{ value: 'newest', label: 'Newest' }
+];
 
 const TYPE_LABELS: Record<string, string> = {
 	AGENT: 'Agent',
@@ -13,6 +23,16 @@ const TYPE_LABELS: Record<string, string> = {
 	WORKFLOW: 'Workflow'
 };
 const MAX_TEXT = 200;
+
+/** Maps any raw value to a known sort; missing, empty, wrong-case or unknown values become the default. */
+export function normaliseSort(raw: string | null | undefined): MarketplaceSort {
+	return SORT_OPTIONS.find((option) => option.value === raw)?.value ?? DEFAULT_SORT;
+}
+
+export function sortLabel(sort: string | null | undefined): string {
+	const normalised = normaliseSort(sort);
+	return SORT_OPTIONS.find((option) => option.value === normalised)?.label ?? '';
+}
 
 export function typeLabel(type: string): string {
 	return TYPE_LABELS[type] ?? type;
@@ -24,6 +44,8 @@ export function listQuery(state: Partial<ListState>): string {
 	if (state.q) params.set('q', state.q);
 	if (state.type) params.set('type', state.type);
 	if (state.role) params.set('role', state.role);
+	const sort = normaliseSort(state.sort);
+	if (sort !== DEFAULT_SORT) params.set('sort', sort);
 	if (state.page && state.page > 1) params.set('page', String(state.page));
 	return params.toString();
 }
@@ -34,7 +56,7 @@ export function marketplaceListHref(state: Partial<ListState> = {}): string {
 	return qs ? `/?${qs}` : '/';
 }
 
-/** Reads ONLY the four known keys, so no other parameter can ever be echoed into a link. */
+/** Reads ONLY the five known keys, so no other parameter can ever be echoed into a link. */
 export function listStateFromParams(params: URLSearchParams): ListState {
 	const type = params.get('type') ?? '';
 	const page = Number.parseInt(params.get('page') ?? '1', 10);
@@ -42,6 +64,7 @@ export function listStateFromParams(params: URLSearchParams): ListState {
 		q: (params.get('q') ?? '').slice(0, MAX_TEXT),
 		type: type in TYPE_LABELS ? type : '',
 		role: (params.get('role') ?? '').slice(0, MAX_TEXT),
+		sort: normaliseSort(params.get('sort')),
 		page: Number.isFinite(page) && page > 1 ? page : 1
 	};
 }

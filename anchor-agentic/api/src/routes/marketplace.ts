@@ -2,6 +2,7 @@ import { Hono } from 'hono'
 import type { AppEnv } from '../types'
 import { createRequestSupabaseClient } from '../supabase'
 import { fetchPage } from '../pagination'
+import { marketplaceSortOrder, parseMarketplaceSort } from '../marketplaceSort'
 
 export const marketplaceRouter = new Hono<AppEnv>()
 
@@ -77,9 +78,8 @@ async function resolveStepLabels(supabase: ReturnType<typeof createRequestSupaba
 }
 
 // US-026/US-028: search/filter/paginate over the frozen, Published-only
-// marketplace_items view. "Highest rated" has no rating data to sort by
-// yet, so the primary order is clone_count desc — exactly the AC's own
-// documented tiebreak, just promoted since every item currently ties at 0.
+// marketplace_items view. Ordering is chosen by the allow-listed `sort`
+// param (US-058); the default is most cloned.
 marketplaceRouter.get('/items', async (c) => {
   const supabase = createRequestSupabaseClient(c)
   const type = c.req.query('type')
@@ -94,8 +94,12 @@ marketplaceRouter.get('/items', async (c) => {
       'item_type, id, owner_id, name, description, role_id, role_name, published_version, clone_count, created_at, updated_at, rating, rating_count',
       { count: 'exact' },
     )
-    .order('clone_count', { ascending: false })
-    .order('created_at', { ascending: false })
+
+  // US-058: c.req.query returns the first value of a repeated param; invalid values fall back to
+  // the default (200, no echo). The ordering comes from the fixed allow-list, never the raw value.
+  for (const { column, ascending, nullsFirst } of marketplaceSortOrder(parseMarketplaceSort(c.req.query('sort')))) {
+    query = query.order(column, nullsFirst === undefined ? { ascending } : { ascending, nullsFirst })
+  }
 
   if (type && (MARKETPLACE_ITEM_TYPES as readonly string[]).includes(type)) {
     query = query.eq('item_type', type as MarketplaceItemType)

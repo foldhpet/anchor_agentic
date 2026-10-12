@@ -97,6 +97,19 @@ export class ReturnToFlow {
 		log.ok(FLOW, `Back on ${listUrl} with q, type and page intact`);
 	}
 
+	/** US-058: a sorted list -> nav "Log in" -> back on the same URL with the sort still chosen. */
+	async logInFromSortedListAndLandBack(
+		query: MarketplaceQuery & { sort: string },
+		itemName: string,
+		persona: Persona,
+		sortLabel: string
+	) {
+		await this.logInFromFilteredListAndLandBack(query, itemName, persona);
+		await this.listing.expectSortSelected(sortLabel);
+		await this.listing.expectSortedBySummary(sortLabel);
+		log.ok(FLOW, `Sort "${sortLabel}" survived the login round trip`);
+	}
+
 	/** Guarded URL as anonymous -> /login?reason=sandbox&next=... (banner shown) -> log in -> that URL. */
 	async logInAfterGuardRedirectAndLandBack(guardedPath: string, persona: Persona) {
 		const redirect = `/login?reason=sandbox&next=${encodeURIComponent(guardedPath)}`;
