@@ -122,6 +122,11 @@
 | [US-052](#us-052) | "New Role" in the global create menu | F-2.5 | Medium | 2 |
 | [US-053](#us-053) | Dedicated "New Role" page | F-2.5, F-3.1 | Medium | 3 |
 
+### Epic M — Marketplace Journey Usability
+| ID | Title | Feature ID(s) | Priority | Estimate |
+|---|---|---|---|---|
+| [US-055](#us-055) | Marketplace journey usability: page titles, item-page clarity, empty/feedback states | F-1.1, F-1.2, F-1.4, F-2.3, F-6.4 | Medium | 8 |
+
 ---
 
 ## Dependency Matrix
@@ -181,6 +186,7 @@
 | US-052 | US-005, US-013 | Amends the existing create-menu story to add Role; Role authoring (US-005) must exist |
 | US-053 | US-005, US-052 | The dedicated page needs both Role authoring and the menu entry pointing to it |
 | US-054 | US-047, US-048, US-050, US-051 | Icons use the type/spacing and color tokens (US-047/048), must meet the contrast rules of the accessibility baseline (US-050), and stay light-mode-safe under forced dark mode (US-051) |
+| US-055 | US-020, US-026, US-027, US-028, US-030, US-045, US-050 | Amends the existing Marketplace list and detail pages (US-026/027/028), clone and rating controls (US-020/030), and the report block (US-045). The unique-title criteria extend the WCAG baseline (US-050). Fulfils US-020 AC3 (anonymous prompt) without redefining it. |
 
 ---
 
@@ -1775,6 +1781,75 @@ Maps to F-2.5/F-3.1. Adds `/roles/new`, mirroring the existing `/agents/new`, `/
 **Dependencies:** US-005, US-052
 
 **Notes:** Deliberately additive, not a replacement — `/roles`'s inline form stays, matching how e2e tests across the suite (`domain-authoring.spec.ts`, `clone.spec.ts`, `export.spec.ts`, `marketplace.spec.ts`, `sandbox-library.spec.ts`) already exercise it directly.
+
+---
+
+## Epic M — Marketplace Journey Usability
+
+> Post-v1.1 usability pass from a UX review of the Marketplace journey (list, item page, login/register, layout). It changes presentation, feedback and navigation only. It adds no new capability, no new dependency, and no API contract change. Sort control (US-028 AC4) and returning to the previous page after login are explicitly out of scope and are left for later stories.
+
+### US-055
+**User Story Title:** Marketplace Journey Usability: Page Titles, Item-Page Clarity, Empty and Feedback States
+
+**User Story ID:** US-055
+
+**As a** visitor (anonymous or registered)
+**I want** every page to be clearly titled, the Marketplace to explain empty results and confirm my actions, and the item page to put content first and guide me to register
+**So that** I always know where I am, why a list is empty, whether my clone or rating worked, and what to do next
+
+**Description:**
+Maps to F-1.1, F-1.2, F-1.4, F-2.3 and F-6.4 (WCAG 2.4.2 Page Titled). It amends the presentation of US-026 (list), US-027 (item page), US-028 (search/filter), US-020 (clone) and US-030 (rating), and extends the accessibility baseline of US-050. It is grouped in three parts, A, B and C, that can ship independently (see Notes).
+
+*Constraints that apply to every criterion:*
+- Existing Playwright assertions on visible text must keep passing without edits. The only exception is the exact strings listed under "Changed strings" below.
+- No new dependency and no API contract change. Everything is web-layer (`anchor-agentic/web`: `+layout`, `+page.svelte` Marketplace list, `marketplace/[itemType]/[id]`, login/register).
+- The clone redirect to the new item's detail page is unchanged. Only a confirmation is added on the page the user lands on.
+- Pure helpers (title builder, pager URL builder) are unit tested. Journeys are covered by Playwright through the existing Page/Flow Models, with no raw selectors in specs.
+- The existing notice pattern from `STYLE-GUIDE.md` is reused for all new messages (`role="status"`, `border-l-4 border-attention bg-surface`). No new colour tokens.
+
+*Changed strings (the only permitted edits to existing assertions):*
+- The item-page type badge no longer shows square brackets (for example `[AGENT]` becomes `AGENT`), matching the list badge. No existing spec asserts on it.
+- The Marketplace empty-with-filters text (`No items match ...`) replaces `No published items yet. Check back soon.` only when a filter is set. No existing spec asserts on it.
+
+**Acceptance Criteria:**
+
+*Part A. Page titles and friendly error page (WCAG 2.4.2)*
+- [ ] Given any page renders, When its `<title>` is read, Then it is `<page h1> - AnchorAgentic` and is unique among the app's routes (examples: `Log in - AnchorAgentic`, `My Sandbox - AnchorAgentic`, `Agent for Test Analyst - AnchorAgentic` for an item page).
+- [ ] Given the Marketplace list is shown with a search term and/or page number above 1, When its `<title>` is read, Then it includes them (for example `Marketplace: "triage", page 2 - AnchorAgentic`). With neither, it is `Marketplace - AnchorAgentic`.
+- [ ] The system should build titles with one shared pure helper, unit tested for the plain, search-only, page-only, search+page and special-character cases, and a route's title must always match its `<h1>` text.
+- [ ] Given a route does not exist or an item is missing, unpublished or removed, When the user navigates to it, Then a custom root error page shows an `<h1>`, a plain-language reason (for 404: "This item may have been removed or unpublished"), and links to the Marketplace and Log in, rather than SvelteKit's default error screen.
+- [ ] Given a non-404 error occurs (for example 500), When the error page renders, Then it shows the same structure with a generic plain-language message and no stack trace, internal message or secret.
+
+*Part B. Marketplace item page*
+- [ ] Given an anonymous visitor views a Published item, When the page renders, Then in the place of the absent Rate/Clone controls a `role="status"` notice reads "Log in or register to clone this item into your Sandbox and rate it", with working Log in and Register links. This fulfils US-020 AC3 and does not redefine it. A registered user never sees this notice.
+- [ ] Given any visitor views a Published item, When the page renders, Then the "Report this item" block (US-045) appears after the item's content (Tasks, Skill files or Steps), not before it. It is collapsed inside a `<details>` element and expands on activation by mouse or keyboard.
+- [ ] Given a visitor reached the item page from a filtered, paginated list (`q`, `type`, `role`, `page`), When they activate "Back to Marketplace", Then they return to that same list with all four parameters preserved. If they arrived directly (no list context), the link goes to `/` as it does today.
+- [ ] Given the item page renders the item's type badge, When it is inspected, Then it uses the same plain badge as the Marketplace list, with no square brackets.
+
+*Part C. Marketplace list and action feedback*
+- [ ] Given `q`, `type` or `role` is set and no items match, When the list renders, Then it shows "No items match ..." followed by the active filters, and a "Clear filters" link to the unfiltered Marketplace. "No published items yet. Check back soon." appears only when no filter is set (the US-026 cold-start state is preserved).
+- [ ] Given the list renders results, When it is read, Then a result count line is shown (for example "12 items") and its text reflects the active filters.
+- [ ] Given the Type filter renders, When its options are read, Then they display as "Agent", "Skill" and "Workflow", while the submitted values and the resulting URL parameters are unchanged.
+- [ ] Given pagination links are generated, When a search contains `&`, `#`, `+`, `%`, a space or non-ASCII characters, Then the links are built with `URLSearchParams` and the search term round-trips intact to the next page. A unit-tested pure helper builds them, and the pager is wrapped in `<nav aria-label="Marketplace pages">`.
+- [ ] Given a registered user clones an item, When the request succeeds, Then they land on the new item's detail page (unchanged) and see a `role="status"` confirmation "Cloned into My Sandbox as a Draft. It is yours to edit." with a link to My Sandbox.
+- [ ] Given a clone request is in progress, When the user clicks Clone again, Then the button is disabled and relabelled "Cloning…" (progressive enhancement via `use:enhance`), so a double click creates exactly one clone. Without JavaScript the form still submits normally.
+- [ ] Given a registered user has not rated an item, When the rating control renders, Then its first option is a disabled "Choose a rating…" placeholder and no score is preselected. If they have already rated, their score is preselected and no placeholder is shown.
+- [ ] Given a registered user submits a rating, When it is saved, Then a `role="status"` message "Thanks, your rating is saved." is shown, and the aggregate rating is updated as specified in US-032.
+
+*Non-functional (tag: [NFR-A11y])*
+- [ ] The system should expose every new message, notice and navigation landmark to assistive technology (`role="status"`, `<nav>` with an accessible name, `<details>` keyboard operable) and keep contrast at the US-050 baseline.
+- [ ] The system should add no new runtime dependency and no network call, and `package.json` dependencies are unchanged.
+- [ ] The system should leave existing Playwright specs green with edits limited to the "Changed strings" listed above, and add Playwright coverage via Page/Flow Models for: titles per page, 404 page, anonymous notice, Back-to-list preservation, empty-with-filters and Clear filters, special-character pagination, clone confirmation and double-click protection, and rating placeholder and confirmation.
+
+**Out of scope:** the sort control (US-028 AC4) and returning the user to the previous page after login. Both are later stories.
+
+**Priority:** Medium
+
+**Estimate:** 8 story points
+
+**Dependencies:** US-020, US-026, US-027, US-028, US-030, US-045, US-050
+
+**Notes:** This is large for one sprint. Suggested split if the team prefers smaller increments: (1) Part A, titles and error page (3 pts); (2) Parts B and C, item page and list and feedback (5 pts). Both halves are independent of each other. The Marketplace list badge (plain item type, no brackets) is the reference form; the item page is brought in line with it. The pager URL helper should preserve unrelated parameters (`type`, `role`) and omit `page=1`. The "Choose a rating…" placeholder must not be submittable, which is a client-side guard only. The API already rejects scores outside 1-5 (US-030 AC3).
 
 ---
 
