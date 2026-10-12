@@ -15,6 +15,13 @@ export class AllSandboxPage extends AnchorBasePage {
 		await expect(this.resultLink(name)).toBeVisible();
 	}
 
+	/** US-056: `total` rows carry this name (the original and its copy), and `cloned` of them are tagged. */
+	async expectRowsWithClonedTags(name: string, expected: { total: number; cloned: number }) {
+		const rows = this.page.locator('li', { hasText: name });
+		await expect(rows).toHaveCount(expected.total);
+		await expect(rows.getByText('Cloned', { exact: true })).toHaveCount(expected.cloned);
+	}
+
 	/** The listing is plain links/text — no per-item edit/delete forms or owner buttons. */
 	async expectNoEditControls() {
 		await expect(this.page.locator('ul form')).toHaveCount(0);

@@ -1793,6 +1793,9 @@ components:
         updated_at:
           type: string
           format: date-time
+        cloned:
+          type: boolean
+          description: True when this item was created by cloning (Agents, Skills and Workflows only; derived from the clone records).
 
     VersionSnapshot:
       type: object

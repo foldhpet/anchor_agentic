@@ -34,6 +34,16 @@ export class MySandboxPage extends AnchorBasePage {
 		await expect(this.itemRow(name)).toContainText(`[${status}]`);
 	}
 
+	/** US-056: the row carries the text-only "Cloned" tag. */
+	async expectClonedTag(name: string) {
+		await expect(this.itemRow(name).getByText('Cloned', { exact: true })).toBeVisible();
+	}
+
+	async expectNoClonedTag(name: string) {
+		await expect(this.itemRow(name)).toBeVisible();
+		await expect(this.itemRow(name).getByText('Cloned', { exact: true })).toHaveCount(0);
+	}
+
 	/** Exactly `count` rows link to an item with this name (e.g. a double-clicked Clone made one copy). */
 	async expectItemCount(name: string, count: number) {
 		await expect(this.itemLink(name)).toHaveCount(count);

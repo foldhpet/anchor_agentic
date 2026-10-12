@@ -7,7 +7,8 @@ export interface SandboxItem {
 	updated_at: string;
 }
 
-export type DomainStatus = 'Draft' | 'Published' | 'UnderReview' | 'Removed' | 'Archived' | 'Deprecated';
+export type DomainStatus =
+	'Draft' | 'Published' | 'UnderReview' | 'Removed' | 'Archived' | 'Deprecated';
 
 export interface Role {
 	id: string;
@@ -104,6 +105,8 @@ export interface LibraryItem {
 	current_version: number;
 	created_at: string;
 	updated_at: string;
+	/** US-056: this item was created by cloning (Agents, Skills and Workflows only). */
+	cloned: boolean;
 }
 
 export interface VersionSnapshot {

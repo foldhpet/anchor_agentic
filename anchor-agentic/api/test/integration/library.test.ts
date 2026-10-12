@@ -44,10 +44,72 @@ describe('library routes', () => {
     const body = await res.json<{ items: unknown[]; total: number; page: number; pageSize: number }>()
 
     expect(res.status).toBe(200)
-    expect(body.items).toEqual(items)
+    expect(body.items).toEqual(items.map((item) => ({ ...item, cloned: false }))) // US-056 adds `cloned`
     expect(body.total).toBe(1)
     expect(body.page).toBe(1)
     expect(body.pageSize).toBe(20)
+  })
+
+  it('GET / tags a cloned Agent, Skill or Workflow with cloned: true and leaves originals and Roles false', async () => {
+    const items = [
+      { item_type: 'SKILL', id: 'skill-copy', owner_id: OWNER_ID, name: 'Copy', status: 'Draft', current_version: 1 },
+      { item_type: 'SKILL', id: 'skill-own', owner_id: OWNER_ID, name: 'Own', status: 'Draft', current_version: 1 },
+      { item_type: 'ROLE', id: 'role-1', owner_id: OWNER_ID, name: 'BA', status: 'Draft', current_version: 1 },
+    ]
+    const fromMock = vi
+      .fn()
+      .mockReturnValueOnce(chain({ data: items, error: null, count: 3 })) // library_items page
+      .mockReturnValueOnce(chain({ data: [{ source_item_type: 'SKILL', cloned_item_id: 'skill-copy' }], error: null })) // clone_records
+    createRequestSupabaseClient.mockReturnValue({
+      auth: { getUser: () => Promise.resolve({ data: { user: { id: OWNER_ID } }, error: null }) },
+      from: fromMock,
+    })
+
+    const app = createApp()
+    const res = await app.request('/api/v1/library', {}, testEnv)
+    const body = await res.json<{ items: { id: string; cloned: boolean }[] }>()
+
+    expect(res.status).toBe(200)
+    expect(body.items.map((item) => [item.id, item.cloned])).toEqual([
+      ['skill-copy', true],
+      ['skill-own', false],
+      ['role-1', false],
+    ])
+    expect(fromMock).toHaveBeenNthCalledWith(2, 'clone_records')
+  })
+
+  it('GET / makes no clone lookup when the page holds no Agent, Skill or Workflow', async () => {
+    const items = [{ item_type: 'ROLE', id: 'role-1', owner_id: OWNER_ID, name: 'BA', status: 'Draft', current_version: 1 }]
+    const fromMock = vi.fn().mockReturnValue(chain({ data: items, error: null, count: 1 }))
+    createRequestSupabaseClient.mockReturnValue({
+      auth: { getUser: () => Promise.resolve({ data: { user: { id: OWNER_ID } }, error: null }) },
+      from: fromMock,
+    })
+
+    const app = createApp()
+    const res = await app.request('/api/v1/library', {}, testEnv)
+    const body = await res.json<{ items: { cloned: boolean }[] }>()
+
+    expect(res.status).toBe(200)
+    expect(body.items.every((item) => item.cloned === false)).toBe(true)
+    expect(fromMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('GET / fails with a 500 when the clone lookup errors', async () => {
+    const items = [{ item_type: 'AGENT', id: 'agent-1', owner_id: OWNER_ID, name: 'A', status: 'Draft', current_version: 1 }]
+    const fromMock = vi
+      .fn()
+      .mockReturnValueOnce(chain({ data: items, error: null, count: 1 }))
+      .mockReturnValueOnce(chain({ data: null, error: Object.assign(new Error('boom'), { code: 'XX000' }) }))
+    createRequestSupabaseClient.mockReturnValue({
+      auth: { getUser: () => Promise.resolve({ data: { user: { id: OWNER_ID } }, error: null }) },
+      from: fromMock,
+    })
+
+    const app = createApp()
+    const res = await app.request('/api/v1/library', {}, testEnv)
+
+    expect(res.status).toBe(500)
   })
 
   it('GET / past the last page returns an empty page with the real total, not a 500', async () => {

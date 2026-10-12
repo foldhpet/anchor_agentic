@@ -209,6 +209,7 @@ Flows: none needed (single-page assertions through `LoginPage`/`MarketplacePage`
 | `permission-boundary.spec.ts` | SessionFlow, SandboxFlow (+ LoginPage / MarketplacePage directly) |
 | `sustainability.spec.ts` | MarketplacePage directly |
 | `skip-link.spec.ts` | MarketplacePage / LoginPage directly (`expectSkipLinkBypassesNav` on `AnchorBasePage`) |
+| `cloned-tag.spec.ts` | AuthFlow, PublishFlow, SessionFlow, CloneFlow (`expectClonedTagOnlyOnTheCopy`) (US-056) |
 | `marketplace-usability.spec.ts` | AuthFlow, PublishFlow, PageTitleFlow, MarketplaceFlow, CloneFlow, SessionFlow (US-055) |
 
 ## Maintenance notes

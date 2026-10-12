@@ -3,6 +3,7 @@ import type { AppEnv } from '../types'
 import { requireAuth } from '../middleware/auth'
 import type { VersionedItemType } from '../versioning'
 import { fetchPage } from '../pagination'
+import { cloneCandidateIds, flagCloned } from '../cloneFlags'
 
 export const libraryRouter = new Hono<AppEnv>()
 
@@ -39,7 +40,20 @@ libraryRouter.get('/', async (c) => {
 
   const { rows, total } = await fetchPage(query, page, pageSize)
 
-  return c.json({ items: rows, total, page, pageSize })
+  // US-056: tag clones. clone_records is readable by any registered user; one lookup per page, and
+  // none at all when the page holds no Agent, Skill or Workflow.
+  const candidateIds = cloneCandidateIds(rows)
+  let records: { source_item_type: string; cloned_item_id: string }[] = []
+  if (candidateIds.length > 0) {
+    const { data, error } = await supabase
+      .from('clone_records')
+      .select('source_item_type, cloned_item_id')
+      .in('cloned_item_id', candidateIds)
+    if (error) throw error
+    records = data ?? []
+  }
+
+  return c.json({ items: flagCloned(rows, records), total, page, pageSize })
 })
 
 // US-015: read-only version history, available to any registered user (not

@@ -1,3 +1,5 @@
+import type { Page } from '@playwright/test';
+import { AllSandboxPage } from '../pages/all-sandbox.page';
 import type { ItemDetailPage } from '../pages/item-detail.page';
 import { MarketplaceDetailPage } from '../pages/marketplace-detail.page';
 import { MySandboxPage } from '../pages/my-sandbox.page';
@@ -48,6 +50,23 @@ export class CloneFlow {
 		await owner.goto(sourceUrl);
 		await owner.expectCloneCount(times);
 		log.ok(FLOW, `Source shows "Cloned ${times} times"`);
+	}
+
+	/** US-056: only the copy carries the "Cloned" tag, in the cloner's My Sandbox and in All Sandbox. */
+	async expectClonedTagOnlyOnTheCopy(ownerPage: Page, clonerPage: Page, name: string) {
+		log.step(FLOW, `Checking the "Cloned" tag on the copy of "${name}" and not on the original`);
+		const copies = new MySandboxPage(clonerPage);
+		await copies.open();
+		await copies.expectClonedTag(name);
+
+		const originals = new MySandboxPage(ownerPage);
+		await originals.open();
+		await originals.expectNoClonedTag(name);
+
+		const everyone = new AllSandboxPage(ownerPage);
+		await everyone.open(name);
+		await everyone.expectRowsWithClonedTags(name, { total: 2, cloned: 1 });
+		log.ok(FLOW, 'The tag is on the copy only, in My Sandbox and in All Sandbox');
 	}
 
 	/** US-055 Part C: the landing page confirms the clone once; a reload no longer shows it. */

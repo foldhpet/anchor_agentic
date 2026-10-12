@@ -2,6 +2,7 @@
 	import { pageTitle } from '$lib/pageTitle';
 	import type { LibraryItem, LibraryItemType } from '$lib/api/types';
 	import { STATUS_STYLE } from '$lib/statusStyle';
+	import ClonedTag from '$lib/ClonedTag.svelte';
 	import StatusIcon from '$lib/StatusIcon.svelte';
 	import type { PageProps } from './$types';
 
@@ -86,6 +87,9 @@
 							item.status
 						].classes}"><StatusIcon status={item.status} />[{item.status}]</span
 					>
+					{#if item.cloned}
+						<ClonedTag />
+					{/if}
 				</li>
 			{/each}
 		</ul>
