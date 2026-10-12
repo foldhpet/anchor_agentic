@@ -107,11 +107,7 @@ test.describe('Marketplace journey usability (US-055)', () => {
 		}
 	);
 
-	// DEFECT (implementation, not the test): web/src/routes/marketplace/[itemType]/[id]/+page.server.ts
-	// calls the detail endpoint without the user's access token, so the API (which reads the rater's
-	// own score only from an Authorization header) always answers myRating: null and the select shows
-	// "Choose a rating…" even after rating. Remove test.fixme once the load passes the token.
-	test.fixme(
+	test(
 		'US-055 AC: a user who already rated sees their score preselected and no placeholder',
 		{ tag: '@US-055' },
 		async ({ page, browser }) => {

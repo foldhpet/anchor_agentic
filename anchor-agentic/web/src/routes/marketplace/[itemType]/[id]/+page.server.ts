@@ -30,7 +30,11 @@ export const load: PageServerLoad = async ({ params, locals, fetch }) => {
 			assignments?: AgentTaskAssignment[];
 			steps?: MarketplaceWorkflowStep[];
 			myRating: number | null;
-		}>(`/api/v1/marketplace/items/${itemType}/${params.id}`, { fetchFn: fetch });
+		}>(`/api/v1/marketplace/items/${itemType}/${params.id}`, {
+			// The API reads the rater's own score (myRating) only from an Authorization header (US-032 AC3).
+			accessToken: locals.session?.access_token,
+			fetchFn: fetch
+		});
 
 		let provenance: Provenance | null = null;
 		let cloneCount = 0;
