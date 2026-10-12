@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { pageTitle } from '$lib/pageTitle';
 	import type { LibraryItem, LibraryItemType } from '$lib/api/types';
 	import { STATUS_STYLE } from '$lib/statusStyle';
 	import StatusIcon from '$lib/StatusIcon.svelte';
@@ -40,6 +41,8 @@
 		})).filter((group) => group.items.length > 0)
 	);
 </script>
+
+<svelte:head><title>{pageTitle('My Sandbox')}</title></svelte:head>
 
 <h1 class="text-2xl">My Sandbox</h1>
 <p class="mt-1 text-ink/75">

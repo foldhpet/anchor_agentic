@@ -1,9 +1,12 @@
 <script lang="ts">
+	import { pageTitle } from '$lib/pageTitle';
 	import { enhance } from '$app/forms';
 	import type { PageProps } from './$types';
 
 	let { data, form }: PageProps = $props();
 </script>
+
+<svelte:head><title>{pageTitle('Moderation Queue')}</title></svelte:head>
 
 <h1 class="text-2xl">Moderation Queue</h1>
 
@@ -20,13 +23,14 @@
 		{#each data.queue as item (item.item_type + item.id)}
 			<li class="rounded-md border border-ink/10 p-4">
 				<h2 class="text-lg">
-					<span class="rounded-full bg-surface px-2 py-0.5 text-xs text-ink/75">[{item.item_type}]</span>
+					<span class="rounded-full bg-surface px-2 py-0.5 text-xs text-ink/75"
+						>[{item.item_type}]</span
+					>
 					{item.name ?? item.id}
 				</h2>
 				{#if item.description}<p class="mt-2 text-ink/80">{item.description}</p>{/if}
 				{#if item.system_prompt}<pre
-						class="mt-2 overflow-x-auto rounded-md bg-surface p-3 text-xs">{item.system_prompt}</pre
-					>{/if}
+						class="mt-2 overflow-x-auto rounded-md bg-surface p-3 text-xs">{item.system_prompt}</pre>{/if}
 
 				{#if item.reports.length === 0}
 					<p class="mt-2 text-sm text-ink/75"><em>Voluntary review request (US-044).</em></p>
@@ -56,7 +60,10 @@
 					<ul class="mt-2 flex flex-col gap-2">
 						{#each item.reports as report (report.id)}
 							<li class="flex items-center gap-2 rounded-md bg-surface px-3 py-2 text-sm">
-								<span>[{report.reason}]{#if report.detail} {report.detail}{/if}</span>
+								<span
+									>[{report.reason}]{#if report.detail}
+										{report.detail}{/if}</span
+								>
 								<form method="POST" action="?/dismiss" use:enhance style="display:inline">
 									<input type="hidden" name="report_id" value={report.id} />
 									<button type="submit" class="rounded-md border border-ink/15 px-2 py-1 text-xs"
@@ -69,7 +76,9 @@
 					<form method="POST" action="?/remove" use:enhance class="mt-3">
 						<input type="hidden" name="item_type" value={item.item_type} />
 						<input type="hidden" name="id" value={item.id} />
-						<button type="submit" class="rounded-md border border-attention px-3 py-1.5 text-sm text-ink"
+						<button
+							type="submit"
+							class="rounded-md border border-attention px-3 py-1.5 text-sm text-ink"
 							>Remove (terminal)</button
 						>
 					</form>

@@ -1,8 +1,11 @@
 <script lang="ts">
+	import { pageTitle } from '$lib/pageTitle';
 	import type { PageProps } from './$types';
 
 	let { form }: PageProps = $props();
 </script>
+
+<svelte:head><title>{pageTitle('Register')}</title></svelte:head>
 
 <h1 class="text-2xl">Register</h1>
 

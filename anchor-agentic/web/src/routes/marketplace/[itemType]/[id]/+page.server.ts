@@ -1,5 +1,6 @@
 import { error, fail, redirect } from '@sveltejs/kit';
 import { ApiError, apiRequest } from '$lib/api/client';
+import { setClonedFlash } from '$lib/clonedFlash';
 import type {
 	AgentTaskAssignment,
 	CloneResult,
@@ -34,10 +35,13 @@ export const load: PageServerLoad = async ({ params, locals, fetch }) => {
 		let provenance: Provenance | null = null;
 		let cloneCount = 0;
 		if (locals.user) {
-			({ provenance, cloneCount } = await apiRequest<{ provenance: Provenance | null; cloneCount: number }>(
-				`/api/v1/clone/${itemType}/${params.id}`,
-				{ accessToken: locals.session?.access_token, fetchFn: fetch }
-			));
+			({ provenance, cloneCount } = await apiRequest<{
+				provenance: Provenance | null;
+				cloneCount: number;
+			}>(`/api/v1/clone/${itemType}/${params.id}`, {
+				accessToken: locals.session?.access_token,
+				fetchFn: fetch
+			}));
 		}
 
 		return { itemType, ...detail, provenance, cloneCount, isRegistered: !!locals.user };
@@ -50,19 +54,23 @@ export const load: PageServerLoad = async ({ params, locals, fetch }) => {
 };
 
 export const actions: Actions = {
-	clone: async ({ params, locals, fetch }) => {
+	clone: async ({ params, locals, fetch, cookies }) => {
 		const itemType = params.itemType as MarketplaceItemType;
 		let cloned: CloneResult;
 		try {
-			({ cloned } = await apiRequest<{ cloned: CloneResult }>(`/api/v1/clone/${itemType}/${params.id}`, {
-				method: 'POST',
-				accessToken: locals.session?.access_token,
-				fetchFn: fetch
-			}));
+			({ cloned } = await apiRequest<{ cloned: CloneResult }>(
+				`/api/v1/clone/${itemType}/${params.id}`,
+				{
+					method: 'POST',
+					accessToken: locals.session?.access_token,
+					fetchFn: fetch
+				}
+			));
 		} catch (err) {
 			if (err instanceof ApiError) return fail(err.status, { error: err.message });
 			throw err;
 		}
+		setClonedFlash(cookies, cloned.id);
 		throw redirect(303, `${DETAIL_ROUTE[cloned.item_type]}/${cloned.id}`);
 	},
 

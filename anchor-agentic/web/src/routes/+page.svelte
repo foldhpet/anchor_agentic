@@ -1,6 +1,9 @@
 <script lang="ts">
+	import { resolve } from '$app/paths';
 	import Icon from '$lib/Icon.svelte';
 	import type { MarketplaceItemType } from '$lib/api/types';
+	import { describeFilters, itemCount, marketplaceListHref, typeLabel } from '$lib/marketplaceList';
+	import { marketplaceTitle } from '$lib/pageTitle';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
@@ -10,7 +13,14 @@
 	}
 
 	let totalPages = $derived(Math.max(1, Math.ceil(data.total / data.pageSize)));
+	let filters = $derived(describeFilters(data));
+
+	function pageHref(page: number) {
+		return marketplaceListHref({ q: data.q, type: data.type, role: data.role, page });
+	}
 </script>
+
+<svelte:head><title>{marketplaceTitle(data.q, data.page)}</title></svelte:head>
 
 <h1 class="text-2xl">Marketplace</h1>
 <p class="mt-1 text-ink/75">Browse published Agents, Skills, and Workflows from the community.</p>
@@ -31,7 +41,7 @@
 		<select name="type" class="rounded-md border border-ink/15 bg-bg px-3 py-1.5">
 			<option value="" selected={data.type === ''}>All types</option>
 			{#each ['AGENT', 'SKILL', 'WORKFLOW'] as type (type)}
-				<option value={type} selected={data.type === type}>{type}</option>
+				<option value={type} selected={data.type === type}>{typeLabel(type)}</option>
 			{/each}
 		</select>
 	</label>
@@ -49,9 +59,19 @@
 </form>
 
 {#if data.items.length === 0}
-	<p class="mt-6 text-ink/75">No published items yet. Check back soon.</p>
+	{#if filters}
+		<p class="mt-6 text-ink/75">
+			No items match {filters}.
+			<a href={resolve('/')}>Clear filters</a>
+		</p>
+	{:else}
+		<p class="mt-6 text-ink/75">No published items yet. Check back soon.</p>
+	{/if}
 {:else}
-	<ul class="mt-6 flex flex-col gap-3">
+	<p class="mt-6 text-sm text-ink/75">
+		{itemCount(data.total)}{filters ? ` matching ${filters}` : ''}
+	</p>
+	<ul class="mt-3 flex flex-col gap-3">
 		{#each data.items as item (`${item.item_type}-${item.id}`)}
 			<li class="rounded-md border border-ink/10 p-4">
 				<div class="flex items-center gap-2">
@@ -79,21 +99,17 @@
 {/if}
 
 {#if totalPages > 1}
-	<p class="mt-6 flex items-center gap-3 text-sm text-ink/75">
+	<nav aria-label="Marketplace pages" class="mt-6 flex items-center gap-3 text-sm text-ink/75">
 		Page {data.page} of {totalPages}
 		{#if data.page > 1}
-			<a
-				class="inline-flex items-center gap-1"
-				href="?q={data.q}&type={data.type}&role={data.role}&page={data.page - 1}"
+			<a class="inline-flex items-center gap-1" href={pageHref(data.page - 1)}
 				><Icon name="previous" />Prev</a
 			>
 		{/if}
 		{#if data.page < totalPages}
-			<a
-				class="inline-flex items-center gap-1"
-				href="?q={data.q}&type={data.type}&role={data.role}&page={data.page + 1}"
+			<a class="inline-flex items-center gap-1" href={pageHref(data.page + 1)}
 				>Next<Icon name="next" /></a
 			>
 		{/if}
-	</p>
+	</nav>
 {/if}

@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { resolve } from '$app/paths';
+	import { pageTitle } from '$lib/pageTitle';
 	import Icon from '$lib/Icon.svelte';
 	import DegradedNotice from '$lib/DegradedNotice.svelte';
 	import { enhance } from '$app/forms';
@@ -13,6 +15,8 @@
 	let { data, form }: PageProps = $props();
 
 	let back = $derived(backLink(page.url.searchParams.get('from'), data.isOwner));
+
+	let cloning = $state(false);
 
 	let exportError = $state<string | null>(null);
 
@@ -45,10 +49,22 @@
 	);
 </script>
 
+<svelte:head><title>{pageTitle(data.skill.name)}</title></svelte:head>
+
 <h1 class="text-2xl">{data.skill.name}</h1>
 <p class="mt-1 text-sm"><a href={back.href}>&larr; {back.label}</a></p>
 
 <DegradedNotice missing={data.degraded} />
+
+{#if data.justCloned}
+	<p
+		role="status"
+		class="mt-4 rounded-md border-l-4 border-attention bg-surface px-4 py-3 text-ink"
+	>
+		Cloned into My Sandbox as a Draft. It is yours to edit.
+		<a href={resolve('/library')}>Go to My Sandbox</a>
+	</p>
+{/if}
 
 {#if form?.error}
 	<p role="alert" class="mt-4 rounded-md border-l-4 border-attention bg-surface px-4 py-3 text-ink">
@@ -68,9 +84,23 @@
 {/if}
 
 {#if data.skill.status === 'Published'}
-	<form method="POST" action="?/clone" use:enhance class="mt-4">
-		<button type="submit" class="rounded-md bg-primary px-4 py-1.5 text-white"
-			>Clone into My Sandbox</button
+	<form
+		method="POST"
+		action="?/clone"
+		use:enhance={() => {
+			cloning = true;
+			return async ({ update }) => {
+				await update();
+				cloning = false;
+			};
+		}}
+		class="mt-4"
+	>
+		<button
+			type="submit"
+			disabled={cloning}
+			class="rounded-md bg-primary px-4 py-1.5 text-white disabled:opacity-60"
+			>{cloning ? 'Cloning…' : 'Clone into My Sandbox'}</button
 		>
 	</form>
 {/if}

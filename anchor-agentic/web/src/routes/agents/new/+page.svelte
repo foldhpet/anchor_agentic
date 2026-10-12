@@ -1,9 +1,12 @@
 <script lang="ts">
+	import { pageTitle } from '$lib/pageTitle';
 	import { enhance } from '$app/forms';
 	import type { PageProps } from './$types';
 
 	let { data, form }: PageProps = $props();
 </script>
+
+<svelte:head><title>{pageTitle('New Agent')}</title></svelte:head>
 
 <h1 class="text-2xl">New Agent</h1>
 

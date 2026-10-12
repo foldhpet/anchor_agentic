@@ -1,14 +1,16 @@
 <script lang="ts">
+	import { pageTitle } from '$lib/pageTitle';
 	import { enhance } from '$app/forms';
 	import type { ActionData } from './$types';
 
 	let { form }: { form: ActionData } = $props();
 </script>
 
+<svelte:head><title>{pageTitle('New Role')}</title></svelte:head>
+
 <h1 class="text-2xl">New Role</h1>
 <p class="mt-1 text-ink/75">
-	A Role is a job function an Agent fulfills — define it once, then build Agents and Tasks under
-	it.
+	A Role is a job function an Agent fulfills — define it once, then build Agents and Tasks under it.
 </p>
 
 {#if form?.error}

@@ -1,5 +1,6 @@
 import { error, fail, redirect } from '@sveltejs/kit';
 import { ApiError, apiRequest } from '$lib/api/client';
+import { setClonedFlash, takeClonedFlash } from '$lib/clonedFlash';
 import { degradedParts, loadProvenance, loadVersions } from '$lib/api/optional';
 import type {
 	Agent,
@@ -15,18 +16,25 @@ import type { Actions, PageServerLoad } from './$types';
 
 const VERSIONS_PAGE_SIZE = 10;
 
-function referenceable<T extends { owner_id: string; status: string }>(items: T[], userId: string | undefined) {
+function referenceable<T extends { owner_id: string; status: string }>(
+	items: T[],
+	userId: string | undefined
+) {
 	return items.filter((item) => item.owner_id === userId || item.status === 'Published');
 }
 
-export const load: PageServerLoad = async ({ params, locals, fetch, url }) => {
+export const load: PageServerLoad = async ({ params, locals, fetch, url, cookies }) => {
+	const justCloned = takeClonedFlash(cookies, params.id);
 	const accessToken = locals.session?.access_token;
 	const versionsPage = Math.max(1, Number.parseInt(url.searchParams.get('vpage') ?? '1', 10) || 1);
 	try {
-		const { workflow } = await apiRequest<{ workflow: Workflow }>(`/api/v1/workflows/${params.id}`, {
-			accessToken,
-			fetchFn: fetch
-		});
+		const { workflow } = await apiRequest<{ workflow: Workflow }>(
+			`/api/v1/workflows/${params.id}`,
+			{
+				accessToken,
+				fetchFn: fetch
+			}
+		);
 		const [
 			{ steps },
 			{ tasks },
@@ -44,7 +52,10 @@ export const load: PageServerLoad = async ({ params, locals, fetch, url }) => {
 			apiRequest<{ agents: Agent[] }>('/api/v1/agents', { accessToken, fetchFn: fetch }),
 			apiRequest<{ skills: Skill[] }>('/api/v1/skills', { accessToken, fetchFn: fetch }),
 			apiRequest<{ roles: Role[] }>('/api/v1/roles', { accessToken, fetchFn: fetch }),
-			loadVersions('WORKFLOW', params.id, versionsPage, VERSIONS_PAGE_SIZE, { accessToken, fetchFn: fetch }),
+			loadVersions('WORKFLOW', params.id, versionsPage, VERSIONS_PAGE_SIZE, {
+				accessToken,
+				fetchFn: fetch
+			}),
 			loadProvenance('WORKFLOW', params.id, { accessToken, fetchFn: fetch })
 		]);
 
@@ -54,12 +65,16 @@ export const load: PageServerLoad = async ({ params, locals, fetch, url }) => {
 		const roleById = new Map(roles.map((r) => [r.id, r]));
 
 		const describeStep = (step: WorkflowStep) => {
-			if (step.step_type === 'TASK' && step.task_id) return taskById.get(step.task_id)?.name ?? step.task_id;
+			if (step.step_type === 'TASK' && step.task_id)
+				return taskById.get(step.task_id)?.name ?? step.task_id;
 			if (step.step_type === 'AGENT' && step.agent_id) {
 				const agent = agentById.get(step.agent_id);
-				return agent ? `Agent for ${roleById.get(agent.role_id)?.name ?? agent.role_id}` : step.agent_id;
+				return agent
+					? `Agent for ${roleById.get(agent.role_id)?.name ?? agent.role_id}`
+					: step.agent_id;
 			}
-			if (step.step_type === 'SKILL' && step.skill_id) return skillById.get(step.skill_id)?.name ?? step.skill_id;
+			if (step.step_type === 'SKILL' && step.skill_id)
+				return skillById.get(step.skill_id)?.name ?? step.skill_id;
 			return '';
 		};
 
@@ -84,6 +99,7 @@ export const load: PageServerLoad = async ({ params, locals, fetch, url }) => {
 			provenance,
 			// null = could not be loaded; the page hides the line instead of showing a wrong 0.
 			cloneCount: provenanceResult.failed ? null : cloneCount,
+			justCloned,
 			degraded: degradedParts({ versions: versionsResult, provenance: provenanceResult })
 		};
 	} catch (err) {
@@ -216,10 +232,13 @@ export const actions: Actions = {
 		const direction = String(form.get('direction') ?? '');
 		const accessToken = locals.session?.access_token;
 
-		const { steps } = await apiRequest<{ steps: WorkflowStep[] }>(`/api/v1/workflows/${params.id}/steps`, {
-			accessToken,
-			fetchFn: fetch
-		});
+		const { steps } = await apiRequest<{ steps: WorkflowStep[] }>(
+			`/api/v1/workflows/${params.id}/steps`,
+			{
+				accessToken,
+				fetchFn: fetch
+			}
+		);
 		const ids = steps.map((s) => s.id);
 		const index = ids.indexOf(stepId);
 		const swapWith = direction === 'up' ? index - 1 : index + 1;
@@ -240,18 +259,22 @@ export const actions: Actions = {
 		return { success: true };
 	},
 
-	clone: async ({ params, locals, fetch }) => {
+	clone: async ({ params, locals, fetch, cookies }) => {
 		let cloned: CloneResult;
 		try {
-			({ cloned } = await apiRequest<{ cloned: CloneResult }>(`/api/v1/clone/WORKFLOW/${params.id}`, {
-				method: 'POST',
-				accessToken: locals.session?.access_token,
-				fetchFn: fetch
-			}));
+			({ cloned } = await apiRequest<{ cloned: CloneResult }>(
+				`/api/v1/clone/WORKFLOW/${params.id}`,
+				{
+					method: 'POST',
+					accessToken: locals.session?.access_token,
+					fetchFn: fetch
+				}
+			));
 		} catch (err) {
 			if (err instanceof ApiError) return fail(err.status, { error: err.message });
 			throw err;
 		}
+		setClonedFlash(cookies, cloned.id);
 		throw redirect(303, `/workflows/${cloned.id}`);
 	}
 };

@@ -1,18 +1,23 @@
 import { error, fail, redirect } from '@sveltejs/kit';
 import { ApiError, apiRequest } from '$lib/api/client';
+import { setClonedFlash, takeClonedFlash } from '$lib/clonedFlash';
 import { degradedParts, loadProvenance, loadVersions } from '$lib/api/optional';
 import type { CloneResult, Skill } from '$lib/api/types';
 import type { Actions, PageServerLoad } from './$types';
 
 const VERSIONS_PAGE_SIZE = 10;
 
-export const load: PageServerLoad = async ({ params, locals, fetch, url }) => {
+export const load: PageServerLoad = async ({ params, locals, fetch, url, cookies }) => {
+	const justCloned = takeClonedFlash(cookies, params.id);
 	const accessToken = locals.session?.access_token;
 	const versionsPage = Math.max(1, Number.parseInt(url.searchParams.get('vpage') ?? '1', 10) || 1);
 	try {
 		const [{ skill }, versionsResult, provenanceResult] = await Promise.all([
 			apiRequest<{ skill: Skill }>(`/api/v1/skills/${params.id}`, { accessToken, fetchFn: fetch }),
-			loadVersions('SKILL', params.id, versionsPage, VERSIONS_PAGE_SIZE, { accessToken, fetchFn: fetch }),
+			loadVersions('SKILL', params.id, versionsPage, VERSIONS_PAGE_SIZE, {
+				accessToken,
+				fetchFn: fetch
+			}),
 			loadProvenance('SKILL', params.id, { accessToken, fetchFn: fetch })
 		]);
 		const { versions, total: versionsTotal } = versionsResult.data;
@@ -27,6 +32,7 @@ export const load: PageServerLoad = async ({ params, locals, fetch, url }) => {
 			provenance,
 			// null = could not be loaded; the page hides the line instead of showing a wrong 0.
 			cloneCount: provenanceResult.failed ? null : cloneCount,
+			justCloned,
 			degraded: degradedParts({ versions: versionsResult, provenance: provenanceResult })
 		};
 	} catch (err) {
@@ -93,7 +99,7 @@ export const actions: Actions = {
 		return { success: true };
 	},
 
-	clone: async ({ params, locals, fetch }) => {
+	clone: async ({ params, locals, fetch, cookies }) => {
 		let cloned: CloneResult;
 		try {
 			({ cloned } = await apiRequest<{ cloned: CloneResult }>(`/api/v1/clone/SKILL/${params.id}`, {
@@ -105,6 +111,7 @@ export const actions: Actions = {
 			if (err instanceof ApiError) return fail(err.status, { error: err.message });
 			throw err;
 		}
+		setClonedFlash(cookies, cloned.id);
 		throw redirect(303, `/skills/${cloned.id}`);
 	}
 };

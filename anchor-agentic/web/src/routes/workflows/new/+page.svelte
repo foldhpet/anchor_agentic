@@ -1,9 +1,12 @@
 <script lang="ts">
+	import { pageTitle } from '$lib/pageTitle';
 	import { enhance } from '$app/forms';
 	import type { ActionData } from './$types';
 
 	let { form }: { form: ActionData } = $props();
 </script>
+
+<svelte:head><title>{pageTitle('New Workflow')}</title></svelte:head>
 
 <h1 class="text-2xl">New Workflow</h1>
 

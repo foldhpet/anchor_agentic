@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { pageTitle } from '$lib/pageTitle';
 	import Icon from '$lib/Icon.svelte';
 	import type { LibraryItemType } from '$lib/api/types';
 	import { withOrigin } from '$lib/backLink';
@@ -22,6 +23,8 @@
 
 	let totalPages = $derived(Math.max(1, Math.ceil(data.total / data.pageSize)));
 </script>
+
+<svelte:head><title>{pageTitle('All Sandbox')}</title></svelte:head>
 
 <h1 class="text-2xl">All Sandbox</h1>
 <p class="mt-1 text-ink/75">

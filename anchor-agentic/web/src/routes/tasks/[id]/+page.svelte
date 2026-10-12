@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { pageTitle } from '$lib/pageTitle';
 	import Icon from '$lib/Icon.svelte';
 	import DegradedNotice from '$lib/DegradedNotice.svelte';
 	import { enhance } from '$app/forms';
@@ -14,6 +15,8 @@
 		Math.max(1, Math.ceil(data.versionsTotal / data.versionsPageSize))
 	);
 </script>
+
+<svelte:head><title>{pageTitle(data.task.name)}</title></svelte:head>
 
 <h1 class="text-2xl">{data.task.name}</h1>
 <p class="mt-1 text-sm"><a href="/roles/{data.role.id}">&larr; {data.role.name}</a></p>

@@ -1,9 +1,12 @@
 <script lang="ts">
+	import { pageTitle } from '$lib/pageTitle';
 	import { enhance } from '$app/forms';
 	import type { PageProps } from './$types';
 
 	let { data, form }: PageProps = $props();
 </script>
+
+<svelte:head><title>{pageTitle('All Sandbox')}</title></svelte:head>
 
 <h1>All Sandbox</h1>
 <p>Every registered user's items are listed here. You can only edit items you own.</p>

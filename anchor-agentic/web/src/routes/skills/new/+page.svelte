@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { pageTitle } from '$lib/pageTitle';
 	import { enhance } from '$app/forms';
 	import type { ActionData } from './$types';
 
@@ -14,6 +15,8 @@
 		files.splice(index, 1);
 	}
 </script>
+
+<svelte:head><title>{pageTitle('New Skill')}</title></svelte:head>
 
 <h1 class="text-2xl">New Skill</h1>
 
@@ -46,8 +49,9 @@
 			</label>
 			<label class="flex flex-col gap-1 text-sm">
 				Content
-				<textarea bind:value={file.content} class="rounded-md border border-ink/15 bg-bg px-3 py-1.5"
-				></textarea>
+				<textarea
+					bind:value={file.content}
+					class="rounded-md border border-ink/15 bg-bg px-3 py-1.5"></textarea>
 			</label>
 			<button
 				type="button"
@@ -57,8 +61,10 @@
 			>
 		</fieldset>
 	{/each}
-	<button type="button" onclick={addFile} class="self-start rounded-md border border-ink/15 px-3 py-1.5 text-sm"
-		>+ Add file</button
+	<button
+		type="button"
+		onclick={addFile}
+		class="self-start rounded-md border border-ink/15 px-3 py-1.5 text-sm">+ Add file</button
 	>
 
 	<input type="hidden" name="skill_files" value={JSON.stringify(files)} />

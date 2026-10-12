@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { pageTitle } from '$lib/pageTitle';
 	import Icon from '$lib/Icon.svelte';
 	import type { PageData } from './$types';
 
@@ -22,6 +23,8 @@
 		}
 	});
 </script>
+
+<svelte:head><title>{pageTitle('Account Settings')}</title></svelte:head>
 
 <h1 class="text-2xl">Account Settings</h1>
 <p class="mt-1 text-sm"><a href="/">← Back to Home</a></p>
